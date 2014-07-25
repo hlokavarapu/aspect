@@ -1062,6 +1062,8 @@ namespace aspect
                   is_element( (*p).first.second, parameters.zero_velocity_boundary_indicators ) == false &&
                   is_element( (*p).first.first, parameters.tangential_velocity_boundary_indicators ) == false &&
                   is_element( (*p).first.second, parameters.tangential_velocity_boundary_indicators ) == false &&
+                  is_element( (*p).first.first, parameters.fixed_composition_boundary_indicators ) == false &&
+                  is_element( (*p).first.second, parameters.fixed_composition_boundary_indicators ) == false &&
                   parameters.prescribed_velocity_boundary_indicators.find( (*p).first.first)
                   == parameters.prescribed_velocity_boundary_indicators.end() &&
                   parameters.prescribed_velocity_boundary_indicators.find( (*p).first.second)
