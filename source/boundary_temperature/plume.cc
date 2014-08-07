@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2014 by the authors of the ASPECT code.
+  Copyright (C) 2014 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -233,8 +233,6 @@ namespace aspect
     void
     Plume<dim>::declare_parameters (ParameterHandler &prm)
     {
-      prm.enter_subsection("Boundary temperature model");
-      {
         prm.enter_subsection("Plume");
         {
           prm.declare_entry ("Data directory",
@@ -250,7 +248,7 @@ namespace aspect
           prm.declare_entry ("Plume position file name", "Tristan.sur",
                              Patterns::Anything (),
                              "The file name of the plume position data.");
-          prm.declare_entry ("Magnitude", "0",
+          prm.declare_entry ("Temperature anomaly", "0",
                              Patterns::Double (),
                              "Magnitude of the temperature anomaly. Units: K.");
           prm.declare_entry ("Radius", "0",
@@ -280,62 +278,54 @@ namespace aspect
         }
         prm.leave_subsection ();
       }
-      prm.leave_subsection ();
-    }
 
 
     template <int dim>
     void
     Plume<dim>::parse_parameters (ParameterHandler &prm)
     {
-      prm.enter_subsection("Boundary temperature model");
+      prm.enter_subsection("Plume");
       {
-        prm.enter_subsection("Plume");
+        // Get the path to the data files. If it contains a reference
+        // to $ASPECT_SOURCE_DIR, replace it by what CMake has given us
+        // as a #define
+        data_directory        = prm.get ("Data directory");
         {
-          // Get the path to the data files. If it contains a reference
-           // to $ASPECT_SOURCE_DIR, replace it by what CMake has given us
-           // as a #define
-           data_directory        = prm.get ("Data directory");
-           {
-             const std::string      subst_text = "$ASPECT_SOURCE_DIR";
-             std::string::size_type position;
-             while (position = data_directory.find (subst_text),  position!=std::string::npos)
-               data_directory.replace (data_directory.begin()+position,
-                                       data_directory.begin()+position+subst_text.size(),
-                                       ASPECT_SOURCE_DIR);
+          const std::string      subst_text = "$ASPECT_SOURCE_DIR";
+          std::string::size_type position;
+          while (position = data_directory.find (subst_text),  position!=std::string::npos)
+            data_directory.replace (data_directory.begin()+position,
+                                    data_directory.begin()+position+subst_text.size(),
+                                    ASPECT_SOURCE_DIR);
+        }
+
+        plume_file_name    = prm.get ("Plume position file name");
+        T0 = prm.get_double ("Temperature anomaly");
+        R0 = prm.get_double ("Radius");
+        switch (dim)
+        {
+           case 2:
+             temperature_[0] = prm.get_double ("Left temperature");
+             temperature_[1] = prm.get_double ("Right temperature");
+             temperature_[2] = prm.get_double ("Bottom temperature");
+             temperature_[3] = prm.get_double ("Top temperature");
+             break;
+
+           case 3:
+             temperature_[0] = prm.get_double ("Left temperature");
+             temperature_[1] = prm.get_double ("Right temperature");
+             temperature_[2] = prm.get_double ("Front temperature");
+             temperature_[3] = prm.get_double ("Back temperature");
+             temperature_[4] = prm.get_double ("Bottom temperature");
+             temperature_[5] = prm.get_double ("Top temperature");
+             break;
+
+           default:
+             Assert (false, ExcNotImplemented());
            }
-
-           plume_file_name    = prm.get ("Plume position file name");
-           T0 = prm.get_double ("Magnitude");
-           R0 = prm.get_double ("Radius");
-          switch (dim)
-            {
-              case 2:
-                temperature_[0] = prm.get_double ("Left temperature");
-                temperature_[1] = prm.get_double ("Right temperature");
-                temperature_[2] = prm.get_double ("Bottom temperature");
-                temperature_[3] = prm.get_double ("Top temperature");
-                break;
-
-              case 3:
-                temperature_[0] = prm.get_double ("Left temperature");
-                temperature_[1] = prm.get_double ("Right temperature");
-                temperature_[2] = prm.get_double ("Front temperature");
-                temperature_[3] = prm.get_double ("Back temperature");
-                temperature_[4] = prm.get_double ("Bottom temperature");
-                temperature_[5] = prm.get_double ("Top temperature");
-                break;
-
-              default:
-                Assert (false, ExcNotImplemented());
-            }
         }
         prm.leave_subsection ();
-      }
-      prm.leave_subsection ();
     }
-
-
   }
 }
 
