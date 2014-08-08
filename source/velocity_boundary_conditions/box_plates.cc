@@ -100,7 +100,10 @@ namespace aspect
 
             getline(in, temp);
             if (in.eof())
-              break;
+              {
+                velocity_values.push_back(velocity_slice);
+                break;
+              }
 
             plate_velocity velocity;
             switch(dim)
@@ -139,6 +142,7 @@ namespace aspect
             (plate,velocity));
 
           }
+
         // We read in the velocity values from today backwards, therefore if
         // we start the model run in the past we start at the last velocity_values
         // slice and move to the first element over time
@@ -163,11 +167,16 @@ namespace aspect
           const ConditionalOStream &pcout)
       {
         if (current_time_index > 0)
-          if (first_velocity_file_time - time < times[current_time_index-1])
+          {
+          if (first_velocity_file_time - time < times[current_time_index])
             {
               --current_time_index;
               pcout << std::endl << "Set current time index to: " << current_time_index << std::endl;
             }
+          velocity_time_weight = (time - (times.back() - times[current_time_index+1])) / (times[current_time_index+1] - times[current_time_index]);
+          pcout << std::endl << "New velocity time weight is: " << velocity_time_weight;
+          }
+
       }
 
       template <int dim>
@@ -314,18 +323,16 @@ namespace aspect
             return -1;
           }
 
-        // sin(theta) accounts for the different area covered by grid points at varying latitudes
-        // the minimal value is chosen to weight points at the poles according to their number and area
         const double point_weight = 1.0;
 
         const unsigned char plate_id = (*id_values)[grid_index[0]][grid_index[1]];
         const unsigned char old_plate_id = (*old_id_values)[grid_index[0]][grid_index[1]];
 
         Tensor<1,dim> velocity = velocity_values[current_time_index].find(plate_id)->second.velocity;
-        Tensor<1,dim> old_velocity = velocity_values[current_time_index+1].find(old_plate_id)->second.velocity;
+        Tensor<1,dim> old_velocity = velocity_values[current_time_index+1].find(plate_id)->second.velocity;
 
         const double omega = velocity_values[current_time_index].find(plate_id)->second.rotation;
-        const double old_omega = velocity_values[current_time_index+1].find(old_plate_id)->second.rotation;
+        const double old_omega = velocity_values[current_time_index+1].find(plate_id)->second.rotation;
 
 
         Tensor<1,dim> rotation_velocity;
@@ -349,10 +356,10 @@ namespace aspect
         //            phase_func = 0.5*(1.0 + std::tanh(pressure_deviation / pressure_width));
 
         const double depth_weight = 0.5*(1.0 + std::tanh((position(dim-1)-460000)/50000));
-        surf_vel += point_weight * depth_weight * time_weight * velocity;
+        surf_vel += point_weight * depth_weight * velocity_time_weight * velocity;
 
         if (time_weight < 1.0 - 1e-7)
-          surf_vel += point_weight * depth_weight * (1-time_weight) * old_velocity;
+          surf_vel += point_weight * depth_weight * (1-velocity_time_weight) * old_velocity;
 
         return point_weight;
       }
