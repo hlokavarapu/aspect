@@ -131,7 +131,7 @@ namespace aspect
            */
           std::vector<std::map<unsigned char,plate_velocity > > velocity_values;
 
-          std::map<unsigned char,Tensor<1,dim> > velocities;
+          double velocity_time_weight;
 
           /**
            * Distances between adjacent point in the x/y grid
