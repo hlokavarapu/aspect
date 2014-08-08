@@ -142,7 +142,7 @@ namespace aspect
         // We read in the velocity values from today backwards, therefore if
         // we start the model run in the past we start at the last velocity_values
         // slice and move to the first element over time
-        current_time_index = velocity_values.size()-1;
+        current_time_index = velocity_values.size()-2;
       }
 
       template <int dim>
@@ -319,32 +319,40 @@ namespace aspect
         const double point_weight = 1.0;
 
         const unsigned char plate_id = (*id_values)[grid_index[0]][grid_index[1]];
+        const unsigned char old_plate_id = (*old_id_values)[grid_index[0]][grid_index[1]];
 
         Tensor<1,dim> velocity = velocity_values[current_time_index].find(plate_id)->second.velocity;
-        const Tensor<1,dim> old_velocity = velocity_values[current_time_index].find(plate_id)->second.velocity;
+        Tensor<1,dim> old_velocity = velocity_values[current_time_index+1].find(old_plate_id)->second.velocity;
 
         const double omega = velocity_values[current_time_index].find(plate_id)->second.rotation;
+        const double old_omega = velocity_values[current_time_index+1].find(old_plate_id)->second.rotation;
+
 
         Tensor<1,dim> rotation_velocity;
+        Tensor<1,dim> old_rotation_velocity;
+
         if (dim == 3)
           {
             rotation_velocity[0] = -omega*position[1];
             rotation_velocity[1] = omega*position[0];
+            old_rotation_velocity[0] = -old_omega*position[1];
+            old_rotation_velocity[1] = old_omega*position[0];
           }
         else if (dim == 2)
           {
             rotation_velocity[0] = -omega*position[1];
+            old_rotation_velocity[0] = -old_omega*position[1];
           }
 
         velocity += rotation_velocity;
+        old_velocity += old_rotation_velocity;
         //            phase_func = 0.5*(1.0 + std::tanh(pressure_deviation / pressure_width));
 
         const double depth_weight = 0.5*(1.0 + std::tanh((position(dim-1)-460000)/50000));
-        //surf_vel += point_weight * time_weight * velocity;
-        surf_vel += point_weight * depth_weight * velocity;
+        surf_vel += point_weight * depth_weight * time_weight * velocity;
 
-  //      if (time_weight < 1.0 - 1e-7)
-  //        surf_vel += point_weight * (1-time_weight) * old_velocity;
+        if (time_weight < 1.0 - 1e-7)
+          surf_vel += point_weight * depth_weight * (1-time_weight) * old_velocity;
 
         return point_weight;
       }
@@ -462,8 +470,8 @@ namespace aspect
         {
           lookup->screen_output(this->get_pcout());
 
-          //lookup->load_file(create_filename (current_time_step),
-          //                   this->get_pcout());
+          lookup->load_file(create_filename (current_time_step),
+                             this->get_pcout());
           end_time_dependence (current_time_step);
           return;
         }
@@ -497,7 +505,7 @@ namespace aspect
       // If the time step was large enough to move forward more
       // then one velocity file, we need to load both current files
       // to stay accurate in interpolation
-     /* if (current_time_step > old_time_step + 1)
+      if (current_time_step > old_time_step + 1)
         try
           {
             lookup->load_file (create_filename (current_time_step),
@@ -527,12 +535,12 @@ namespace aspect
                                "prescribe the last velocity file manually in such a case. "
                                "Cancelling calculation."));
               }
-          }*/
+          }
 
       // Now load the velocity file. This part is the main purpose of this function.
       try
         {
-          lookup->load_file (create_filename (current_time_step),
+          lookup->load_file (create_filename (current_time_step+1),
                              this->get_pcout());
         }
 
