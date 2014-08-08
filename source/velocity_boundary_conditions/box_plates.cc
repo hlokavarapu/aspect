@@ -117,7 +117,8 @@ namespace aspect
               break;
             }
 
-            velocity.rotation = omega;
+            // omega is in [cm/yr/km] scale it to [1/s]
+            velocity.rotation = omega / cmyr_si / 1000;
 
             if (start_time > old_time + 1e-16)
               {
@@ -324,20 +325,18 @@ namespace aspect
 
         const double omega = velocity_values[current_time_index].find(plate_id)->second.rotation;
 
+        Tensor<1,dim> rotation_velocity;
         if (dim == 3)
           {
-            const Tensor<1,dim> rotation_velocity((-omega*position[1],
-                                                    omega*position[0],
-                                                    0));
-            velocity += rotation_velocity;
+            rotation_velocity[0] = -omega*position[1];
+            rotation_velocity[1] = omega*position[0];
           }
         else if (dim == 2)
           {
-            const Tensor<1,dim> rotation_velocity((-omega*position[1],
-                                                    omega*position[0]));
-            velocity += rotation_velocity;
+            rotation_velocity[0] = -omega*position[1];
           }
 
+        velocity += rotation_velocity;
         //            phase_func = 0.5*(1.0 + std::tanh(pressure_deviation / pressure_width));
 
         const double depth_weight = 0.5*(1.0 + std::tanh((position(dim-1)-460000)/50000));
