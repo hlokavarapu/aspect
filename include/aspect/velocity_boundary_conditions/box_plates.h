@@ -84,7 +84,8 @@ namespace aspect
            * Called once per timestep. Updates time_index if necessary.
            */
           void update(const double time,
-                      const double first_velocity_file_time);
+                      const double first_velocity_file_time,
+                      const ConditionalOStream &pcout);
 
           /**
            * Returns the computed surface velocity in cartesian coordinates.
@@ -119,10 +120,16 @@ namespace aspect
           std::vector<double> times;
           unsigned int current_time_index;
 
+          struct plate_velocity
+          {
+              Tensor<1,dim> velocity;
+              double rotation;
+          };
+
           /**
            * Table for the data point positions.
            */
-          std::vector<std::map<unsigned char,Tensor<1,dim> > > velocity_values;
+          std::vector<std::map<unsigned char,plate_velocity > > velocity_values;
 
           std::map<unsigned char,Tensor<1,dim> > velocities;
 

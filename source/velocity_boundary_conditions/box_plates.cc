@@ -90,39 +90,41 @@ namespace aspect
 
 
         double old_time = -1;
-        std::map<unsigned char, Tensor<1, dim> > velocity_slice;
+        std::map<unsigned char, plate_velocity > velocity_slice;
 
         while (!in.eof())
           {
-            double start_time,end_time,vx,vy;
+            double start_time,end_time,vx,vy,omega;
             unsigned char plate;
-            in >> start_time >> end_time >> plate >> vx >> vy;
+            in >> start_time >> end_time >> plate >> vx >> vy >> omega;
 
             getline(in, temp);
             if (in.eof())
               break;
 
-            Tensor<1,dim> velocity;
+            plate_velocity velocity;
             switch(dim)
             {
             case 2:
-              velocity[0] = vx / cmyr_si;
+              velocity.velocity[0] = vx / cmyr_si;
               break;
             case 3:
-              velocity[0] = vx / cmyr_si;
-              velocity[1] = vy / cmyr_si;
+              velocity.velocity[0] = vx / cmyr_si;
+              velocity.velocity[1] = vy / cmyr_si;
               break;
             default:
               AssertThrow(false,ExcNotImplemented());
               break;
             }
 
+            velocity.rotation = omega;
+
             if (start_time > old_time + 1e-16)
               {
                 if (times.size() > 0)
                   {
                   velocity_values.push_back(velocity_slice);
-                  velocity_slice = std::map<unsigned char, Tensor<1, dim> > ();
+                  velocity_slice = std::map<unsigned char, plate_velocity > ();
                   }
 
                 // Correct times to years instead of Ma
@@ -132,7 +134,7 @@ namespace aspect
                 old_time = start_time;
               }
 
-            velocity_slice.insert(std::pair<unsigned char,Tensor<1,dim> >
+            velocity_slice.insert(std::pair<unsigned char,plate_velocity >
             (plate,velocity));
 
           }
@@ -156,13 +158,14 @@ namespace aspect
       }
 
       template <int dim>
-      void BoxPlatesLookup<dim>::update(const double time, const double first_velocity_file_time)
+      void BoxPlatesLookup<dim>::update(const double time, const double first_velocity_file_time,
+          const ConditionalOStream &pcout)
       {
         if (current_time_index > 0)
           if (first_velocity_file_time - time < times[current_time_index-1])
             {
               --current_time_index;
-              std::cout << "Set current time index to: " << current_time_index;
+              pcout << std::endl << "Set current time index to: " << current_time_index << std::endl;
             }
       }
 
@@ -316,8 +319,24 @@ namespace aspect
 
         const unsigned char plate_id = (*id_values)[grid_index[0]][grid_index[1]];
 
-        const Tensor<1,dim> velocity = velocity_values[current_time_index].find(plate_id)->second;
-        const Tensor<1,dim> old_velocity = velocity_values[current_time_index].find(plate_id)->second;
+        Tensor<1,dim> velocity = velocity_values[current_time_index].find(plate_id)->second.velocity;
+        const Tensor<1,dim> old_velocity = velocity_values[current_time_index].find(plate_id)->second.velocity;
+
+        const double omega = velocity_values[current_time_index].find(plate_id)->second.rotation;
+
+        if (dim == 3)
+          {
+            const Tensor<1,dim> rotation_velocity((-omega*position[1],
+                                                    omega*position[0],
+                                                    0));
+            velocity += rotation_velocity;
+          }
+        else if (dim == 2)
+          {
+            const Tensor<1,dim> rotation_velocity((-omega*position[1],
+                                                    omega*position[0]));
+            velocity += rotation_velocity;
+          }
 
         //            phase_func = 0.5*(1.0 + std::tanh(pressure_deviation / pressure_width));
 
@@ -420,8 +439,8 @@ namespace aspect
       std::string templ = data_directory+id_file_names;
       const int size = templ.length();
       char *filename = (char *) (malloc ((size + 10) * sizeof(char)));
-      snprintf (filename, size + 10, templ.c_str (), (const int) ((first_velocity_file_time - (timestep+1) * time_step)/(1e6*year_in_seconds)),
-                (const int) ((first_velocity_file_time - timestep * time_step)/(1e6*year_in_seconds)));
+      snprintf (filename, size + 10, templ.c_str (),
+                (const unsigned int) ((first_velocity_file_time - timestep * time_step)/(1e6*year_in_seconds)));
       std::string str_filename (filename);
       free (filename);
       return str_filename;
@@ -436,7 +455,7 @@ namespace aspect
 
       time_relative_to_vel_file_start_time = this->get_time() - velocity_file_start_time;
 
-      lookup->update(time_relative_to_vel_file_start_time,first_velocity_file_time);
+      lookup->update(time_relative_to_vel_file_start_time,first_velocity_file_time,this->get_pcout());
 
       // If the boundary condition is constant, switch off time_dependence end leave function.
       // This also sets time_weight to 1.0
@@ -444,8 +463,8 @@ namespace aspect
         {
           lookup->screen_output(this->get_pcout());
 
-          lookup->load_file(create_filename (current_time_step),
-                             this->get_pcout());
+          //lookup->load_file(create_filename (current_time_step),
+          //                   this->get_pcout());
           end_time_dependence (current_time_step);
           return;
         }
@@ -479,7 +498,7 @@ namespace aspect
       // If the time step was large enough to move forward more
       // then one velocity file, we need to load both current files
       // to stay accurate in interpolation
-      if (current_time_step > old_time_step + 1)
+     /* if (current_time_step > old_time_step + 1)
         try
           {
             lookup->load_file (create_filename (current_time_step),
@@ -509,12 +528,12 @@ namespace aspect
                                "prescribe the last velocity file manually in such a case. "
                                "Cancelling calculation."));
               }
-          }
+          }*/
 
-      // Now load the next velocity file. This part is the main purpose of this function.
+      // Now load the velocity file. This part is the main purpose of this function.
       try
         {
-          lookup->load_file (create_filename (current_time_step + 1),
+          lookup->load_file (create_filename (current_time_step),
                              this->get_pcout());
         }
 
@@ -577,7 +596,7 @@ namespace aspect
                              "in which the ASPECT source files were located when ASPECT was "
                              "compiled. This interpretation allows, for example, to reference "
                              "files located in the 'data/' subdirectory of ASPECT. ");
-          prm.declare_entry ("Id file names", "plates_%d_%d",
+          prm.declare_entry ("Id file names", "plates_%d",
                              Patterns::Anything (),
                              "The file name of the id data. Provide file in format: "
                              "(Velocity file name).\\%d.gpml where \\%d is any sprintf integer "
@@ -587,7 +606,7 @@ namespace aspect
                              "The file name of the material data. Provide file in format: "
                              "(Velocity file name).\\%d.gpml where \\%d is any sprintf integer "
                              "qualifier, specifying the format of the current file number.");
-          prm.declare_entry ("Time step", "1e7",
+          prm.declare_entry ("Time step", "1e6",
                              Patterns::Double (0),
                              "Time step between following velocity files. "
                              "Depending on the setting of the global 'Use years in output instead of seconds' flag "
@@ -605,7 +624,7 @@ namespace aspect
                              "time, a no-slip boundary condition is assumed. "
                              "Depending on the setting of the global 'Use years in output instead of seconds' flag "
                              "in the input file, this number is either interpreted as seconds or as years.");
-          prm.declare_entry ("First velocity file time", "130e6",
+          prm.declare_entry ("First velocity file time", "140e6",
                              Patterns::Double (0),
                              "Time at which the velocity file with number 0 shall be loaded. Previous to this "
                              "time, a no-slip boundary condition is assumed. "
