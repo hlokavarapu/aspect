@@ -62,7 +62,7 @@ namespace aspect
                       ExcMessage (std::string("Couldn't open file <") + filename));
 
          unsigned int i = 0;
-         double start_time;
+         double start_time = 0.0;
          while (!in.eof())
            {
              double time,x,y;
@@ -79,10 +79,11 @@ namespace aspect
              switch(dim)
              {
              case 2:
-               position = {x,0};
+               position(0) = x;
                break;
              case 3:
-               position = {x,y,0};
+               position(0) = x;
+               position(1) = y;
                break;
              default:
                AssertThrow(false,ExcNotImplemented());
