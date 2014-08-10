@@ -411,7 +411,7 @@ namespace aspect
           break;
         case 3:
           index[0] = std::min(static_cast<unsigned int> (position[0]/delta_x),nx-1);
-          index[1] = std::min(static_cast<unsigned int> (position[1]/delta_y),ny-1);
+          index[1] = std::min(static_cast<unsigned int> ((grid_extent[1] - position[1])/delta_y),ny-1);
           break;
         default:
           AssertThrow(false,ExcNotImplemented());
