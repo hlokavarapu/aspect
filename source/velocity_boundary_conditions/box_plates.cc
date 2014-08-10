@@ -171,12 +171,11 @@ namespace aspect
           if (first_velocity_file_time - time < times[current_time_index])
             {
               --current_time_index;
-              pcout << std::endl << "Set current time index to: " << current_time_index << std::endl;
             }
           velocity_time_weight = (time - (times.back() - times[current_time_index+1])) / (times[current_time_index+1] - times[current_time_index]);
-          pcout << std::endl << "New velocity time weight is: " << velocity_time_weight;
           }
-
+        else
+          velocity_time_weight = 1.0;
       }
 
       template <int dim>
@@ -328,12 +327,24 @@ namespace aspect
         const unsigned char plate_id = (*id_values)[grid_index[0]][grid_index[1]];
         const unsigned char old_plate_id = (*old_id_values)[grid_index[0]][grid_index[1]];
 
-        Tensor<1,dim> velocity = velocity_values[current_time_index].find(plate_id)->second.velocity;
         Tensor<1,dim> old_velocity = velocity_values[current_time_index+1].find(plate_id)->second.velocity;
-
-        const double omega = velocity_values[current_time_index].find(plate_id)->second.rotation;
         const double old_omega = velocity_values[current_time_index+1].find(plate_id)->second.rotation;
 
+        Tensor<1,dim> velocity;
+        double omega;
+
+        // It might happen that the current plate disappears in the next time step
+        // In case the plate is not longer there, use the old velocity
+        if (velocity_values[current_time_index].find(plate_id) != velocity_values[current_time_index].end())
+          {
+            velocity = velocity_values[current_time_index].find(plate_id)->second.velocity;
+            omega = velocity_values[current_time_index].find(plate_id)->second.rotation;
+          }
+        else
+          {
+            velocity = old_velocity;
+            omega = old_omega;
+          }
 
         Tensor<1,dim> rotation_velocity;
         Tensor<1,dim> old_rotation_velocity;
