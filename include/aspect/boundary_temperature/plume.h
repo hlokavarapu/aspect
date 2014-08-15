@@ -165,6 +165,16 @@ namespace aspect
         void
         parse_parameters (ParameterHandler &prm);
 
+        /**
+         * This is a workaround for the fact the the mesh refinement plugins
+         * can not have an own plume_lookup object due to missing update() and
+         * initialize() functions. It forwards the current plume position to
+         * other plugins.
+         */
+        Point<dim>
+        get_plume_position () const;
+
+
       private:
         double temperature_[2*dim];
 

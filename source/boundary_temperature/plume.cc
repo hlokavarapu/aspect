@@ -168,6 +168,14 @@ namespace aspect
     }
 
     template <int dim>
+    Point<dim>
+    Plume<dim>::
+    get_plume_position () const
+    {
+      return plume_position;
+    }
+
+    template <int dim>
     double
     Plume<dim>::
     temperature (const GeometryModel::Interface<dim> &geometry_model,
