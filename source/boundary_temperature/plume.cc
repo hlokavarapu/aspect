@@ -447,9 +447,9 @@ namespace aspect
 
         if (prm.get ("Side boundary type") == "initial")
           side_boundary_type = initial;
-        else if (prm.get ("Coordinate system") == "adiabatic")
+        else if (prm.get ("Side boundary type") == "adiabatic")
           side_boundary_type = adiabatic;
-        else if (prm.get ("Coordinate system") == "constant")
+        else if (prm.get ("Side boundary type") == "constant")
           side_boundary_type = constant;
         else
           AssertThrow (false, ExcNotImplemented());
