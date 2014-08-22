@@ -25,6 +25,7 @@
 #include <aspect/boundary_temperature/interface.h>
 #include <aspect/simulator_access.h>
 
+#include <deal.II/base/parsed_function.h>
 
 namespace aspect
 {
@@ -112,7 +113,7 @@ namespace aspect
         update ();
 
         /**
-         * Return the temperature that is to hold at a particular location on
+         * Return the temperature that is to hold at a particular position on
          * the boundary of the domain. This function returns constant
          * temperatures at the left and right boundaries.
          *
@@ -122,13 +123,13 @@ namespace aspect
          * @param boundary_indicator The boundary indicator of the part of the
          * boundary of the domain on which the point is located at which we
          * are requesting the temperature.
-         * @param location The location of the point at which we ask for the
+         * @param position The position of the point at which we ask for the
          * temperature.
          */
         virtual
         double temperature (const GeometryModel::Interface<dim> &geometry_model,
                             const unsigned int                   boundary_indicator,
-                            const Point<dim>                    &location) const;
+                            const Point<dim>                    &position) const;
 
         /**
          * Return the minimal the temperature on that part of the boundary on
@@ -201,14 +202,55 @@ namespace aspect
         std::string plume_file_name;
 
         /**
+         * The type of side boundary temperature that will be applied.
+         * Current choices are adiabatic or initial.
+         */
+        enum side_boundaries
+        {
+          adiabatic,
+          initial,
+          constant
+        } side_boundary_type;
+
+        /**
          * Magnitude of the temperature anomaly
          */
-        double T0;
+        double anomaly_amplitude;
 
         /**
          * Radius of the temperature anomaly
          */
-        double R0;
+        double anomaly_radius;
+
+        /**
+         * Age of the upper thermal boundary layer at the surface of the
+         * model. If set to zero, no boundary layer will be present in the
+         * model.
+         */
+        double age_top_boundary_layer;
+        /* Age of the lower thermal boundary layer. */
+        double age_bottom_boundary_layer;
+
+        /**
+         * Deviation from adiabaticity in a subadiabatic mantle
+         * temperature profile. 0 for an adiabatic temperature
+         * profile.
+         */
+        double subadiabaticity;
+
+        /**
+         * A function object representing the compositional fields that will
+         * be used as a reference profile for calculating the thermal
+         * diffusivity. The function depends only on depth.
+         */
+        std::auto_ptr<Functions::ParsedFunction<1> > function;
+
+        /**
+         * An implementation of the adiabatic initial condition plugin to
+         * boundary temperature. Slightly adopted to this class.
+         */
+        double
+        adiabatic_temperature (const Point<dim> &position) const;
 
     };
   }

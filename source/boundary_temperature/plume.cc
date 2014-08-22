@@ -178,23 +178,115 @@ namespace aspect
     template <int dim>
     double
     Plume<dim>::
+    adiabatic_temperature (const Point<dim> &position) const
+    {
+      unsigned int bottom = 2;
+      unsigned int top = 3;
+      if (dim == 3)
+        {
+          bottom = 4;
+          top = 5;
+        }
+
+      // then, get the temperature of the adiabatic profile at a representative
+      // point at the top and bottom boundary of the model
+      const Point<dim> surface_point = this->get_geometry_model().representative_point(0.0);
+      const Point<dim> bottom_point = this->get_geometry_model().representative_point(this->get_geometry_model().maximal_depth());
+      const double adiabatic_surface_temperature = this->get_adiabatic_conditions().temperature(surface_point);
+      const double adiabatic_bottom_temperature = this->get_adiabatic_conditions().temperature(bottom_point);
+
+      // get a representative profile of the compositional fields as an input
+      // for the material model
+      const double depth = this->get_geometry_model().depth(position);
+
+      // look up material properties
+      typename MaterialModel::Interface<dim>::MaterialModelInputs in(1, this->n_compositional_fields());
+      typename MaterialModel::Interface<dim>::MaterialModelOutputs out(1, this->n_compositional_fields());
+      in.position[0]=position;
+      in.temperature[0]=this->get_adiabatic_conditions().temperature(position);
+      in.pressure[0]=this->get_adiabatic_conditions().pressure(position);
+      for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
+        in.composition[0][c] = function->value(Point<1>(depth),c);
+      in.strain_rate.resize(0); // adiabat has strain=0.
+      this->get_material_model().evaluate(in, out);
+
+      const double kappa = out.thermal_conductivities[0] / (out.densities[0] * out.specific_heat[0]);
+
+      // analytical solution for the thermal boundary layer from half-space cooling model
+      const double surface_cooling_temperature = age_top_boundary_layer > 0.0 ?
+                                                 (temperature_[top] - adiabatic_surface_temperature) *
+                                                 erfc(this->get_geometry_model().depth(position) /
+                                                      (2 * sqrt(kappa * age_top_boundary_layer)))
+                                                 : 0.0;
+      const double bottom_heating_temperature = age_bottom_boundary_layer > 0.0 ?
+                                                (temperature_[bottom] - adiabatic_bottom_temperature + subadiabaticity)
+                                                * erfc((this->get_geometry_model().maximal_depth()
+                                                        - this->get_geometry_model().depth(position)) /
+                                                       (2 * sqrt(kappa * age_bottom_boundary_layer)))
+                                                : 0.0;
+
+
+      // add the subadiabaticity
+      const double zero_depth = 0.174;
+      const double nondimesional_depth = (this->get_geometry_model().depth(position) / this->get_geometry_model().maximal_depth() - zero_depth)
+                                         / (1.0 - zero_depth);
+      double subadiabatic_T = 0.0;
+      if (nondimesional_depth > 0)
+        subadiabatic_T = -subadiabaticity * nondimesional_depth * nondimesional_depth;
+
+      // If adiabatic heating is disabled, apply all perturbations to
+      // constant adiabatic surface temperature instead of adiabatic profile.
+      const double temperature_profile = (this->include_adiabatic_heating())
+                                         ?
+                                         this->get_adiabatic_conditions().temperature(position)
+                                         :
+                                         adiabatic_surface_temperature;
+
+      // return sum of the adiabatic profile, the boundary layer temperatures and the initial
+      // temperature perturbation.
+      return temperature_profile + surface_cooling_temperature
+             + bottom_heating_temperature + subadiabatic_T;
+    }
+
+    template <int dim>
+    double
+    Plume<dim>::
     temperature (const GeometryModel::Interface<dim> &geometry_model,
                  const unsigned int                   boundary_indicator,
-                 const Point<dim>                    &location) const
+                 const Point<dim>                    &position) const
     {
 
       Assert (boundary_indicator<2*dim, ExcMessage ("Unknown boundary indicator."));
 
       double perturbation = 0.0;
       unsigned int bottom = 2;
+      unsigned int top = 3;
       if (dim == 3)
-        bottom = 4;
+        {
+          bottom = 4;
+          top = 5;
+        }
 
+      double boundary_temperature = 0;
       if (boundary_indicator == bottom)
-        // T=T_0*exp-(r/r_0)**2
-        perturbation = T0 * std::exp(-std::pow((location-plume_position).norm()/R0,2));
+        {
+          // T=T_0*exp-(r/r_0)**2
+          const double perturbation = anomaly_amplitude * std::exp(-std::pow((position-plume_position).norm()/anomaly_radius,2));
+          boundary_temperature = temperature_[boundary_indicator] + perturbation;
+        }
+      else if (boundary_indicator == top)
+        boundary_temperature = temperature_[boundary_indicator];
 
-        return temperature_[boundary_indicator] + perturbation;
+      if (side_boundary_type == initial)
+        boundary_temperature = this->get_initial_conditions().initial_temperature(position);
+      else if (side_boundary_type == constant)
+        boundary_temperature = temperature_[boundary_indicator];
+      else if (side_boundary_type == adiabatic)
+        boundary_temperature = adiabatic_temperature(position);
+      else
+        AssertThrow (false, ExcNotImplemented());
+
+      return boundary_temperature;
     }
 
 
@@ -257,12 +349,49 @@ namespace aspect
           prm.declare_entry ("Plume position file name", "Tristan.sur",
                              Patterns::Anything (),
                              "The file name of the plume position data.");
-          prm.declare_entry ("Temperature anomaly", "0",
+          prm.declare_entry ("Amplitude", "0",
                              Patterns::Double (),
-                             "Magnitude of the temperature anomaly. Units: K.");
+                             "Amplitude of the temperature anomaly. Units: K.");
           prm.declare_entry ("Radius", "0",
                              Patterns::Double (),
                              "Radius of the temperature anomaly. Units: m.");
+          /**
+           * Choose the type of side boundary temperature applied. Current choices
+           * are to apply temperatures from an adiabatic profile, the initial
+           * temperature or constant boundary temperatures.
+           */
+          prm.declare_entry ("Side boundary type", "initial",
+                             Patterns::Selection ("initial|adiabatic|constant"),
+                             "A selection that determines the assumed temperatures "
+                             "at the side boundaries. Choices are initial, adiabatic "
+                             "and constant to prescribe the initial temperature, "
+                             "temperatures from an adiabatic profile or a constant "
+                             "temperature.");
+          prm.declare_entry ("Age top boundary layer", "0e0",
+                             Patterns::Double (0),
+                             "The age of the upper thermal boundary layer, used for the calculation "
+                             "of the half-space cooling model temperature. Units: years if the "
+                             "'Use years in output instead of seconds' parameter is set; "
+                             "seconds otherwise.");
+          prm.declare_entry ("Age bottom boundary layer", "0e0",
+                             Patterns::Double (0),
+                             "The age of the lower thermal boundary layer, used for the calculation "
+                             "of the half-space cooling model temperature. Units: years if the "
+                             "'Use years in output instead of seconds' parameter is set; "
+                             "seconds otherwise.");
+          prm.declare_entry ("Subadiabaticity", "0e0",
+                             Patterns::Double (0),
+                             "If this value is larger than 0, the initial temperature profile will "
+                             "not be adiabatic, but subadiabatic. This value gives the maximal "
+                             "deviation from adiabaticity. Set to 0 for an adiabatic temperature "
+                             "profile. Units: K.\n\n"
+                             "The function object in the Function subsection "
+                             "represents the compositional fields that will be used as a reference "
+                             "profile for calculating the thermal diffusivity. "
+                             "This function is one-dimensional and depends only on depth. The format of this "
+                             "functions follows the syntax understood by the "
+                             "muparser library, see Section~\\ref{sec:muparser-format}.");
+
           prm.declare_entry ("Left temperature", "1",
                              Patterns::Double (),
                              "Temperature at the left boundary (at minimal x-value). Units: K.");
@@ -284,6 +413,11 @@ namespace aspect
                                  Patterns::Double (),
                                  "Temperature at the back boundary (at maximal y-value). Units: K.");
             }
+          prm.enter_subsection("Function");
+          {
+            Functions::ParsedFunction<1>::declare_parameters (prm, 1);
+          }
+          prm.leave_subsection();
         }
         prm.leave_subsection ();
       }
@@ -309,8 +443,48 @@ namespace aspect
         }
 
         plume_file_name    = prm.get ("Plume position file name");
-        T0 = prm.get_double ("Temperature anomaly");
-        R0 = prm.get_double ("Radius");
+        anomaly_amplitude = prm.get_double ("Amplitude");
+        anomaly_radius = prm.get_double ("Radius");
+
+        if (prm.get ("Side boundary type") == "initial")
+          side_boundary_type = initial;
+        else if (prm.get ("Coordinate system") == "adiabatic")
+          side_boundary_type = adiabatic;
+        else if (prm.get ("Coordinate system") == "constant")
+          side_boundary_type = constant;
+        else
+          AssertThrow (false, ExcNotImplemented());
+
+        age_top_boundary_layer = prm.get_double ("Age top boundary layer");
+        age_bottom_boundary_layer = prm.get_double ("Age bottom boundary layer");
+        // convert input ages to seconds
+        if (this->convert_output_to_years())
+          {
+            age_top_boundary_layer *= year_in_seconds;
+            age_bottom_boundary_layer *= year_in_seconds;
+          }
+
+        subadiabaticity = prm.get_double ("Subadiabaticity");
+        if (this->n_compositional_fields() > 0)
+          {
+            prm.enter_subsection("Function");
+            try
+              {
+                function.reset (new Functions::ParsedFunction<1>(this->n_compositional_fields()));
+                function->parse_parameters (prm);
+              }
+            catch (...)
+              {
+                std::cerr << "ERROR: FunctionParser failed to parse\n"
+                          << "\t<Initial conditions/Adiabatic/Function>\n"
+                          << "with expression\n"
+                          << "\t<" << prm.get("Function expression") << ">";
+                throw;
+              }
+
+            prm.leave_subsection();
+          }
+
         switch (dim)
         {
            case 2:
