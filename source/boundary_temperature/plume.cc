@@ -391,7 +391,6 @@ namespace aspect
                              "This function is one-dimensional and depends only on depth. The format of this "
                              "functions follows the syntax understood by the "
                              "muparser library, see Section~\\ref{sec:muparser-format}.");
-
           prm.declare_entry ("Left temperature", "1",
                              Patterns::Double (),
                              "Temperature at the left boundary (at minimal x-value). Units: K.");
