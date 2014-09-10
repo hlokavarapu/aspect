@@ -557,8 +557,8 @@ namespace aspect
         // also make sure that the other columns filled by the this object
         // all show up with sufficient accuracy and in scientific notation
         {
-            const char *columns[] = { "Minimal temperature (K)",
-                                      "Maximal temperature (K)"
+            const char *columns[] = { "Minimal mid temperature (K)",
+                                      "Maximal mid temperature (K)"
             };
             for (unsigned int i=0; i<sizeof(columns)/sizeof(columns[0]); ++i)
               {
@@ -572,7 +572,7 @@ namespace aspect
         output << global_min_temperature << " K, "
                << global_max_temperature << " K";
 
-        return std::pair<std::string, std::string> ("Temperature mid min/max:",
+        return std::pair<std::string, std::string> ("Mid temperature min/max:",
             output.str());
       }
 
@@ -650,32 +650,32 @@ namespace aspect
               global_minimum_radial_velocity = -global_values[0];
               global_maximum_radial_velocity = global_values[1];
             }
-                  statistics.add_value ("Max. mid layer radial velocity (m/s)", global_maximum_radial_velocity);
-                  statistics.add_value ("Min. mid layer radial velocity (m/s)", global_minimum_radial_velocity);
+            statistics.add_value ("Min. mid layer radial velocity (m/s)", global_minimum_radial_velocity);
+
+            statistics.add_value ("Max. mid layer radial velocity (m/s)", global_maximum_radial_velocity);
 
 
-                  // also make sure that the other columns filled by the this object
-                  // all show up with sufficient accuracy and in scientific notation
-                  {
-                    const char *columns[] = { "Max. mid layer radial velocity (m/s)",
-                                              "Min. mid layer radial velocity (m/s)"
-                                            };
-                    for (unsigned int i=0; i<sizeof(columns)/sizeof(columns[0]); ++i)
-                      {
-                        statistics.set_precision (columns[i], 8);
-                        statistics.set_scientific (columns[i], true);
-                      }
-                  }
+            // also make sure that the other columns filled by the this object
+            // all show up with sufficient accuracy and in scientific notation
+            {
+              const char *columns[] = { "Min. mid layer radial velocity (m/s)",
+                                        "Max. mid layer radial velocity (m/s)"
+              };
+              for (unsigned int i=0; i<sizeof(columns)/sizeof(columns[0]); ++i)
+                {
+                  statistics.set_precision (columns[i], 8);
+                  statistics.set_scientific (columns[i], true);
+                }
+            }
 
-              std::ostringstream output;
-              output.precision(3);
-              output << global_maximum_radial_velocity
-                     << " m/s, "
-                     << global_minimum_radial_velocity
-                     << " m/s";
+            std::ostringstream output;
+            output.precision(3);
+            output << global_minimum_radial_velocity << " m/s, "
+                   << global_maximum_radial_velocity << " m/s";
 
-              return std::pair<std::string, std::string> ("RMS, mid radial velocity max/min:",
-                                                          output.str());
+
+            return std::pair<std::string, std::string> ("Mid radial velocity min/max:",
+                output.str());
           }
   }
 }
