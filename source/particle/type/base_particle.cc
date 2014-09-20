@@ -18,12 +18,14 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#include <aspect/particle/particle.h>
+#include <aspect/particle/type/base_particle.h>
 
 namespace aspect
 {
   namespace Particle
   {
+    namespace Type
+    {
     template <int dim>
     inline
     BaseParticle<dim>::BaseParticle (const Point<dim> &new_loc,
@@ -165,14 +167,14 @@ namespace aspect
 
     template <int dim>
     void
-    BaseParticle<dim>::add_mpi_types (std::vector<MPIDataInfo> &data_info)
+    BaseParticle<dim>::add_mpi_types (std::vector<aspect::Particle::MPIDataInfo> &data_info)
     {
       // Add the position, velocity, ID
       data_info.push_back (
-        MPIDataInfo ("pos", dim));
+        aspect::Particle::MPIDataInfo ("pos", dim));
       data_info.push_back (
-        MPIDataInfo ("velocity", dim));
-      data_info.push_back (MPIDataInfo ("id", 1));
+        aspect::Particle::MPIDataInfo ("velocity", dim));
+      data_info.push_back (aspect::Particle::MPIDataInfo ("id", 1));
     }
 
 
@@ -180,5 +182,6 @@ namespace aspect
     // explicit instantiation
     template class BaseParticle<2>;
     template class BaseParticle<3>;
+    }
   }
 }

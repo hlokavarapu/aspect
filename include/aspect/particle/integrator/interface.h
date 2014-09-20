@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2011, 2012 by the authors of the ASPECT code.
+ Copyright (C) 2011 - 2014 by the authors of the ASPECT code.
 
  This file is part of ASPECT.
 
@@ -18,11 +18,13 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __aspect__particle_integrator_h
-#define __aspect__particle_integrator_h
+#ifndef __aspect__particle_integrator_interface_h
+#define __aspect__particle_integrator_interface_h
 
 #include <aspect/particle/world.h>
+#include <aspect/particle/type/base_particle.h>
 #include <deal.II/numerics/fe_field_function.h>
+#include <aspect/plugins.h>
 
 namespace aspect
 {
@@ -79,7 +81,7 @@ namespace aspect
            * vector indicating the quantity and type of values the integrator
            * needs saved for this particle.
            */
-          virtual void add_mpi_types(std::vector<MPIDataInfo> &data_info) = 0;
+          virtual void add_mpi_types(std::vector<aspect::Particle::MPIDataInfo> &data_info) = 0;
 
           /**
            * Return data length of the integration related data required for
@@ -113,6 +115,27 @@ namespace aspect
            * for.
            */
           virtual void write_data(std::vector<double> &data, const double &id_num) const = 0;
+
+
+          /**
+           * Declare the parameters this class takes through input files. The
+           * default implementation of this function does not describe any
+           * parameters. Consequently, derived classes do not have to overload
+           * this function if they do not take any runtime parameters.
+           */
+          static
+          void
+          declare_parameters (ParameterHandler &prm);
+
+          /**
+           * Read the parameters this class declares from the parameter file.
+           * The default implementation of this function does not read any
+           * parameters. Consequently, derived classes do not have to overload
+           * this function if they do not take any runtime parameters.
+           */
+          virtual
+          void
+          parse_parameters (ParameterHandler &prm);
       };
 
 
@@ -134,8 +157,75 @@ namespace aspect
       std::string
       integrator_object_names ();
 
-    }
-  }
+
+      /**
+       * Register a particle integrator so that it can be selected from
+       * the parameter file.
+       *
+       * @param name A string that identifies the particle integrator
+       * @param description A text description of what this integrator does and that
+       * will be listed in the documentation of the parameter file.
+       * @param declare_parameters_function A pointer to a function that can be
+       * used to declare the parameters that this particle integrator wants to read
+       * from input files.
+       * @param factory_function A pointer to a function that can create an
+       * object of this particle integrator.
+       *
+       * @ingroup ParticleIntegrators
+       */
+      template <int dim>
+      void
+      register_particle_integrator (const std::string &name,
+                                     const std::string &description,
+                                     void (*declare_parameters_function) (ParameterHandler &),
+                                     Interface<dim,aspect::Particle::Type::BaseParticle<dim> > *(*factory_function) ());
+
+      /**
+       * A function that given the name of a model returns a pointer to an
+       * object that describes it. Ownership of the pointer is transferred to
+       * the caller.
+       *
+       * The model object returned is not yet initialized and has not
+       * read its runtime parameters yet.
+       *
+       * @ingroup ParticleIntegrators
+       */
+      template <int dim>
+      Interface<dim, aspect::Particle::Type::BaseParticle<dim> > *
+      create_particle_integrator (ParameterHandler &prm);
+
+
+      /**
+       * Declare the runtime parameters of the registered particle integrators.
+       *
+       * @ingroup ParticleIntegrators
+       */
+      template <int dim>
+      void
+      declare_parameters (ParameterHandler &prm);
+
+/**
+ * Given a class name, a name, and a description for the parameter file
+ * for a particle integrator, register it with the functions that
+ * can declare their parameters and create these objects.
+ *
+ * @ingroup ParticleIntegrators
+ */
+#define ASPECT_REGISTER_PARTICLE_INTEGRATOR(classname, name, description) \
+template class classname<2,aspect::Particle::Type::BaseParticle<2> >; \
+template class classname<3,aspect::Particle::Type::BaseParticle<3> >; \
+namespace ASPECT_REGISTER_PARTICLE_INTEGRATOR_ ## classname \
+{ \
+aspect::internal::Plugins::RegisterHelper<aspect::Particle::Integrator::Interface<2,aspect::Particle::Type::BaseParticle<2> >,classname<2,aspect::Particle::Type::BaseParticle<2> > > \
+dummy_ ## classname ## _2d (&aspect::Particle::Integrator::register_particle_integrator<2>, \
+                            name, description); \
+aspect::internal::Plugins::RegisterHelper<aspect::Particle::Integrator::Interface<3,aspect::Particle::Type::BaseParticle<3> >,classname<3,aspect::Particle::Type::BaseParticle<3> > > \
+dummy_ ## classname ## _3d (&aspect::Particle::Integrator::register_particle_integrator<3>, \
+                            name, description); \
 }
+}
+}
+}
+
 
 #endif

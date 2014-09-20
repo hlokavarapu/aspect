@@ -52,19 +52,7 @@ namespace aspect
 
       if (!initialized)
         {
-          // Create a generator object using a random uniform distribution
-          generator = Particle::Generator::create_generator_object<dim,Particle::BaseParticle<dim> >
-                      ("random_uniform");
 
-          // Create an output object depending on what the parameters specify
-          output = Particle::Output::create_output_object<dim,Particle::BaseParticle<dim> >
-                   (data_output_format,
-                    this->get_output_directory(),
-                    this->get_mpi_communicator());
-
-          // Create an integrator object depending on the specified parameter
-          integrator = Particle::Integrator::create_integrator_object<dim,Particle::BaseParticle<dim> >
-                       (integration_scheme);
 
           // Set up the particle world with the appropriate simulation objects
           world.set_mapping(&(this->get_mapping()));
@@ -149,16 +137,14 @@ namespace aspect
                              "Units: years if the "
                              "'Use years in output instead of seconds' parameter is set; "
                              "seconds otherwise.");
-          prm.declare_entry("Data output format", "vtu",
-                            Patterns::Selection(Particle::Output::output_object_names()),
-                            "File format to output raw particle data in.");
-          prm.declare_entry("Integration scheme", "rk2",
-                            Patterns::Selection(Particle::Integrator::integrator_object_names()),
-                            "Integration scheme to move particles.");
         }
         prm.leave_subsection ();
       }
       prm.leave_subsection ();
+
+      Particle::Generator::declare_parameters<dim>(prm);
+      Particle::Output::declare_parameters<dim>(prm);
+      Particle::Integrator::declare_parameters<dim>(prm);
     }
 
 
@@ -172,18 +158,25 @@ namespace aspect
         {
           n_initial_tracers    = static_cast<unsigned int>(prm.get_double ("Number of tracers"));
           data_output_interval = prm.get_double ("Time between data output");
-          data_output_format   = prm.get("Data output format");
-#ifndef DEAL_II_HAVE_HDF5
-          AssertThrow (data_output_format != "hdf5",
-                       ExcMessage ("deal.ii was not compiled with HDF5 support, "
-                                   "so HDF5 output is not possible. Please "
-                                   "recompile deal.ii with HDF5 support turned on."));
-#endif
-          integration_scheme = prm.get("Integration scheme");
+
         }
         prm.leave_subsection ();
       }
       prm.leave_subsection ();
+
+      // Create a generator object using a random uniform distribution
+      generator = Particle::Generator::create_particle_generator<dim>
+                  (prm);
+
+      // Create an output object depending on what the parameters specify
+      output = Particle::Output::create_particle_output<dim>
+               (prm);
+      output->initialize(this->get_output_directory(),
+                         this->get_mpi_communicator());
+
+      // Create an integrator object depending on the specified parameter
+      integrator = Particle::Integrator::create_particle_integrator<dim>
+                   (prm);
     }
   }
 }

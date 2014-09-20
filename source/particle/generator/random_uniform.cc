@@ -18,7 +18,7 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#include <aspect/particle/generator.h>
+#include <aspect/particle/generator/random_uniform.h>
 
 #include <boost/random.hpp>
 
@@ -30,24 +30,22 @@ namespace aspect
     namespace Generator
     {
       // Generate random uniform distribution of particles over entire simulation domain
-      template <int dim, class T>
-      class RandomUniformGenerator : public Interface<dim, T>
-      {
-        public:
+
           /**
            * Constructor.
            *
            * @param[in] The MPI communicator for synchronizing particle generation.
            */
-          RandomUniformGenerator() {}
+        template <int dim, class T>
+        RandomUniformGenerator<dim,T>::RandomUniformGenerator() {}
 
           /**
            * Generate a uniformly randomly distributed set of particles in the current triangulation.
            */
           // TODO: fix the particle system so it works even with processors assigned 0 cells
-          virtual
+        template <int dim, class T>
           void
-          generate_particles(Particle::World<dim, T> &world,
+          RandomUniformGenerator<dim,T>::generate_particles(Particle::World<dim, T> &world,
                              const double total_num_particles)
           {
             double      total_volume, local_volume, subdomain_fraction, start_fraction, end_fraction;
@@ -82,7 +80,7 @@ namespace aspect
             const unsigned int  subdomain_particles = end_id - start_id;
 
             uniform_random_particles_in_subdomain(world, subdomain_particles, start_id);
-          };
+          }
 
           /**
            * Generate a set of particles uniformly randomly distributed within the
@@ -95,7 +93,9 @@ namespace aspect
            * @param [in] num_particles The number of particles to generate in this subdomain
            * @param [in] start_id The starting ID to assign to generated particles
            */
-          void uniform_random_particles_in_subdomain (Particle::World<dim, T> &world,
+        template <int dim, class T>
+          void
+          RandomUniformGenerator<dim,T>::uniform_random_particles_in_subdomain (Particle::World<dim, T> &world,
                                                       const unsigned int num_particles,
                                                       const unsigned int start_id)
           {
@@ -180,44 +180,23 @@ namespace aspect
               }
           }
 
-        private:
-          /**
-           * Random number generator and an object that describes a
-           * uniform distribution on the interval [0,1]. These
-           * will be used to generate particle locations at random.
-           */
-          boost::mt19937            random_number_generator;
-          boost::uniform_01<double> uniform_distribution_01;
-      };
+
+    }
+  }
+}
 
 
-      template <int dim, class T>
-      Interface<dim,T> *
-      create_generator_object (const std::string &generator_type)
-      {
-        if (generator_type == "random_uniform")
-          return new RandomUniformGenerator<dim,T>();
-        else
-          Assert (false, ExcNotImplemented());
-
-        return 0;
-      }
-
-
-      std::string
-      generator_object_names ()
-      {
-        return ("random_uniform");
-      }
-
-
-      // explicit instantiations
-      template
-      Interface<2,Particle::BaseParticle<2> > *
-      create_generator_object (const std::string &generator_type);
-      template
-      Interface<3,Particle::BaseParticle<3> > *
-      create_generator_object (const std::string &generator_type);
+// explicit instantiations
+namespace aspect
+{
+  namespace Particle
+  {
+    namespace Generator
+    {
+    ASPECT_REGISTER_PARTICLE_GENERATOR(RandomUniformGenerator,
+                                               "random uniform",
+                                               "Generate random uniform distribution of "
+                                               "particles over entire simulation domain.")
     }
   }
 }

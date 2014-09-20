@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2011, 2012, 2013 by the authors of the ASPECT code.
+ Copyright (C) 2011 - 2014 by the authors of the ASPECT code.
 
  This file is part of ASPECT.
 
@@ -22,7 +22,7 @@
 #define __aspect__particle_world_h
 
 #include <deal.II/numerics/fe_field_function.h>
-#include <aspect/particle/particle.h>
+// #include <aspect/particle/type/base_particle.h>
 #include <aspect/simulator_access.h>
 
 namespace aspect
@@ -34,6 +34,24 @@ namespace aspect
 
     /// MPI tag for particle transfers
     const int           PARTICLE_XFER_TAG = 382;
+
+    /**
+     * Typedef of cell level/index pair
+     */
+    typedef std::pair<int, int> LevelInd;
+
+    class MPIDataInfo
+    {
+      public:
+        std::string     name;
+        unsigned int    n_elements;
+
+        MPIDataInfo(std::string name,
+                    unsigned int num_elems)
+          :
+          name(name),
+          n_elements(num_elems) {};
+    };
 
     namespace Integrator
     {
@@ -137,7 +155,7 @@ namespace aspect
 
           // If we still can't find it, return false
           return LevelInd(-1, -1);
-        };
+        }
 
         /**
          * Called by listener functions to indicate that the mesh of this
@@ -542,7 +560,7 @@ namespace aspect
           // If it failed all these tests, the particle is outside the mesh
           particle.set_local(false);
           return std::make_pair(-1, -1);
-        };
+        }
 
         /**
          * Transfer particles that have crossed subdomain boundaries to other

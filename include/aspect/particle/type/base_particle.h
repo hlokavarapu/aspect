@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2011, 2012, 2013 by the authors of the ASPECT code.
+ Copyright (C) 2011 - 2014 by the authors of the ASPECT code.
 
  This file is part of ASPECT.
 
@@ -18,8 +18,10 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __aspect__particle_particle_h
-#define __aspect__particle_particle_h
+#ifndef __aspect__particle_type_base_particle_h
+#define __aspect__particle_type_base_particle_h
+
+#include <aspect/particle/world.h>
 
 #include <aspect/postprocess/interface.h>
 #include <aspect/simulator_access.h>
@@ -28,24 +30,8 @@ namespace aspect
 {
   namespace Particle
   {
-    /**
-     * Typedef of cell level/index pair
-     */
-    typedef std::pair<int, int> LevelInd;
-
-    class MPIDataInfo
+    namespace Type
     {
-      public:
-        std::string     name;
-        unsigned int    n_elements;
-
-        MPIDataInfo(std::string name,
-                    unsigned int num_elems)
-          :
-          name(name),
-          n_elements(num_elems) {};
-    };
-
     /**
      * Base class of particles - represents a particle with position,
      * velocity, and an ID number. This class can be extended to include data
@@ -219,137 +205,10 @@ namespace aspect
          * appended.
          */
         static void
-        add_mpi_types (std::vector<MPIDataInfo> &data_info);
+        add_mpi_types (std::vector<aspect::Particle::MPIDataInfo> &data_info);
     };
 
-    /**
-     * DataParticle provides an example of how to extend the BaseParticle
-     * class to include related particle data. This allows users to attach
-     * scalars/vectors/tensors/etc to particles and ensure they are
-     * transmitted correctly over MPI and written to output files.
-     */
-    template <int dim, int data_dim>
-    class DataParticle : public BaseParticle<dim>
-    {
-      private:
-        double      val[data_dim];
-
-      private:
-        DataParticle()
-        {
-          for (unsigned int i=0; i<data_dim; ++i) val[i] = 0;
-        };
-
-        DataParticle(const Point<dim> &new_loc, const double &new_id) : BaseParticle<dim>(new_loc, new_id)
-        {
-          for (unsigned int i=0; i<data_dim; ++i) val[i] = 0;
-        };
-
-        static unsigned int data_len()
-        {
-          return BaseParticle<dim>::data_len() + data_dim;
-        };
-
-        virtual unsigned int read_data(const std::vector<double> &data, const unsigned int &pos)
-        {
-          unsigned int  p;
-
-          // Read the parent data first
-          p = BaseParticle<dim>::read_data(data, pos);
-
-          // Then read the DataParticle data
-          for (unsigned i=0; i<data_dim; ++i)
-            {
-              val[i] = data.at(p++);
-            }
-
-          return p;
-        };
-
-
-        virtual void write_data(std::vector<double> &data) const
-        {
-          // Write the parent data first
-          BaseParticle<dim>::write_data(data);
-
-          // Then write the DataParticle data
-          for (unsigned i=0; i<data_dim; ++i)
-            {
-              data.push_back(val[i]);
-            }
-        };
-
-        /**
-         * Returns a vector from the first dim components of val
-         *
-         * @return vector representation of first dim components of the
-         * particle data
-         */
-        Point<dim>
-        get_vector () const;
-
-        /**
-         * Sets the first dim components of val to the specified vector value
-         *
-         * @param [in] new_vec Vector to set the DataParticle data to
-         */
-        void set_vector(Point<dim> new_vec)
-        {
-          AssertThrow(data_dim>=dim, std::out_of_range("set_vector"));
-          for (unsigned int i=0; i<dim; ++i)
-            val[i] = new_vec(i);
-        }
-
-        /**
-         * Return a reference to an element of the DataParticle data
-         *
-         * @param [in] ind Index of the data array @return Reference to double
-         * value at the requested index
-         */
-        double &operator[](const unsigned int &ind)
-        {
-          AssertThrow(data_dim>ind, std::out_of_range("DataParticle[]"));
-          return val[ind];
-        }
-
-        /**
-         * Return the value of an element of the DataParticle data
-         *
-         * @param [in] ind Index of the data array @return Value at the
-         * requested index
-         */
-        double operator[](const unsigned int &ind) const
-        {
-          AssertThrow(data_dim>ind, std::out_of_range("DataParticle[]"));
-          return val[ind];
-        }
-
-        /**
-         * Set up the MPI data type information for the DataParticle type
-         *
-         * @param [in,out] data_info Vector to append MPIDataInfo objects to
-         */
-        static void add_mpi_types(std::vector<MPIDataInfo> &data_info)
-        {
-          // Set up the parent types first
-          BaseParticle<dim>::add_mpi_types(data_info);
-
-          // Then add our own
-          data_info.push_back(MPIDataInfo("data", data_dim));
-        };
-    };
-
-    // A particle with associated values, such as scalars, vectors or tensors
-    template <int dim, int data_dim>
-    inline Point<dim>
-    DataParticle<dim,data_dim>::get_vector () const
-    {
-      AssertThrow(data_dim >= dim, std::out_of_range ("get_vector"));
-      Point < dim > p;
-      for (unsigned int i = 0; i < dim; ++i)
-        p (i) = val[i];
     }
-
   }
 }
 
