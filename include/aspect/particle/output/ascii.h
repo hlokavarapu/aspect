@@ -57,6 +57,7 @@ namespace aspect
            virtual
            std::string
            output_particle_data(const std::multimap<LevelInd, T> &particles,
+                                std::vector<MPIDataInfo> &data_info,
                                 const double &current_time);
     };
   }

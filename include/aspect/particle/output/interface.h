@@ -22,7 +22,7 @@
 #define __aspect__particle_output_interface_h
 
 #include <deal.II/base/mpi.h>
-#include <aspect/particle/type/base_particle.h>
+#include <aspect/particle/property/base_particle.h>
 
 
 namespace aspect
@@ -98,6 +98,7 @@ namespace aspect
           virtual
           std::string
           output_particle_data(const std::multimap<LevelInd, T> &particles,
+                               std::vector<MPIDataInfo> &data_info,
                                const double &current_time) = 0;
 
           /**
@@ -152,7 +153,7 @@ namespace aspect
       register_particle_output (const std::string &name,
                                      const std::string &description,
                                      void (*declare_parameters_function) (ParameterHandler &),
-                                     Interface<dim,aspect::Particle::Type::BaseParticle<dim> > *(*factory_function) ());
+                                     Interface<dim,aspect::Particle::Property::BaseParticle<dim> > *(*factory_function) ());
 
       /**
        * A function that given the name of a model returns a pointer to an
@@ -165,7 +166,7 @@ namespace aspect
        * @ingroup ParticleOutputs
        */
       template <int dim>
-      Interface<dim, aspect::Particle::Type::BaseParticle<dim> > *
+      Interface<dim, aspect::Particle::Property::BaseParticle<dim> > *
       create_particle_output (ParameterHandler &prm);
 
       /**
@@ -185,14 +186,14 @@ namespace aspect
  * @ingroup ParticleOutputs
  */
 #define ASPECT_REGISTER_PARTICLE_OUTPUT(classname, name, description) \
-template class classname<2,aspect::Particle::Type::BaseParticle<2> >; \
-template class classname<3,aspect::Particle::Type::BaseParticle<3> >; \
+template class classname<2,aspect::Particle::Property::BaseParticle<2> >; \
+template class classname<3,aspect::Particle::Property::BaseParticle<3> >; \
 namespace ASPECT_REGISTER_PARTICLE_OUTPUT_ ## classname \
 { \
-aspect::internal::Plugins::RegisterHelper<aspect::Particle::Output::Interface<2,aspect::Particle::Type::BaseParticle<2> >,classname<2,aspect::Particle::Type::BaseParticle<2> > > \
+aspect::internal::Plugins::RegisterHelper<aspect::Particle::Output::Interface<2,aspect::Particle::Property::BaseParticle<2> >,classname<2,aspect::Particle::Property::BaseParticle<2> > > \
 dummy_ ## classname ## _2d (&aspect::Particle::Output::register_particle_output<2>, \
                             name, description); \
-aspect::internal::Plugins::RegisterHelper<aspect::Particle::Output::Interface<3,aspect::Particle::Type::BaseParticle<3> >,classname<3,aspect::Particle::Type::BaseParticle<3> > > \
+aspect::internal::Plugins::RegisterHelper<aspect::Particle::Output::Interface<3,aspect::Particle::Property::BaseParticle<3> >,classname<3,aspect::Particle::Property::BaseParticle<3> > > \
 dummy_ ## classname ## _3d (&aspect::Particle::Output::register_particle_output<3>, \
                             name, description); \
 }

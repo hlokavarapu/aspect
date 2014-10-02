@@ -22,7 +22,7 @@
 #define __aspect__particle_world_h
 
 #include <deal.II/numerics/fe_field_function.h>
-// #include <aspect/particle/type/base_particle.h>
+// #include <aspect/particle/property/interface.h>
 #include <aspect/simulator_access.h>
 
 namespace aspect
@@ -59,6 +59,12 @@ namespace aspect
       class Interface;
     }
 
+    namespace Property
+    {
+      template <int dim>
+      class Manager;
+    }
+
     template <int dim, class T>
     class World
     {
@@ -77,6 +83,9 @@ namespace aspect
 
         /// Integration scheme for moving particles in this world
         Integrator::Interface<dim, T>   *integrator;
+
+        /// Integration scheme for moving particles in this world
+        Property::Manager<dim>   *property_manager;
 
         /// MPI communicator to be used for this world
         MPI_Comm                        communicator;
@@ -109,6 +118,10 @@ namespace aspect
         /// MPI_Request object buffers to allow for non-blocking communication
         MPI_Request                     *send_reqs, *recv_reqs;
 
+        /*
+         * Information about the data of particles
+         */
+        std::vector<MPIDataInfo>        data_info;
 
         /**
          * Recursively determines which cell the given particle belongs to.
@@ -298,6 +311,17 @@ namespace aspect
         };
 
         /**
+         * Set the particle property manager for this particle world.
+         *
+         * @param [in] new_manager The new property manager for this
+         * world.
+         */
+        void set_manager(Property::Manager<dim> *new_manager)
+        {
+          property_manager = new_manager;
+        };
+
+        /**
          * Set the MPI communicator for this world.
          *
          * @param [in] new_comm_world The new MPI_Comm object for this world.
@@ -346,6 +370,17 @@ namespace aspect
           particles.insert(std::make_pair(cell, particle));
         }
 
+        void initialize_particles()
+        {
+          typename std::multimap<LevelInd, T>::iterator       it;
+
+          for (it=particles.begin(); it!=particles.end(); ++it)
+            {
+              property_manager->initialize_particle(it->second);
+            }
+        }
+
+
         /**
          * Access to particles in this world.
          */
@@ -363,6 +398,14 @@ namespace aspect
         };
 
         /**
+         * Const access to particles in this world.
+         */
+        const std::vector<MPIDataInfo> &get_mpi_datainfo() const
+        {
+          return data_info;
+        };
+
+        /**
          * Initialize the particle world by creating appropriate MPI data
          * types for transferring particles, and allocating memory for MPI
          * related functions.
@@ -372,7 +415,6 @@ namespace aspect
           int                                   *block_lens;
           MPI_Aint                              *indices;
           MPI_Datatype                          *old_types;
-          std::vector<MPIDataInfo>              data_info;
           std::vector<MPIDataInfo>::iterator    it;
           int                                   num_entries, res, i;
 
@@ -381,9 +423,12 @@ namespace aspect
           AssertThrow (mapping != NULL, ExcMessage ("Particle world mapping must be set before calling init()."));
           AssertThrow (dof_handler != NULL, ExcMessage ("Particle world dof_handler must be set before calling init()."));
           AssertThrow (integrator != NULL, ExcMessage ("Particle world integrator must be set before calling init()."));
+          AssertThrow (property_manager != NULL, ExcMessage ("Particle world integrator must be set before calling init()."));
+
+          const typename std::multimap<LevelInd, T>::iterator   pit (particles.begin());
 
           // Construct MPI data type for this particle
-          T::add_mpi_types(data_info);
+          property_manager->add_mpi_types(data_info);
 
           // And data associated with the integration scheme
           integrator->add_mpi_types(data_info);
@@ -619,7 +664,7 @@ namespace aspect
 
           // Allocate space for sending and receiving particle data
           unsigned int        integrator_data_len = integrator->data_len();
-          unsigned int        particle_data_len = T::data_len();
+          unsigned int        particle_data_len = property_manager->get_data_len();
           std::vector<double> send_data, recv_data;
 
           // Set up the space for the received particle data
@@ -732,7 +777,7 @@ namespace aspect
          *
          * @return Total number of particles in simulation.
          */
-        unsigned int get_global_particle_count()
+        unsigned int get_global_particle_count() const
         {
           return Utilities::MPI::sum (particles.size(), communicator);
         };
@@ -744,10 +789,9 @@ namespace aspect
          */
         void check_particle_count()
         {
-          unsigned int    global_particles = get_global_particle_count();
+          const unsigned int global_particles = get_global_particle_count();
 
-          AssertThrow (global_particles==global_num_particles,
-                       ExcMessage ("Particle count unexpectedly changed."));
+          global_num_particles = global_particles;
         };
 
         /**

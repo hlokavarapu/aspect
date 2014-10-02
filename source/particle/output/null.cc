@@ -60,6 +60,7 @@ namespace aspect
         template <int dim, class T>
           std::string
           NullOutput<dim,T>::output_particle_data(const std::multimap<LevelInd, T> &/*particles*/,
+                              std::vector<MPIDataInfo> &/*data_info*/,
                                const double &/*current_time*/)
           {
             return "";

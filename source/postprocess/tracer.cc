@@ -31,6 +31,7 @@ namespace aspect
       integrator(NULL),
       output(NULL),
       generator(NULL),
+      property_manager(),
       initialized(false),
       next_data_output_time(std::numeric_limits<double>::quiet_NaN())
     {}
@@ -53,12 +54,14 @@ namespace aspect
       if (!initialized)
         {
 
+          next_data_output_time = this->get_time();
 
           // Set up the particle world with the appropriate simulation objects
           world.set_mapping(&(this->get_mapping()));
           world.set_triangulation(&(this->get_triangulation()));
           world.set_dof_handler(&(this->get_dof_handler()));
           world.set_integrator(integrator);
+          world.set_manager(&property_manager);
           world.set_solution(&(this->get_solution()));
           world.set_mpi_comm(this->get_mpi_communicator());
 
@@ -70,28 +73,37 @@ namespace aspect
           // Add the specified number of particles
           generator->generate_particles(world, n_initial_tracers);
           world.finished_adding_particles();
+          world.initialize_particles();
 
           initialized = true;
         }
 
-      std::string     result_string = "done", data_file_name;
+      const unsigned int num_particles = world.get_global_particle_count();
+      statistics.add_value ("Advected particles",num_particles);
+      std::ostringstream result_string;
+      result_string << num_particles;
 
       // If it's time to generate an output file, call the appropriate functions and reset the timer
       if (this->get_time() >= next_data_output_time)
         {
           set_next_data_output_time (this->get_time());
-          data_file_name = output->output_particle_data(world.get_particles(),
+
+          std::vector<aspect::Particle::MPIDataInfo>        data_info;
+          property_manager.add_mpi_types(data_info);
+
+          const std::string data_file_name = output->output_particle_data(world.get_particles(),
+                                                        data_info,
                                                         (this->convert_output_to_years() ?
                                                          this->get_time() / year_in_seconds :
                                                          this->get_time()));
-          result_string += ". Writing particle graphical output " + data_file_name;
+          result_string << ". Writing particle graphical output " + data_file_name;
         }
 
       // Advance the particles in the world by the current timestep
       world.advance_timestep (this->get_timestep(),
                               this->get_solution());
 
-      return std::make_pair("Advecting particles:", result_string);
+      return std::make_pair("Advected particles: ", result_string.str());
     }
 
 
@@ -145,6 +157,7 @@ namespace aspect
       Particle::Generator::declare_parameters<dim>(prm);
       Particle::Output::declare_parameters<dim>(prm);
       Particle::Integrator::declare_parameters<dim>(prm);
+      Particle::Property::Manager<dim>::declare_parameters(prm);
     }
 
 
@@ -177,6 +190,9 @@ namespace aspect
       // Create an integrator object depending on the specified parameter
       integrator = Particle::Integrator::create_particle_integrator<dim>
                    (prm);
+
+      property_manager.parse_parameters(prm);
+      property_manager.initialize();
     }
   }
 }

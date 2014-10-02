@@ -57,12 +57,12 @@ namespace aspect
         template <int dim, class T>
           std::string
           ASCIIOutput<dim,T>::output_particle_data(const std::multimap<LevelInd, T> &particles,
+                               std::vector<MPIDataInfo> &data_info,
                                const double &current_time)
           {
             typename std::multimap<LevelInd, T>::const_iterator  it;
             unsigned int                            i;
             std::string                             output_file_prefix, output_path_prefix, full_filename;
-            std::vector<MPIDataInfo>                data_info;
             std::vector<MPIDataInfo>::iterator      dit;
 
             output_file_prefix = "particle-" + Utilities::int_to_string (this->file_index, 5);
@@ -71,9 +71,6 @@ namespace aspect
             std::ofstream output (full_filename.c_str());
             if (!output)
               std::cout << "ERROR: proc " << Utilities::MPI::this_mpi_process(this->communicator) << " could not create " << full_filename << std::endl;
-
-            // Get the data types
-            T::add_mpi_types(data_info);
 
             // Print the header line
             output << "# ";

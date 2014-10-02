@@ -18,19 +18,16 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __aspect__particle_type_base_particle_h
-#define __aspect__particle_type_base_particle_h
+#ifndef __aspect__particle_property_base_particle_h
+#define __aspect__particle_property_base_particle_h
 
 #include <aspect/particle/world.h>
-
-#include <aspect/postprocess/interface.h>
-#include <aspect/simulator_access.h>
 
 namespace aspect
 {
   namespace Particle
   {
-    namespace Type
+    namespace Property
     {
     /**
      * Base class of particles - represents a particle with position,
@@ -69,6 +66,12 @@ namespace aspect
          */
         bool            check_vel;
 
+        /**
+         * The serialized vector of all tracer properties
+         */
+        std::vector<double>      val;
+
+
       public:
         /**
          * Empty constructor for BaseParticle, creates a particle at the
@@ -100,8 +103,17 @@ namespace aspect
          *
          * @return Number of doubles required to represent this particle
          */
-        static unsigned int
-        data_len ();
+        const unsigned int
+        data_len () const;
+
+        /**
+          * Get the number of doubles required to represent this particle for
+          * communication.
+          *
+          * @return Number of doubles required to represent this particle
+          */
+        void
+        set_data_len (const unsigned int data_len);
 
         /**
          * Read the particle data from the specified vector of doubles.
@@ -162,6 +174,23 @@ namespace aspect
         get_id () const;
 
         /**
+         * Set the properties of this particle.
+         *
+         * @param [in] new_properties The new properties for this particle.
+         */
+        void
+        set_properties (std::vector<double> new_properties);
+
+        /**
+         * Get the properties of this particle.
+         *
+         * @return The properties of this particle.
+         */
+        const
+        std::vector<double>
+        get_properties () const;
+
+        /**
          * Check whether the particle is marked as being local to this
          * subdomain. Note that this function does not actually perform the
          * check for locality.
@@ -198,14 +227,6 @@ namespace aspect
         void
         set_vel_check (bool new_vel_check);
 
-        /**
-         * Add the MPI data description for this particle type to the vector.
-         *
-         * @param[in,out] data_info Vector to which MPI data description is
-         * appended.
-         */
-        static void
-        add_mpi_types (std::vector<aspect::Particle::MPIDataInfo> &data_info);
     };
 
     }

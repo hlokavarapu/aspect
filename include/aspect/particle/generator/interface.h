@@ -21,7 +21,7 @@
 #ifndef __aspect__particle_generator_interface_h
 #define __aspect__particle_generator_interface_h
 
-#include <aspect/particle/type/base_particle.h>
+#include <aspect/particle/property/base_particle.h>
 #include <aspect/particle/world.h>
 #include <aspect/plugins.h>
 
@@ -108,7 +108,7 @@ void
 register_particle_generator (const std::string &name,
                                const std::string &description,
                                void (*declare_parameters_function) (ParameterHandler &),
-                               Interface<dim, aspect::Particle::Type::BaseParticle<dim> > *(*factory_function) ());
+                               Interface<dim, aspect::Particle::Property::BaseParticle<dim> > *(*factory_function) ());
 
 /**
  * A function that given the name of a model returns a pointer to an
@@ -121,7 +121,7 @@ register_particle_generator (const std::string &name,
  * @ingroup ParticleGenerators
  */
 template <int dim>
-Interface<dim, aspect::Particle::Type::BaseParticle<dim> > *
+Interface<dim, aspect::Particle::Property::BaseParticle<dim> > *
 create_particle_generator (ParameterHandler &prm);
 
 /**
@@ -142,14 +142,14 @@ declare_parameters (ParameterHandler &prm);
  * @ingroup ParticleGenerators
  */
 #define ASPECT_REGISTER_PARTICLE_GENERATOR(classname, name, description) \
-template class classname<2, aspect::Particle::Type::BaseParticle<2> >; \
-template class classname<3, aspect::Particle::Type::BaseParticle<3> >; \
+template class classname<2, aspect::Particle::Property::BaseParticle<2> >; \
+template class classname<3, aspect::Particle::Property::BaseParticle<3> >; \
 namespace ASPECT_REGISTER_PARTICLE_GENERATOR_ ## classname \
 { \
-aspect::internal::Plugins::RegisterHelper<aspect::Particle::Generator::Interface<2, aspect::Particle::Type::BaseParticle<2> >,classname<2, aspect::Particle::Type::BaseParticle<2> > > \
+aspect::internal::Plugins::RegisterHelper<aspect::Particle::Generator::Interface<2, aspect::Particle::Property::BaseParticle<2> >,classname<2, aspect::Particle::Property::BaseParticle<2> > > \
 dummy_ ## classname ## _2d (&aspect::Particle::Generator::register_particle_generator<2>, \
                             name, description); \
-aspect::internal::Plugins::RegisterHelper<aspect::Particle::Generator::Interface<3, aspect::Particle::Type::BaseParticle<3> >,classname<3, aspect::Particle::Type::BaseParticle<3> > > \
+aspect::internal::Plugins::RegisterHelper<aspect::Particle::Generator::Interface<3, aspect::Particle::Property::BaseParticle<3> >,classname<3, aspect::Particle::Property::BaseParticle<3> > > \
 dummy_ ## classname ## _3d (&aspect::Particle::Generator::register_particle_generator<3>, \
                             name, description); \
 }

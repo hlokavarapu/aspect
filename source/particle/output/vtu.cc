@@ -58,9 +58,9 @@ namespace aspect
         template <int dim, class T>
           std::string
           VTUOutput<dim,T>::output_particle_data(const std::multimap<LevelInd, T> &particles,
-                               const double &current_time)
+                                                 std::vector<MPIDataInfo> &data_info,
+                                                 const double &current_time)
           {
-            std::vector<MPIDataInfo>                data_info;
             unsigned int                            data_offset;
 
             const std::string output_file_prefix = "particles-" + Utilities::int_to_string (this->file_index, 5);
@@ -115,9 +115,6 @@ namespace aspect
               output << "          1\n";
             output << "        </DataArray>\n";
             output << "      </Cells>\n";
-
-            // Get the data types
-            T::add_mpi_types(data_info);
 
             // Write data for each particle (id, velocity, etc)
             output << "      <PointData Scalars=\"scalars\">\n";

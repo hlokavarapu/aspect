@@ -60,6 +60,7 @@ namespace aspect
         template <int dim, class T>
           std::string
           HDF5Output<dim,T>::output_particle_data(const std::multimap<LevelInd, T> &particles,
+                               std::vector<MPIDataInfo> &data_info,
                                const double &current_time)
           {
             std::string             output_file_prefix, output_path_prefix, full_filename;
