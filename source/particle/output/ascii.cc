@@ -33,10 +33,10 @@ namespace aspect
            * @param[in] The directory into which output files shall be placed.
            * @param[in] The MPI communicator that describes this simulation.
            */
-        template <int dim, class T>
-        ASCIIOutput<dim,T>::ASCIIOutput()
+        template <int dim>
+        ASCIIOutput<dim>::ASCIIOutput()
                       :
-                      Interface<dim,T> ()
+                      Interface<dim> ()
           {}
 
           /**
@@ -54,13 +54,13 @@ namespace aspect
            *   information that describes what output was produced if for example
            *   multiple files were created.
            */
-        template <int dim, class T>
+        template <int dim>
           std::string
-          ASCIIOutput<dim,T>::output_particle_data(const std::multimap<LevelInd, T> &particles,
+          ASCIIOutput<dim>::output_particle_data(const std::multimap<LevelInd, BaseParticle<dim> > &particles,
                                std::vector<MPIDataInfo> &data_info,
                                const double &current_time)
           {
-            typename std::multimap<LevelInd, T>::const_iterator  it;
+            typename std::multimap<LevelInd, BaseParticle<dim> >::const_iterator  it;
             unsigned int                            i;
             std::string                             output_file_prefix, output_path_prefix, full_filename;
             std::vector<MPIDataInfo>::iterator      dit;

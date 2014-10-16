@@ -32,8 +32,8 @@ namespace aspect
     namespace Generator
     {
       // Generate random uniform distribution of particles over entire simulation domain
-      template <int dim, class T>
-      class RandomUniformGenerator : public Interface<dim, T>
+      template <int dim>
+      class RandomUniformGenerator : public Interface<dim>
       {
         public:
           /**
@@ -49,7 +49,7 @@ namespace aspect
           // TODO: fix the particle system so it works even with processors assigned 0 cells
           virtual
           void
-          generate_particles(Particle::World<dim, T> &world,
+          generate_particles(Particle::World<dim> &world,
                              const double total_num_particles);
 
           /**
@@ -63,7 +63,7 @@ namespace aspect
            * @param [in] num_particles The number of particles to generate in this subdomain
            * @param [in] start_id The starting ID to assign to generated particles
            */
-          void uniform_random_particles_in_subdomain (Particle::World<dim, T> &world,
+          void uniform_random_particles_in_subdomain (Particle::World<dim> &world,
                                                       const unsigned int num_particles,
                                                       const unsigned int start_id);
 

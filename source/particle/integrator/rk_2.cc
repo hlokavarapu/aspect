@@ -30,20 +30,20 @@ namespace aspect
        * Runge Kutta second order integrator, where y_{n+1} = y_n + dt*v(0.5*k_1), k_1 = dt*v(y_n).
        * This scheme requires storing the original location, and the read/write_data functions reflect this.
        */
-        template <int dim, class T>
-        RK2Integrator<dim,T>::RK2Integrator(void)
+        template <int dim>
+        RK2Integrator<dim>::RK2Integrator(void)
           {
             step = 0;
             loc0.clear();
           }
 
 
-        template <int dim, class T>
+        template <int dim>
           bool
-          RK2Integrator<dim,T>::integrate_step(aspect::Particle::World<dim, T> *world, const double dt)
+          RK2Integrator<dim>::integrate_step(aspect::Particle::World<dim> *world, const double dt)
           {
-            typename std::multimap<LevelInd, T> &particles = world->get_particles();
-            typename std::multimap<LevelInd, T>::iterator       it;
+            typename std::multimap<LevelInd, BaseParticle<dim> > &particles = world->get_particles();
+            typename std::multimap<LevelInd, BaseParticle<dim> >::iterator it;
             Point<dim>                          loc, vel;
             double                              id_num;
 
@@ -74,24 +74,24 @@ namespace aspect
             return (step != 0);
           }
 
-        template <int dim, class T>
+        template <int dim>
           void
-          RK2Integrator<dim,T>::add_mpi_types(std::vector<aspect::Particle::MPIDataInfo> &data_info)
+          RK2Integrator<dim>::add_mpi_types(std::vector<aspect::Particle::MPIDataInfo> &data_info)
           {
             // Add the loc0 data
             data_info.push_back(aspect::Particle::MPIDataInfo("loc0", dim));
           }
 
-        template <int dim, class T>
+        template <int dim>
           unsigned int
-          RK2Integrator<dim,T>::data_len() const
+          RK2Integrator<dim>::data_len() const
           {
             return dim;
           }
 
-        template <int dim, class T>
+        template <int dim>
           unsigned int
-          RK2Integrator<dim,T>::read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num)
+          RK2Integrator<dim>::read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num)
           {
             unsigned int    i, p = pos;
 
@@ -104,9 +104,9 @@ namespace aspect
             return p;
           }
 
-        template <int dim, class T>
+        template <int dim>
           void
-          RK2Integrator<dim,T>::write_data(std::vector<double> &data, const double &id_num) const
+          RK2Integrator<dim>::write_data(std::vector<double> &data, const double &id_num) const
           {
             unsigned int    i;
             typename std::map<double, Point<dim> >::const_iterator it;

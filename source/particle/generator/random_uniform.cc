@@ -36,51 +36,51 @@ namespace aspect
            *
            * @param[in] The MPI communicator for synchronizing particle generation.
            */
-        template <int dim, class T>
-        RandomUniformGenerator<dim,T>::RandomUniformGenerator() {}
+        template <int dim>
+        RandomUniformGenerator<dim>::RandomUniformGenerator() {}
 
           /**
            * Generate a uniformly randomly distributed set of particles in the current triangulation.
            */
           // TODO: fix the particle system so it works even with processors assigned 0 cells
-        template <int dim, class T>
-          void
-          RandomUniformGenerator<dim,T>::generate_particles(Particle::World<dim, T> &world,
-                             const double total_num_particles)
-          {
-            double      total_volume, local_volume, subdomain_fraction, start_fraction, end_fraction;
+        template <int dim>
+        void
+        RandomUniformGenerator<dim>::generate_particles(Particle::World<dim> &world,
+                                                        const double total_num_particles)
+        {
+          double      total_volume, local_volume, subdomain_fraction, start_fraction, end_fraction;
 
-            // Calculate the number of particles in this domain as a fraction of total volume
-            total_volume = local_volume = 0;
-            for (typename parallel::distributed::Triangulation<dim>::active_cell_iterator
-                 it=world.get_triangulation()->begin_active();
-                 it!=world.get_triangulation()->end(); ++it)
-              {
-                double cell_volume = it->measure();
-                AssertThrow (cell_volume != 0, ExcMessage ("Found cell with zero volume."));
+          // Calculate the number of particles in this domain as a fraction of total volume
+          total_volume = local_volume = 0;
+          for (typename parallel::distributed::Triangulation<dim>::active_cell_iterator
+               it=world.get_triangulation()->begin_active();
+               it!=world.get_triangulation()->end(); ++it)
+            {
+              double cell_volume = it->measure();
+              AssertThrow (cell_volume != 0, ExcMessage ("Found cell with zero volume."));
 
-                if (it->is_locally_owned())
-                  local_volume += cell_volume;
-              }
-            // Sum the local volumes over all nodes
-            MPI_Allreduce(&local_volume, &total_volume, 1, MPI_DOUBLE, MPI_SUM, world.mpi_comm());
+              if (it->is_locally_owned())
+                local_volume += cell_volume;
+            }
+          // Sum the local volumes over all nodes
+          MPI_Allreduce(&local_volume, &total_volume, 1, MPI_DOUBLE, MPI_SUM, world.mpi_comm());
 
-            // Assign this subdomain the appropriate fraction
-            subdomain_fraction = local_volume/total_volume;
+          // Assign this subdomain the appropriate fraction
+          subdomain_fraction = local_volume/total_volume;
 
-            // Sum the subdomain fractions so we don't miss particles from rounding and to create unique IDs
-            MPI_Scan(&subdomain_fraction, &end_fraction, 1, MPI_DOUBLE, MPI_SUM, world.mpi_comm());
-            start_fraction = end_fraction-subdomain_fraction;
+          // Sum the subdomain fractions so we don't miss particles from rounding and to create unique IDs
+          MPI_Scan(&subdomain_fraction, &end_fraction, 1, MPI_DOUBLE, MPI_SUM, world.mpi_comm());
+          start_fraction = end_fraction-subdomain_fraction;
 
-            // Calculate start and end IDs so there are no gaps
-            // TODO: this can create gaps for certain processor counts because of
-            // floating point imprecision, figure out how to fix it
-            const unsigned int  start_id = static_cast<unsigned int>(std::ceil(start_fraction*total_num_particles));
-            const unsigned int  end_id   = static_cast<unsigned int>(fmin(std::ceil(end_fraction*total_num_particles), total_num_particles));
-            const unsigned int  subdomain_particles = end_id - start_id;
+          // Calculate start and end IDs so there are no gaps
+          // TODO: this can create gaps for certain processor counts because of
+          // floating point imprecision, figure out how to fix it
+          const unsigned int  start_id = static_cast<unsigned int>(std::ceil(start_fraction*total_num_particles));
+          const unsigned int  end_id   = static_cast<unsigned int>(fmin(std::ceil(end_fraction*total_num_particles), total_num_particles));
+          const unsigned int  subdomain_particles = end_id - start_id;
 
-            uniform_random_particles_in_subdomain(world, subdomain_particles, start_id);
-          }
+          uniform_random_particles_in_subdomain(world, subdomain_particles, start_id);
+        }
 
           /**
            * Generate a set of particles uniformly randomly distributed within the
@@ -93,9 +93,9 @@ namespace aspect
            * @param [in] num_particles The number of particles to generate in this subdomain
            * @param [in] start_id The starting ID to assign to generated particles
            */
-        template <int dim, class T>
+        template <int dim>
           void
-          RandomUniformGenerator<dim,T>::uniform_random_particles_in_subdomain (Particle::World<dim, T> &world,
+          RandomUniformGenerator<dim>::uniform_random_particles_in_subdomain (Particle::World<dim> &world,
                                                       const unsigned int num_particles,
                                                       const unsigned int start_id)
           {
@@ -173,14 +173,12 @@ namespace aspect
                 AssertThrow (num_tries < 100, ExcMessage ("Couldn't generate particle (unusual cell shape?)."));
 
                 // Add the generated particle to the set
-                T new_particle(pt, cur_id);
+                BaseParticle<dim> new_particle(pt, cur_id);
                 world.add_particle(new_particle, select_cell);
 
                 cur_id++;
               }
           }
-
-
     }
   }
 }

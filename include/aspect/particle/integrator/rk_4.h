@@ -35,12 +35,12 @@ namespace aspect
       * This scheme requires storing the original location and intermediate k1, k2, k3 values,
       * so the read/write_data functions reflect this.
       */
-      template <int dim, class T>
-      class RK4Integrator : public Interface<dim, T>
+      template <int dim>
+      class RK4Integrator : public Interface<dim>
       {
         public:
         RK4Integrator();
-          virtual bool integrate_step(Particle::World<dim, T> *world, const double dt);
+          virtual bool integrate_step(Particle::World<dim> *world, const double dt);
           virtual void add_mpi_types(std::vector<MPIDataInfo> &data_info);
           virtual unsigned int data_len() const;
           virtual unsigned int read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num);

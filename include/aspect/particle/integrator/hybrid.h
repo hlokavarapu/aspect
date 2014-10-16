@@ -33,12 +33,12 @@ namespace aspect
        * Integrator which chooses Euler, RK2 or RK4 depending on characteristics of the cell a particle is in.
        * Currently used for research only.
        */
-      template <int dim, class T>
-      class HybridIntegrator : public Interface<dim, T>
+      template <int dim>
+      class HybridIntegrator : public Interface<dim>
       {
         public:
         HybridIntegrator();
-          virtual bool integrate_step(Particle::World<dim, T> *world, const double dt);
+          virtual bool integrate_step(aspect::Particle::World<dim> *world, const double dt);
           virtual void add_mpi_types(std::vector<MPIDataInfo> &data_info);
           virtual unsigned int data_len() const;
           virtual unsigned int read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num);

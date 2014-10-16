@@ -22,9 +22,9 @@
 #define __aspect__particle_property_interface_h
 
 #include <aspect/particle/world.h>
+#include <aspect/particle/base_particle.h>
 
 #include <aspect/simulator_access.h>
-#include <aspect/particle/property/base_particle.h>
 #include <aspect/plugins.h>
 #include <deal.II/base/std_cxx1x/shared_ptr.h>
 

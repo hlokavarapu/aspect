@@ -30,15 +30,15 @@ namespace aspect
        * Integrator which chooses Euler, RK2 or RK4 depending on characteristics of the cell a particle is in.
        * Currently used for research only.
        */
-        template <int dim, class T>
-          typename HybridIntegrator<dim,T>::IntegrationScheme
-          HybridIntegrator<dim,T>::select_scheme(const std::vector<Point<dim> > &cell_vertices, const std::vector<Point<dim> > &cell_velocities, const double timestep)
+        template <int dim>
+          typename HybridIntegrator<dim>::IntegrationScheme
+          HybridIntegrator<dim>::select_scheme(const std::vector<Point<dim> > &cell_vertices, const std::vector<Point<dim> > &cell_velocities, const double timestep)
           {
             return cell_vertices[0][0] > 0.5 ? SCHEME_RK4 : SCHEME_EULER;
           }
 
-        template <int dim, class T>
-        HybridIntegrator<dim,T>::HybridIntegrator()
+        template <int dim>
+        HybridIntegrator<dim>::HybridIntegrator()
           {
             step = 0;
             loc0.clear();
@@ -48,12 +48,12 @@ namespace aspect
             scheme.clear();
           }
 
-        template <int dim, class T>
+        template <int dim>
           bool
-          HybridIntegrator<dim,T>::integrate_step(Particle::World<dim, T> *world, const double dt)
+          HybridIntegrator<dim>::integrate_step(aspect::Particle::World<dim> *world, const double dt)
           {
-            typename std::multimap<LevelInd, T> &particles = world->get_particles();
-            typename std::multimap<LevelInd, T>::iterator    it;
+            typename std::multimap<LevelInd, BaseParticle<dim> > &particles = world->get_particles();
+            typename std::multimap<LevelInd, BaseParticle<dim> >::iterator    it;
             const DoFHandler<dim>                            *dh = world->get_dof_handler();
             const Mapping<dim>                               *mapping = world->get_mapping();
             const parallel::distributed::Triangulation<dim>  *tria = world->get_triangulation();
@@ -174,9 +174,9 @@ namespace aspect
             return (step != 0);
           }
 
-        template <int dim, class T>
+        template <int dim>
           void
-          HybridIntegrator<dim,T>::add_mpi_types(std::vector<MPIDataInfo> &data_info)
+          HybridIntegrator<dim>::add_mpi_types(std::vector<MPIDataInfo> &data_info)
           {
             // Add the loc0, k1, k2, and k3 data
             data_info.push_back(MPIDataInfo("loc0", dim));
@@ -186,16 +186,16 @@ namespace aspect
             data_info.push_back(MPIDataInfo("scheme", 1));
           }
 
-        template <int dim, class T>
+        template <int dim>
           unsigned int
-          HybridIntegrator<dim,T>::data_len() const
+          HybridIntegrator<dim>::data_len() const
           {
             return (4*dim+1);
           }
 
-        template <int dim, class T>
+        template <int dim>
           unsigned int
-          HybridIntegrator<dim,T>::read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num)
+          HybridIntegrator<dim>::read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num)
           {
             unsigned int    i, p = pos;
 
@@ -222,9 +222,9 @@ namespace aspect
             return p;
           }
 
-        template <int dim, class T>
+        template <int dim>
           void
-          HybridIntegrator<dim,T>::write_data(std::vector<double> &data, const double &id_num) const
+          HybridIntegrator<dim>::write_data(std::vector<double> &data, const double &id_num) const
           {
             typename std::map<double, Point<dim> >::const_iterator it;
             typename std::map<double, IntegrationScheme>::const_iterator sit;

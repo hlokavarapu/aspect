@@ -27,19 +27,19 @@ namespace aspect
   {
     namespace Output
     {
-      template <int dim, class T>
+      template <int dim>
       void
-      Interface<dim,T>::declare_parameters (ParameterHandler &prm)
+      Interface<dim>::declare_parameters (ParameterHandler &prm)
       {}
 
-      template <int dim, class T>
+      template <int dim>
       void
-      Interface<dim,T>::parse_parameters (ParameterHandler &prm)
+      Interface<dim>::parse_parameters (ParameterHandler &prm)
       {}
 
-      template <int dim, class T>
+      template <int dim>
       void
-      Interface<dim,T>::initialize (std::string output_dir_,
+      Interface<dim>::initialize (std::string output_dir_,
                                     MPI_Comm communicator_)
       {
         output_dir = output_dir_;
@@ -56,8 +56,8 @@ namespace aspect
             std_cxx1x::tuple
             <void *,
             void *,
-            internal::Plugins::PluginList<Interface<2, aspect::Particle::Property::BaseParticle<2> > >,
-            internal::Plugins::PluginList<Interface<3, aspect::Particle::Property::BaseParticle<3> > > > registered_plugins;
+            internal::Plugins::PluginList<Interface<2> >,
+            internal::Plugins::PluginList<Interface<3> > > registered_plugins;
           }
 
 
@@ -67,7 +67,7 @@ namespace aspect
           register_particle_output (const std::string &name,
                                          const std::string &description,
                                          void (*declare_parameters_function) (ParameterHandler &),
-                                         Interface<dim, aspect::Particle::Property::BaseParticle<dim> > *(*factory_function) ())
+                                         Interface<dim> *(*factory_function) ())
           {
             std_cxx1x::get<dim>(registered_plugins).register_plugin (name,
                                                                      description,
@@ -77,7 +77,7 @@ namespace aspect
 
 
           template <int dim>
-          Interface<dim, aspect::Particle::Property::BaseParticle<dim> > *
+          Interface<dim> *
           create_particle_output (ParameterHandler &prm)
           {
             std::string name;
@@ -141,11 +141,11 @@ namespace aspect
           namespace Plugins
           {
             template <>
-            std::list<internal::Plugins::PluginList<Particle::Output::Interface<2, aspect::Particle::Property::BaseParticle<2> > >::PluginInfo> *
-            internal::Plugins::PluginList<Particle::Output::Interface<2, aspect::Particle::Property::BaseParticle<2> > >::plugins = 0;
+            std::list<internal::Plugins::PluginList<Particle::Output::Interface<2> >::PluginInfo> *
+            internal::Plugins::PluginList<Particle::Output::Interface<2> >::plugins = 0;
             template <>
-            std::list<internal::Plugins::PluginList<Particle::Output::Interface<3, aspect::Particle::Property::BaseParticle<3> > >::PluginInfo> *
-            internal::Plugins::PluginList<Particle::Output::Interface<3, aspect::Particle::Property::BaseParticle<3> > >::plugins = 0;
+            std::list<internal::Plugins::PluginList<Particle::Output::Interface<3> >::PluginInfo> *
+            internal::Plugins::PluginList<Particle::Output::Interface<3> >::plugins = 0;
           }
         }
 
@@ -154,21 +154,21 @@ namespace aspect
           namespace Output
           {
       #define INSTANTIATE(dim) \
-        template class Interface<dim, aspect::Particle::Property::BaseParticle<dim> >; \
+        template class Interface<dim>; \
         \
         template \
         void \
         register_particle_output<dim> (const std::string &, \
                                             const std::string &, \
                                             void ( *) (ParameterHandler &), \
-                                            Interface<dim, aspect::Particle::Property::BaseParticle<dim> > *( *) ()); \
+                                            Interface<dim> *( *) ()); \
         \
         template  \
         void \
         declare_parameters<dim> (ParameterHandler &); \
         \
         template \
-        Interface<dim, aspect::Particle::Property::BaseParticle<dim> > * \
+        Interface<dim> * \
         create_particle_output<dim> (ParameterHandler &prm);
 
           ASPECT_INSTANTIATE(INSTANTIATE)

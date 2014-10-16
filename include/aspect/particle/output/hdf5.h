@@ -31,8 +31,8 @@ namespace aspect
   {
     namespace Output
     {
-      template <int dim, class T>
-       class HDF5Output : public Interface<dim, T>
+      template <int dim>
+       class HDF5Output : public Interface<dim>
        {
          public:
            /**
@@ -60,7 +60,7 @@ namespace aspect
             */
            virtual
            std::string
-           output_particle_data(const std::multimap<LevelInd, T> &particles,
+           output_particle_data(const std::multimap<LevelInd, BaseParticle<dim> > &particles,
                                 std::vector<MPIDataInfo> &data_info,
                                 const double &current_time);
 

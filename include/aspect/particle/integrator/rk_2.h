@@ -33,12 +33,12 @@ namespace aspect
        * Runge Kutta second order integrator, where y_{n+1} = y_n + dt*v(0.5*k_1), k_1 = dt*v(y_n).
        * This scheme requires storing the original location, and the read/write_data functions reflect this.
        */
-      template <int dim, class T>
-      class RK2Integrator : public Interface<dim, T>
+      template <int dim>
+      class RK2Integrator : public Interface<dim>
       {
         public:
           RK2Integrator();
-          virtual bool integrate_step(Particle::World<dim, T> *world, const double dt);
+          virtual bool integrate_step(aspect::Particle::World<dim> *world, const double dt);
           virtual void add_mpi_types(std::vector<MPIDataInfo> &data_info);
           virtual unsigned int data_len() const;
           virtual unsigned int read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num);

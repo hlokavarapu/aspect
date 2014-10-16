@@ -18,8 +18,8 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __aspect__particle_property_base_particle_h
-#define __aspect__particle_property_base_particle_h
+#ifndef __aspect__particle_base_particle_h
+#define __aspect__particle_base_particle_h
 
 #include <aspect/particle/world.h>
 
@@ -27,13 +27,11 @@ namespace aspect
 {
   namespace Particle
   {
-    namespace Property
-    {
     /**
      * Base class of particles - represents a particle with position,
-     * velocity, and an ID number. This class can be extended to include data
-     * related to a particle. An example of this is shown in the DataParticle
-     * class.
+     * velocity, an ID number and an unknown number of properties. This class
+     * can be extended to include data related to a particle by the property
+     * manager
      */
     template <int dim>
     class BaseParticle
@@ -74,13 +72,13 @@ namespace aspect
 
       public:
         /**
-         * Empty constructor for BaseParticle, creates a particle at the
+         * Empty constructor for Particle, creates a particle at the
          * origin with zero velocity.
          */
         BaseParticle ();
 
         /**
-         * Constructor for BaseParticle, creates a particle with the specified
+         * Constructor for Particle, creates a particle with the specified
          * ID at the specified location with zero velocity. Note that Aspect
          * does not check for duplicate particle IDs so the user must be sure
          * the IDs are unique over all processes.
@@ -92,7 +90,7 @@ namespace aspect
                       const double &new_id);
 
         /**
-         * Destructor for BaseParticle
+         * Destructor for Particle
          */
         virtual
         ~BaseParticle ();
@@ -229,7 +227,6 @@ namespace aspect
 
     };
 
-    }
   }
 }
 

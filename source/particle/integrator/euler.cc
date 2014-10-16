@@ -30,12 +30,12 @@ namespace aspect
        * Euler scheme integrator, where y_{n+1} = y_n + dt * v(y_n).
        * This requires only one step per integration, and doesn't involve any extra data.
        */
-      template <int dim, class T>
+      template <int dim>
           bool
-          EulerIntegrator<dim,T>::integrate_step(Particle::World<dim, T> *world, const double dt)
+          EulerIntegrator<dim>::integrate_step(Particle::World<dim> *world, const double dt)
           {
-            typename std::multimap<LevelInd, T> &particles = world->get_particles();
-            typename std::multimap<LevelInd, T>::iterator       it;
+            typename std::multimap<LevelInd, BaseParticle<dim> > &particles = world->get_particles();
+            typename std::multimap<LevelInd, BaseParticle<dim> >::iterator       it;
             Point<dim>                          loc, vel;
 
             for (it=particles.begin(); it!=particles.end(); ++it)
@@ -48,25 +48,25 @@ namespace aspect
             return false;
           }
 
-        template <int dim, class T>
+        template <int dim>
           void
-          EulerIntegrator<dim,T>::add_mpi_types(std::vector<MPIDataInfo> &data_info)
+          EulerIntegrator<dim>::add_mpi_types(std::vector<MPIDataInfo> &data_info)
           {}
-        template <int dim, class T>
+        template <int dim>
           unsigned int
-          EulerIntegrator<dim,T>::data_len() const
+          EulerIntegrator<dim>::data_len() const
           {
             return 0;
           }
-        template <int dim, class T>
+        template <int dim>
           unsigned int
-          EulerIntegrator<dim,T>::read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num)
+          EulerIntegrator<dim>::read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num)
           {
             return pos;
           }
-        template <int dim, class T>
+        template <int dim>
           void
-          EulerIntegrator<dim,T>::write_data(std::vector<double> &data, const double &id_num) const
+          EulerIntegrator<dim>::write_data(std::vector<double> &data, const double &id_num) const
           {
           }
     }

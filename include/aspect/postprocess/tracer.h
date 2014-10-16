@@ -27,7 +27,7 @@
 #include <aspect/particle/generator/interface.h>
 #include <aspect/particle/integrator/interface.h>
 #include <aspect/particle/property/interface.h>
-#include <aspect/particle/property/base_particle.h>
+#include <aspect/particle/base_particle.h>
 #include <aspect/simulator_access.h>
 
 namespace aspect
@@ -41,22 +41,22 @@ namespace aspect
         /**
          * The world holding the particles
          */
-      Particle::World<dim, Particle::Property::BaseParticle<dim> >              world;
+      Particle::World<dim>              world;
 
         /**
          * The integrator to use in moving the particles
          */
-      Particle::Integrator::Interface<dim, Particle::Property::BaseParticle<dim> >  *integrator;
+      Particle::Integrator::Interface<dim>  *integrator;
 
         /**
          * Pointer to an output object
          */
-      Particle::Output::Interface<dim, Particle::Property::BaseParticle<dim> >      *output;
+      Particle::Output::Interface<dim>      *output;
 
         /**
          * Pointer to a generator object
          */
-      Particle::Generator::Interface<dim, Particle::Property::BaseParticle<dim> >   *generator;
+      Particle::Generator::Interface<dim>   *generator;
 
         /**
          * Pointer to a properties object

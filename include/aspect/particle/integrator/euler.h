@@ -33,11 +33,11 @@ namespace aspect
        * Euler scheme integrator, where y_{n+1} = y_n + dt * v(y_n).
        * This requires only one step per integration, and doesn't involve any extra data.
        */
-      template <int dim, class T>
-      class EulerIntegrator : public Interface<dim, T>
+      template <int dim>
+      class EulerIntegrator : public Interface<dim>
       {
         public:
-          virtual bool integrate_step(Particle::World<dim, T> *world, const double dt);
+          virtual bool integrate_step(Particle::World<dim> *world, const double dt);
           virtual void add_mpi_types(std::vector<MPIDataInfo> &data_info);
           virtual unsigned int data_len() const;
           virtual unsigned int read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num);

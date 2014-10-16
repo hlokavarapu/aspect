@@ -55,7 +55,7 @@ namespace aspect
 
     namespace Integrator
     {
-      template <int dim, class T>
+      template <int dim>
       class Interface;
     }
 
@@ -65,7 +65,10 @@ namespace aspect
       class Manager;
     }
 
-    template <int dim, class T>
+    template <int dim>
+    class BaseParticle;
+
+    template <int dim>
     class World
     {
       private:
@@ -82,7 +85,7 @@ namespace aspect
         const LinearAlgebra::BlockVector           *solution;
 
         /// Integration scheme for moving particles in this world
-        Integrator::Interface<dim, T>   *integrator;
+        Integrator::Interface<dim>   *integrator;
 
         /// Integration scheme for moving particles in this world
         Property::Manager<dim>   *property_manager;
@@ -96,7 +99,7 @@ namespace aspect
 
         /// Set of particles currently in the local domain, organized by
         /// the level/index of the cell they are in
-        std::multimap<LevelInd, T>      particles;
+        std::multimap<LevelInd, BaseParticle<dim> >      particles;
 
         // Total number of particles in simulation
         unsigned int                    global_num_particles;
@@ -136,7 +139,7 @@ namespace aspect
          * level and index of the cell the particle was determined to be in.
          * If no cell was found this returns (-1, -1).
          */
-        LevelInd recursive_find_cell(T &particle,
+        LevelInd recursive_find_cell(BaseParticle<dim> &particle,
                                      const LevelInd cur_cell)
         {
           typename parallel::distributed::Triangulation<dim>::cell_iterator it, found_cell, child_cell;
@@ -305,7 +308,7 @@ namespace aspect
          * @param [in] new_integrator The new Integrator scheme for this
          * world.
          */
-        void set_integrator(Integrator::Interface<dim, T> *new_integrator)
+        void set_integrator(Integrator::Interface<dim> *new_integrator)
         {
           integrator = new_integrator;
         };
@@ -361,7 +364,7 @@ namespace aspect
          * Add a particle to this world. If the specified cell does not exist
          * in the local subdomain an exception will be thrown.
          */
-        void add_particle(const T &particle, const LevelInd &cell)
+        void add_particle(const BaseParticle<dim> &particle, const LevelInd &cell)
         {
           const typename parallel::distributed::Triangulation<dim>::active_cell_iterator it
           (triangulation, cell.first, cell.second);
@@ -372,7 +375,7 @@ namespace aspect
 
         void initialize_particles()
         {
-          typename std::multimap<LevelInd, T>::iterator       it;
+          typename std::multimap<LevelInd, BaseParticle<dim> >::iterator       it;
 
           for (it=particles.begin(); it!=particles.end(); ++it)
             {
@@ -384,7 +387,7 @@ namespace aspect
         /**
          * Access to particles in this world.
          */
-        std::multimap<LevelInd, T> &get_particles()
+        std::multimap<LevelInd, BaseParticle<dim> > &get_particles()
         {
           return particles;
         };
@@ -392,7 +395,7 @@ namespace aspect
         /**
          * Const access to particles in this world.
          */
-        const std::multimap<LevelInd, T> &get_particles() const
+        const std::multimap<LevelInd, BaseParticle<dim> > &get_particles() const
         {
           return particles;
         };
@@ -425,7 +428,7 @@ namespace aspect
           AssertThrow (integrator != NULL, ExcMessage ("Particle world integrator must be set before calling init()."));
           AssertThrow (property_manager != NULL, ExcMessage ("Particle world integrator must be set before calling init()."));
 
-          const typename std::multimap<LevelInd, T>::iterator   pit (particles.begin());
+          const typename std::multimap<LevelInd, BaseParticle<dim> >::iterator   pit (particles.begin());
 
           // Construct MPI data type for this particle
           property_manager->add_mpi_types(data_info);
@@ -471,8 +474,8 @@ namespace aspect
          */
         void find_all_cells()
         {
-          typename std::multimap<LevelInd, T>::iterator   it;
-          std::multimap<LevelInd, T>                      tmp_map;
+          typename std::multimap<LevelInd, BaseParticle<dim> >::iterator   it;
+          std::multimap<LevelInd, BaseParticle<dim> >                      tmp_map;
           LevelInd                                        found_cell;
 
           // Find the cells that the particles moved to
@@ -549,7 +552,7 @@ namespace aspect
          */
         void mark_particles_for_check()
         {
-          typename std::multimap<LevelInd, T>::iterator  it;
+          typename std::multimap<LevelInd, BaseParticle<dim> >::iterator  it;
           for (it=particles.begin(); it!=particles.end(); ++it) it->second.set_vel_check(true);
         }
 
@@ -565,7 +568,7 @@ namespace aspect
          * particle is in. If no cell was found to contain the particle,
          * return the level/index (-1, -1)
          */
-        LevelInd find_cell(T &particle, const LevelInd &cur_cell)
+        LevelInd find_cell(BaseParticle<dim> &particle, const LevelInd &cur_cell)
         {
           typename parallel::distributed::Triangulation<dim>::cell_iterator         it, found_cell;
           typename parallel::distributed::Triangulation<dim>::active_cell_iterator  ait;
@@ -622,12 +625,12 @@ namespace aspect
          */
         void send_recv_particles()
         {
-          typename std::multimap<LevelInd, T>::iterator  it;
+          typename std::multimap<LevelInd, BaseParticle<dim> >::iterator  it;
           typename parallel::distributed::Triangulation<dim>::cell_iterator found_cell;
           int                 i;
           unsigned int        rank;
-          std::vector<T>      send_particles;
-          typename std::vector<T>::const_iterator    sit;
+          std::vector<BaseParticle<dim> >      send_particles;
+          typename std::vector<BaseParticle<dim> >::const_iterator    sit;
 
           // Go through the particles and take out those which need to be moved to another processor
           for (it=particles.begin(); it!=particles.end();)
@@ -689,7 +692,7 @@ namespace aspect
           // Put the received particles into the domain if they are in the triangulation
           for (i=0; i<total_recv; ++i)
             {
-              T                   recv_particle;
+              BaseParticle<dim>       recv_particle;
               LevelInd            found_cell;
               pos = recv_particle.read_data(recv_data, pos);
               pos = integrator->read_data(recv_data, pos, recv_particle.get_id());
@@ -717,7 +720,7 @@ namespace aspect
           Point<dim>                    velocity;
           unsigned int                  i, num_cell_particles;
           LevelInd                      cur_cell;
-          typename std::multimap<LevelInd, T>::iterator  it, sit;
+          typename std::multimap<LevelInd, BaseParticle<dim> >::iterator  it, sit;
           typename DoFHandler<dim>::active_cell_iterator  found_cell;
           std::vector<Point<dim> >      particle_points;
 

@@ -18,19 +18,17 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#include <aspect/particle/property/base_particle.h>
+#include <aspect/particle/base_particle.h>
 #include <list>
 
 namespace aspect
 {
   namespace Particle
   {
-    namespace Property
-    {
     template <int dim>
     inline
     BaseParticle<dim>::BaseParticle (const Point<dim> &new_loc,
-                                     const double &new_id)
+                             const double &new_id)
       :
       location (new_loc),
       id (new_id),
@@ -99,7 +97,8 @@ namespace aspect
     }
 
     template <int dim>
-    unsigned int BaseParticle<dim>::read_data(const std::vector<double> &data, const unsigned int &pos)
+    unsigned int
+    BaseParticle<dim>::read_data(const std::vector<double> &data, const unsigned int &pos)
     {
       unsigned int p = pos;
       // Read location data
@@ -208,4 +207,3 @@ namespace aspect
     template class BaseParticle<3>;
     }
   }
-}

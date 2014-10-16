@@ -36,10 +36,10 @@ namespace aspect
            * @param[in] The directory into which output files shall be placed.
            * @param[in] The MPI communicator that describes this simulation.
            */
-        template <int dim, class T>
-        HDF5Output<dim,T>::HDF5Output()
+        template <int dim>
+        HDF5Output<dim>::HDF5Output()
             :
-            Interface<dim,T> ()
+            Interface<dim> ()
           {}
 
           /**
@@ -57,9 +57,9 @@ namespace aspect
            *   information that describes what output was produced if for example
            *   multiple files were created.
            */
-        template <int dim, class T>
+        template <int dim>
           std::string
-          HDF5Output<dim,T>::output_particle_data(const std::multimap<LevelInd, T> &particles,
+          HDF5Output<dim>::output_particle_data(const std::multimap<LevelInd, BaseParticle<dim> > &particles,
                                std::vector<MPIDataInfo> &data_info,
                                const double &current_time)
           {

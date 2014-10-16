@@ -32,8 +32,8 @@ namespace aspect
        * This scheme requires storing the original location and intermediate k1, k2, k3 values,
        * so the read/write_data functions reflect this.
        */
-        template <int dim, class T>
-          RK4Integrator<dim,T>::RK4Integrator(void)
+        template <int dim>
+          RK4Integrator<dim>::RK4Integrator(void)
           {
             step = 0;
             loc0.clear();
@@ -42,12 +42,12 @@ namespace aspect
             k3.clear();
           }
 
-        template <int dim, class T>
+        template <int dim>
           bool
-          RK4Integrator<dim,T>::integrate_step(Particle::World<dim, T> *world, const double dt)
+          RK4Integrator<dim>::integrate_step(Particle::World<dim> *world, const double dt)
           {
-            typename std::multimap<LevelInd, T> &particles = world->get_particles();
-            typename std::multimap<LevelInd, T>::iterator       it;
+            typename std::multimap<LevelInd, BaseParticle<dim> > &particles = world->get_particles();
+            typename std::multimap<LevelInd, BaseParticle<dim> >::iterator       it;
             Point<dim>                          loc, vel, k4;
             double                              id_num;
 
@@ -96,9 +96,9 @@ namespace aspect
             return (step != 0);
           }
 
-        template <int dim, class T>
+        template <int dim>
           void
-          RK4Integrator<dim,T>::add_mpi_types(std::vector<MPIDataInfo> &data_info)
+          RK4Integrator<dim>::add_mpi_types(std::vector<MPIDataInfo> &data_info)
           {
             // Add the loc0, k1, k2, and k3 data
             data_info.push_back(MPIDataInfo("loc0", dim));
@@ -107,16 +107,16 @@ namespace aspect
             data_info.push_back(MPIDataInfo("k3", dim));
           }
 
-        template <int dim, class T>
+        template <int dim>
           unsigned int
-          RK4Integrator<dim,T>::data_len() const
+          RK4Integrator<dim>::data_len() const
           {
             return 4*dim;
           }
 
-        template <int dim, class T>
+        template <int dim>
           unsigned int
-          RK4Integrator<dim,T>::read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num)
+          RK4Integrator<dim>::read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num)
           {
             unsigned int    i, p = pos;
 
@@ -142,9 +142,9 @@ namespace aspect
             return p;
           }
 
-        template <int dim, class T>
+        template <int dim>
           void
-          RK4Integrator<dim,T>::write_data(std::vector<double> &data, const double &id_num) const
+          RK4Integrator<dim>::write_data(std::vector<double> &data, const double &id_num) const
           {
             typename std::map<double, Point<dim> >::const_iterator it;
             unsigned int  i;

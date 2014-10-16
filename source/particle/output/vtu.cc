@@ -34,10 +34,10 @@ namespace aspect
            * @param[in] The directory into which output files shall be placed.
            * @param[in] The MPI communicator that describes this simulation.
            */
-        template <int dim, class T>
-          VTUOutput<dim,T>::VTUOutput()
+        template <int dim>
+          VTUOutput<dim>::VTUOutput()
             :
-            Interface<dim,T> ()
+            Interface<dim> ()
           {}
 
           /**
@@ -55,9 +55,9 @@ namespace aspect
            *   information that describes what output was produced if for example
            *   multiple files were created.
            */
-        template <int dim, class T>
+        template <int dim>
           std::string
-          VTUOutput<dim,T>::output_particle_data(const std::multimap<LevelInd, T> &particles,
+          VTUOutput<dim>::output_particle_data(const std::multimap<LevelInd, BaseParticle<dim> > &particles,
                                                  std::vector<MPIDataInfo> &data_info,
                                                  const double &current_time)
           {
@@ -86,7 +86,7 @@ namespace aspect
             // Go through the particles on this domain and print the position of each one
             output << "      <Points>\n";
             output << "        <DataArray name=\"Position\" type=\"Float64\" NumberOfComponents=\"3\" Format=\"ascii\">\n";
-            for (typename std::multimap<LevelInd, T>::const_iterator
+            for (typename std::multimap<LevelInd, BaseParticle<dim> >::const_iterator
                  it=particles.begin(); it!=particles.end(); ++it)
               {
                 output << "          " << it->second.get_location();
@@ -127,7 +127,7 @@ namespace aspect
             for (; dit!=data_info.end(); ++dit)
               {
                 output << "        <DataArray type=\"Float64\" Name=\"" << dit->name << "\" NumberOfComponents=\"" << (dit->n_elements == 2 ? 3 : dit->n_elements) << "\" Format=\"ascii\">\n";
-                for (typename std::multimap<LevelInd, T>::const_iterator
+                for (typename std::multimap<LevelInd, BaseParticle<dim> >::const_iterator
                      it=particles.begin(); it!=particles.end(); ++it)
                   {
                     std::vector<double> particle_data;
