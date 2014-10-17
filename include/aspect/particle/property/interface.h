@@ -61,8 +61,21 @@ namespace aspect
             */
            virtual
            void
-           initialize_particle (std::vector<double> &data,
-                                const Point<dim> &position);
+           initialize_particle (std::vector<double> &/*data*/,
+                                const Point<dim> &/*position*/,
+                                const Vector<double> &/*solution*/);
+
+           /**
+            * Update function. This function is called every timestep for
+            * every particle to update up it's properties. It is obvious that
+            * this function is called a lot, so its code should be efficient.
+            */
+           virtual
+           void
+           update_particle (unsigned int data_position,
+                            std::vector<double> &/*particle_properties*/,
+                            const Point<dim> &/*position*/,
+                            const Vector<double> &/*solution*/);
 
            virtual unsigned int data_len() const;
 
@@ -110,7 +123,7 @@ namespace aspect
      * and updates it over time if requested by the user selected properties
      */
     template <int dim>
-    class Manager
+    class Manager : public SimulatorAccess<dim>
     {
       private:
         /**
@@ -151,7 +164,8 @@ namespace aspect
          */
         virtual
         void
-        initialize_particle (BaseParticle<dim> &particle);
+        initialize_particle (BaseParticle<dim> &particle,
+                             const Vector<double> &solution);
 
         /**
          * Update function for particle properties. This function is
@@ -159,7 +173,8 @@ namespace aspect
          */
         virtual
         void
-        update_particle (BaseParticle<dim> &particle);
+        update_particle (BaseParticle<dim> &particle,
+                         const Vector<double> &solution);
 
         /**
          * Get the number of doubles required to represent this particle's

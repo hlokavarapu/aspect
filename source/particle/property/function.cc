@@ -36,7 +36,8 @@ namespace aspect
       template <int dim>
       void
       Function<dim>::initialize_particle(std::vector<double> &data,
-                                         const Point<dim> &position)
+                                         const Point<dim> &position,
+                                         const Vector<double> &)
       {
         data.push_back(function.value(position));
       }

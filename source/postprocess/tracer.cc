@@ -46,6 +46,13 @@ namespace aspect
     }
 
     template <int dim>
+    void
+    PassiveTracers<dim>::initialize()
+    {
+
+    }
+
+    template <int dim>
     std::pair<std::string,std::string>
     PassiveTracers<dim>::execute (TableHandler &statistics)
     {
@@ -177,20 +184,30 @@ namespace aspect
       }
       prm.leave_subsection ();
 
+      world.initialize(this->get_simulator());
+
       // Create a generator object using a random uniform distribution
       generator = Particle::Generator::create_particle_generator<dim>
                   (prm);
+      if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(generator))
+        sim->initialize (this->get_simulator());
 
       // Create an output object depending on what the parameters specify
       output = Particle::Output::create_particle_output<dim>
                (prm);
+      if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(output))
+        sim->initialize (this->get_simulator());
       output->initialize(this->get_output_directory(),
                          this->get_mpi_communicator());
 
       // Create an integrator object depending on the specified parameter
       integrator = Particle::Integrator::create_particle_integrator<dim>
                    (prm);
+      if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(integrator))
+        sim->initialize (this->get_simulator());
 
+      SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(&property_manager);
+      sim->initialize (this->get_simulator());
       property_manager.parse_parameters(prm);
       property_manager.initialize();
     }

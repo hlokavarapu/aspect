@@ -34,8 +34,17 @@ namespace aspect
 
       template <int dim>
       void
-      Interface<dim>::initialize_particle (std::vector<double> &data,
-                                           const Point<dim> &position)
+      Interface<dim>::initialize_particle (std::vector<double> &,
+                                           const Point<dim> &,
+                                           const Vector<double> &)
+      {}
+
+      template <int dim>
+      void
+      Interface<dim>::update_particle (unsigned int ,
+                                       std::vector<double> &,
+                                       const Point<dim> &,
+                                       const Vector<double> &)
       {}
 
       template <int dim>
@@ -85,7 +94,8 @@ namespace aspect
 
     template <int dim>
     void
-    Manager<dim>::initialize_particle (BaseParticle<dim> &particle)
+    Manager<dim>::initialize_particle (BaseParticle<dim> &particle,
+                                       const Vector<double> &solution)
     {
       std::vector<double> particle_properties (0);
       particle.set_data_len(data_len);
@@ -93,15 +103,27 @@ namespace aspect
            p = property_list.begin(); p!=property_list.end(); ++p)
         {
           (*p)->initialize_particle(particle_properties,
-                                    particle.get_location());
+                                    particle.get_location(),
+                                    solution);
         }
       particle.set_properties(particle_properties);
     }
 
     template <int dim>
     void
-    Manager<dim>::update_particle (BaseParticle<dim> &particle)
+    Manager<dim>::update_particle (BaseParticle<dim> &particle,
+                                   const Vector<double> &solution)
     {
+      unsigned int data_position = 0;
+      for (typename std::list<std_cxx1x::shared_ptr<Interface<dim> > >::const_iterator
+           p = property_list.begin(); p!=property_list.end(); ++p)
+        {
+          (*p)->update_particle(data_position,
+                                particle.get_properties(),
+                                particle.get_location(),
+                                solution);
+          data_position += (*p)->data_len();
+        }
     }
 
     template <int dim>
@@ -155,9 +177,8 @@ namespace aspect
                             "",
                             Patterns::MultipleSelection(pattern_of_names),
                             "A comma separated list of tracer properties that should be tracked "
-                            ". By default, TODO. The current parameter is the place where "
-                            "you decide which of these additional output variables you want "
-                            "to have in your output file.\n\n"
+                            ". By default none is selected, which means only position, velocity "
+                            " and id of the tracers are outputted. \n\n"
                             "The following properties are available:\n\n"
                             +
                             std_cxx1x::get<dim>(registered_plugins).get_description_string());
@@ -216,8 +237,8 @@ namespace aspect
           property_list.push_back (std_cxx1x::shared_ptr<Property::Interface<dim> >
                                     (particle_property));
 
-          //if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(&*properties.back()))
-          //  sim->initialize (this->get_simulator());
+          if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(&*property_list.back()))
+            sim->initialize (this->get_simulator());
 
           property_list.back()->parse_parameters (prm);
         }

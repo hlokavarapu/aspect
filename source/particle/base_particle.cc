@@ -175,6 +175,13 @@ namespace aspect
     }
 
     template <int dim>
+    std::vector<double>&
+    BaseParticle<dim>::get_properties ()
+    {
+      return val;
+    }
+
+    template <int dim>
     bool
     BaseParticle<dim>::local () const
     {

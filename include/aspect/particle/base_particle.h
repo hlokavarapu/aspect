@@ -72,13 +72,13 @@ namespace aspect
 
       public:
         /**
-         * Empty constructor for Particle, creates a particle at the
+         * Empty constructor for BaseParticle, creates a particle at the
          * origin with zero velocity.
          */
         BaseParticle ();
 
         /**
-         * Constructor for Particle, creates a particle with the specified
+         * Constructor for BaseParticle, creates a particle with the specified
          * ID at the specified location with zero velocity. Note that Aspect
          * does not check for duplicate particle IDs so the user must be sure
          * the IDs are unique over all processes.
@@ -90,7 +90,7 @@ namespace aspect
                       const double &new_id);
 
         /**
-         * Destructor for Particle
+         * Destructor for BaseParticle
          */
         virtual
         ~BaseParticle ();
@@ -187,6 +187,14 @@ namespace aspect
         const
         std::vector<double>
         get_properties () const;
+
+        /**
+         * Get write-access to properties of this particle.
+         *
+         * @return The properties of this particle.
+         */
+        std::vector<double>&
+        get_properties ();
 
         /**
          * Check whether the particle is marked as being local to this

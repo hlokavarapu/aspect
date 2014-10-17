@@ -69,7 +69,7 @@ namespace aspect
     class BaseParticle;
 
     template <int dim>
-    class World
+    class World : public SimulatorAccess<dim>
     {
       private:
         /// Mapping for the simulation this particle world exists in
@@ -375,14 +375,115 @@ namespace aspect
 
         void initialize_particles()
         {
-          typename std::multimap<LevelInd, BaseParticle<dim> >::iterator       it;
+          Vector<double>                single_res(dim+2+this->n_compositional_fields());
+          std::vector<Vector<double> >  result;
+          unsigned int                  i, num_cell_particles;
+          LevelInd                      cur_cell;
+          typename std::multimap<LevelInd, BaseParticle<dim> >::iterator  it, sit;
+          typename DoFHandler<dim>::active_cell_iterator  found_cell;
+          std::vector<Point<dim> >      particle_points;
 
-          for (it=particles.begin(); it!=particles.end(); ++it)
+          // Prepare the field function
+          Functions::FEFieldFunction<dim, DoFHandler<dim>, LinearAlgebra::BlockVector> fe_value(*dof_handler, *solution, *mapping);
+
+          // Get the velocity for each cell at a time so we can take advantage of knowing the active cell
+          for (it=particles.begin(); it!=particles.end();)
             {
-              property_manager->initialize_particle(it->second);
+              // Save a pointer to the first particle in this cell
+              sit = it;
+
+              // Get the current cell
+              cur_cell = it->first;
+
+              // Resize the vectors to the number of particles in this cell
+              num_cell_particles = particles.count(cur_cell);
+              particle_points.resize(num_cell_particles);
+
+              // Get a vector of the particle locations in this cell
+              i=0;
+              while (it != particles.end() && it->first == cur_cell)
+                {
+                  particle_points[i++] = it->second.get_location();
+                  it++;
+                }
+              result.resize(i, single_res);
+              particle_points.resize(i);
+
+              // Get the cell the particle is in
+              found_cell = typename DoFHandler<dim>::active_cell_iterator(triangulation, cur_cell.first, cur_cell.second, dof_handler);
+
+              // Interpolate the velocity field for each of the particles
+              fe_value.set_active_cell(found_cell);
+              fe_value.vector_value_list(particle_points, result);
+
+              // Copy the resulting velocities to the appropriate vector
+              it = sit;
+              i = 0;
+              while (it != particles.end() && it->first == cur_cell)
+                {
+                  property_manager->initialize_particle(it->second,
+                                                        result[i]);
+                  i++;
+                  it++;
+                }
             }
         }
 
+        void update_particles()
+        {
+          Vector<double>                single_res(dim+2+this->n_compositional_fields());
+          std::vector<Vector<double> >  result;
+          unsigned int                  i, num_cell_particles;
+          LevelInd                      cur_cell;
+          typename std::multimap<LevelInd, BaseParticle<dim> >::iterator  it, sit;
+          typename DoFHandler<dim>::active_cell_iterator  found_cell;
+          std::vector<Point<dim> >      particle_points;
+
+          // Prepare the field function
+          Functions::FEFieldFunction<dim, DoFHandler<dim>, LinearAlgebra::BlockVector> fe_value(*dof_handler, *solution, *mapping);
+
+          // Get the velocity for each cell at a time so we can take advantage of knowing the active cell
+          for (it=particles.begin(); it!=particles.end();)
+            {
+              // Save a pointer to the first particle in this cell
+              sit = it;
+
+              // Get the current cell
+              cur_cell = it->first;
+
+              // Resize the vectors to the number of particles in this cell
+              num_cell_particles = particles.count(cur_cell);
+              particle_points.resize(num_cell_particles);
+
+              // Get a vector of the particle locations in this cell
+              i=0;
+              while (it != particles.end() && it->first == cur_cell)
+                {
+                  particle_points[i++] = it->second.get_location();
+                  it++;
+                }
+              result.resize(i, single_res);
+              particle_points.resize(i);
+
+              // Get the cell the particle is in
+              found_cell = typename DoFHandler<dim>::active_cell_iterator(triangulation, cur_cell.first, cur_cell.second, dof_handler);
+
+              // Interpolate the velocity field for each of the particles
+              fe_value.set_active_cell(found_cell);
+              fe_value.vector_value_list(particle_points, result);
+
+              // Copy the resulting velocities to the appropriate vector
+              it = sit;
+              i = 0;
+              while (it != particles.end() && it->first == cur_cell)
+                {
+                  property_manager->update_particle(it->second,
+                                                    result[i]);
+                  i++;
+                  it++;
+                }
+            }
+        }
 
         /**
          * Access to particles in this world.
@@ -536,6 +637,9 @@ namespace aspect
               // Swap particles between processors if needed
               send_recv_particles();
             }
+
+          // Update particle properties
+          update_particles();
 
           // Ensure we didn't lose any particles
           check_particle_count();
@@ -715,7 +819,7 @@ namespace aspect
          */
         void get_particle_velocities(const LinearAlgebra::BlockVector &solution)
         {
-          Vector<double>                single_res(dim+2);
+          Vector<double>                single_res(dim);
           std::vector<Vector<double> >  result;
           Point<dim>                    velocity;
           unsigned int                  i, num_cell_particles;

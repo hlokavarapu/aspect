@@ -52,7 +52,8 @@ namespace aspect
          */
         void
         initialize_particle (std::vector<double> &data,
-                             const Point<dim> &position);
+                             const Point<dim> &position,
+                             const Vector<double> &);
 
         unsigned int data_len() const;
 

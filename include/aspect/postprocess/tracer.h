@@ -114,6 +114,12 @@ namespace aspect
         ~PassiveTracers();
 
         /**
+         *
+         */
+        void
+        initialize();
+
+        /**
          * Execute this postprocessor. Derived classes will implement this
          * function to do whatever they want to do to evaluate the solution at
          * the current time step.
