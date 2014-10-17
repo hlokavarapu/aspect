@@ -44,9 +44,9 @@ namespace aspect
 
         template <int dim>
           bool
-          RK4Integrator<dim>::integrate_step(Particle::World<dim> *world, const double dt)
+          RK4Integrator<dim>::integrate_step(typename std::multimap<LevelInd, BaseParticle<dim> > &particles,
+                                             const double                                          dt)
           {
-            typename std::multimap<LevelInd, BaseParticle<dim> > &particles = world->get_particles();
             typename std::multimap<LevelInd, BaseParticle<dim> >::iterator       it;
             Point<dim>                          loc, vel, k4;
             double                              id_num;

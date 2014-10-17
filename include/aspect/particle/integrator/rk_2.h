@@ -38,7 +38,7 @@ namespace aspect
       {
         public:
           RK2Integrator();
-          virtual bool integrate_step(aspect::Particle::World<dim> *world, const double dt);
+          virtual bool integrate_step(typename std::multimap<LevelInd, BaseParticle<dim> > &particles, const double dt);
           virtual void add_mpi_types(std::vector<MPIDataInfo> &data_info);
           virtual unsigned int data_len() const;
           virtual unsigned int read_data(const std::vector<double> &data, const unsigned int &pos, const double &id_num);

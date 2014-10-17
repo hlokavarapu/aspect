@@ -22,12 +22,12 @@
 #define __aspect__postprocess_tracer_h
 
 #include <aspect/postprocess/interface.h>
+#include <aspect/particle/base_particle.h>
 #include <aspect/particle/world.h>
 #include <aspect/particle/output/interface.h>
 #include <aspect/particle/generator/interface.h>
 #include <aspect/particle/integrator/interface.h>
 #include <aspect/particle/property/interface.h>
-#include <aspect/particle/base_particle.h>
 #include <aspect/simulator_access.h>
 
 namespace aspect

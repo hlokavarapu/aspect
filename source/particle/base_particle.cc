@@ -209,8 +209,7 @@ namespace aspect
       check_vel = new_vel_check;
     }
 
-    // explicit instantiation
     template class BaseParticle<2>;
     template class BaseParticle<3>;
-    }
   }
+}

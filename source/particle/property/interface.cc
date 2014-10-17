@@ -48,6 +48,13 @@ namespace aspect
       {}
 
       template <int dim>
+      bool
+      Interface<dim>::need_update ()
+      {
+        return false;
+      }
+
+      template <int dim>
       unsigned int
       Interface<dim>::data_len() const
       {
@@ -124,6 +131,19 @@ namespace aspect
                                 solution);
           data_position += (*p)->data_len();
         }
+    }
+
+    template <int dim>
+    bool
+    Manager<dim>::need_update ()
+    {
+      bool update(false);
+      for (typename std::list<std_cxx1x::shared_ptr<Interface<dim> > >::const_iterator
+           p = property_list.begin(); p!=property_list.end(); ++p)
+        {
+          update = update | (*p)->need_update();
+        }
+      return update;
     }
 
     template <int dim>

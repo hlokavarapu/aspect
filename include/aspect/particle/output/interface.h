@@ -21,8 +21,12 @@
 #ifndef __aspect__particle_output_interface_h
 #define __aspect__particle_output_interface_h
 
-#include <deal.II/base/mpi.h>
 #include <aspect/particle/base_particle.h>
+#include <aspect/particle/definitions.h>
+#include <aspect/plugins.h>
+
+#include <deal.II/base/parameter_handler.h>
+#include <deal.II/base/mpi.h>
 
 
 namespace aspect

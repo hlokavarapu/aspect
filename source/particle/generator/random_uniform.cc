@@ -53,8 +53,8 @@ namespace aspect
           // Calculate the number of particles in this domain as a fraction of total volume
           total_volume = local_volume = 0;
           for (typename parallel::distributed::Triangulation<dim>::active_cell_iterator
-               it=world.get_triangulation()->begin_active();
-               it!=world.get_triangulation()->end(); ++it)
+               it=this->get_triangulation().begin_active();
+               it!=this->get_triangulation().end(); ++it)
             {
               double cell_volume = it->measure();
               AssertThrow (cell_volume != 0, ExcMessage ("Found cell with zero volume."));
@@ -63,13 +63,13 @@ namespace aspect
                 local_volume += cell_volume;
             }
           // Sum the local volumes over all nodes
-          MPI_Allreduce(&local_volume, &total_volume, 1, MPI_DOUBLE, MPI_SUM, world.mpi_comm());
+          MPI_Allreduce(&local_volume, &total_volume, 1, MPI_DOUBLE, MPI_SUM, this->get_mpi_communicator());
 
           // Assign this subdomain the appropriate fraction
           subdomain_fraction = local_volume/total_volume;
 
           // Sum the subdomain fractions so we don't miss particles from rounding and to create unique IDs
-          MPI_Scan(&subdomain_fraction, &end_fraction, 1, MPI_DOUBLE, MPI_SUM, world.mpi_comm());
+          MPI_Scan(&subdomain_fraction, &end_fraction, 1, MPI_DOUBLE, MPI_SUM, this->get_mpi_communicator());
           start_fraction = end_fraction-subdomain_fraction;
 
           // Calculate start and end IDs so there are no gaps
@@ -109,7 +109,7 @@ namespace aspect
             // Create the roulette wheel based on volumes of local cells
             total_volume = 0;
             for (typename parallel::distributed::Triangulation<dim>::active_cell_iterator
-                 it=world.get_triangulation()->begin_active(); it!=world.get_triangulation()->end(); ++it)
+                 it=this->get_triangulation().begin_active(); it!=this->get_triangulation().end(); ++it)
               {
                 if (it->is_locally_owned())
                   {
@@ -129,7 +129,7 @@ namespace aspect
                 select_cell = roulette_wheel.lower_bound(roulette_spin)->second;
 
                 const typename parallel::distributed::Triangulation<dim>::active_cell_iterator
-                it (world.get_triangulation(), select_cell.first, select_cell.second);
+                it (&(this->get_triangulation()), select_cell.first, select_cell.second);
 
                 // Get the bounds of the cell defined by the vertices
                 for (d=0; d<dim; ++d)

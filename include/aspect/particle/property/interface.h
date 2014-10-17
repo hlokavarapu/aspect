@@ -21,8 +21,8 @@
 #ifndef __aspect__particle_property_interface_h
 #define __aspect__particle_property_interface_h
 
-#include <aspect/particle/world.h>
 #include <aspect/particle/base_particle.h>
+#include <aspect/particle/definitions.h>
 
 #include <aspect/simulator_access.h>
 #include <aspect/plugins.h>
@@ -67,7 +67,7 @@ namespace aspect
 
            /**
             * Update function. This function is called every timestep for
-            * every particle to update up it's properties. It is obvious that
+            * every particle to update it's properties. It is obvious that
             * this function is called a lot, so its code should be efficient.
             */
            virtual
@@ -76,6 +76,17 @@ namespace aspect
                             std::vector<double> &/*particle_properties*/,
                             const Point<dim> &/*position*/,
                             const Vector<double> &/*solution*/);
+
+           /**
+            * Returns a bool, which is false in the default implementation,
+            * telling the property manager that no update is needed. Every
+            * plugin that implements this function should return true. This
+            * saves considerable computation time in cases, when no plugin needs
+            * to update tracer properties over time.
+            */
+           virtual
+           bool
+           need_update ();
 
            virtual unsigned int data_len() const;
 
@@ -175,6 +186,17 @@ namespace aspect
         void
         update_particle (BaseParticle<dim> &particle,
                          const Vector<double> &solution);
+
+        /**
+         * Returns a bool, which is false if no selected plugin needs to
+         * update tracer properties over time. This saves considerable
+         * computation time in cases, when no plugin needs to update tracer
+         * properties over time, because the solution does not need to be
+         * evaluated at tracer positions in this case.
+         */
+        virtual
+        bool
+        need_update ();
 
         /**
          * Get the number of doubles required to represent this particle's

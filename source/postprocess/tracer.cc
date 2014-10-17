@@ -64,13 +64,8 @@ namespace aspect
           next_data_output_time = this->get_time();
 
           // Set up the particle world with the appropriate simulation objects
-          world.set_mapping(&(this->get_mapping()));
-          world.set_triangulation(&(this->get_triangulation()));
-          world.set_dof_handler(&(this->get_dof_handler()));
           world.set_integrator(integrator);
           world.set_manager(&property_manager);
-          world.set_solution(&(this->get_solution()));
-          world.set_mpi_comm(this->get_mpi_communicator());
 
           // And initialize the world
           world.init();

@@ -21,12 +21,15 @@
 #ifndef __aspect__particle_base_particle_h
 #define __aspect__particle_base_particle_h
 
-#include <aspect/particle/world.h>
+#include <aspect/global.h>
+#include <deal.II/base/point.h>
 
 namespace aspect
 {
   namespace Particle
   {
+    using namespace dealii;
+
     /**
      * Base class of particles - represents a particle with position,
      * velocity, an ID number and an unknown number of properties. This class

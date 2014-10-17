@@ -21,9 +21,8 @@
 #ifndef __aspect__particle_integrator_interface_h
 #define __aspect__particle_integrator_interface_h
 
-#include <aspect/particle/world.h>
 #include <aspect/particle/base_particle.h>
-#include <deal.II/numerics/fe_field_function.h>
+#include <aspect/particle/definitions.h>
 #include <aspect/plugins.h>
 
 namespace aspect
@@ -68,7 +67,7 @@ namespace aspect
            * additional integration steps or if all internal steps are
            * complete (false).
            */
-          virtual bool integrate_step(aspect::Particle::World<dim> *world, const double dt) = 0;
+          virtual bool integrate_step(typename std::multimap<LevelInd, BaseParticle<dim> > &particles, const double dt) = 0;
 
           /**
            * Secify the MPI types and data sizes involved in transferring

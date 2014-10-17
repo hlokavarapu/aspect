@@ -22,6 +22,7 @@
 #define __aspect__particle_generator_random_uniform_h
 
 #include <aspect/particle/generator/interface.h>
+#include <aspect/simulator_access.h>
 
 #include <boost/random.hpp>
 
@@ -33,7 +34,7 @@ namespace aspect
     {
       // Generate random uniform distribution of particles over entire simulation domain
       template <int dim>
-      class RandomUniformGenerator : public Interface<dim>
+      class RandomUniformGenerator : public Interface<dim>, public SimulatorAccess<dim>
       {
         public:
           /**

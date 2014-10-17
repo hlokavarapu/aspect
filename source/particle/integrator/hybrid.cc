@@ -19,6 +19,7 @@
  */
 
 #include <aspect/particle/integrator/hybrid.h>
+#include <deal.II/numerics/fe_field_function.h>
 
 namespace aspect
 {
@@ -50,14 +51,14 @@ namespace aspect
 
         template <int dim>
           bool
-          HybridIntegrator<dim>::integrate_step(aspect::Particle::World<dim> *world, const double dt)
+          HybridIntegrator<dim>::integrate_step(typename std::multimap<LevelInd, BaseParticle<dim> > &particles,
+                                                const double dt)
           {
-            typename std::multimap<LevelInd, BaseParticle<dim> > &particles = world->get_particles();
             typename std::multimap<LevelInd, BaseParticle<dim> >::iterator    it;
-            const DoFHandler<dim>                            *dh = world->get_dof_handler();
-            const Mapping<dim>                               *mapping = world->get_mapping();
-            const parallel::distributed::Triangulation<dim>  *tria = world->get_triangulation();
-            const LinearAlgebra::BlockVector         *solution = world->get_solution();
+            const DoFHandler<dim>                            *dh = &(this->get_dof_handler());
+            const Mapping<dim>                               *mapping = &(this->get_mapping());
+            const parallel::distributed::Triangulation<dim>  *tria = &(this->get_triangulation());
+            const LinearAlgebra::BlockVector         *solution = &(this->get_solution());
             Point<dim>                                       loc, vel, k4;
             double                                           id_num;
             LevelInd                                         cur_level_ind;
