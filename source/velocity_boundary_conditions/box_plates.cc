@@ -72,7 +72,7 @@ namespace aspect
         // an exception in case it does not, because it could be by purpose
         // (i.e. the end of the boundary condition is reached)
         AssertThrow (fexists(filename),
-                     ExcMessage (std::string("Plume position file <")
+                     ExcMessage (std::string("Plate velocity file <")
                                  +
                                  filename
                                  +
@@ -90,13 +90,15 @@ namespace aspect
 
 
         double old_time = -1;
+
+        // each time will contain a map from plate character to velocity
         std::map<unsigned char, plate_velocity > velocity_slice;
 
         while (!in.eof())
           {
             double start_time,end_time,vx,vy,omega;
-            unsigned char plate;
-            in >> start_time >> end_time >> plate >> vx >> vy >> omega;
+            unsigned char plate_id;
+            in >> start_time >> end_time >> plate_id >> vx >> vy >> omega;
 
             getline(in, temp);
             if (in.eof())
@@ -206,7 +208,7 @@ namespace aspect
         std::string temp;
         std::ifstream in(filename.c_str(), std::ios::in);
         AssertThrow (in,
-                     ExcMessage (std::string("Couldn't find velocities. Is file native gpml format for velocities?")));
+                     ExcMessage (std::string("Couldn't find ids. Is file in the right format for plate ids?")));
 
         // swap pointers to old and new values, we overwrite the old ones
         // and the new ones become the old ones
@@ -253,7 +255,7 @@ namespace aspect
         // always use closest point, ensured by the check_termination = false setting
         double n_interpolation_weight = add_interpolation_point(surf_vel,position,spatial_index,time_weight,false);
 
-        // If interpolation is requested, loop over points in theta, phi direction until we exit a circle of
+        // If interpolation is requested, loop over points in x, y direction until we exit a circle of
         // interpolation_width radius around the evaluation point position
         if (interpolation_width > 0)
           {
@@ -308,10 +310,10 @@ namespace aspect
       template <int dim>
       double
       BoxPlatesLookup<dim>::add_interpolation_point(Tensor<1,dim>       &surf_vel,
-                                             const Point<dim> &position,
-                                             const unsigned int          grid_index[2],
-                                             const double       time_weight,
-                                             const bool         check_termination) const
+                                                    const Point<dim> &position,
+                                                    const unsigned int          grid_index[2],
+                                                    const double       time_weight,
+                                                    const bool         check_termination) const
       {
         const double distance = (position - get_grid_point_position(grid_index[0],
                                                                    grid_index[1])).norm();
@@ -338,12 +340,12 @@ namespace aspect
         if (velocity_values[current_time_index].find(plate_id) != velocity_values[current_time_index].end())
           {
             velocity = velocity_values[current_time_index].find(plate_id)->second.velocity;
-            omega = velocity_values[current_time_index].find(plate_id)->second.rotation;
+            omega    = velocity_values[current_time_index].find(plate_id)->second.rotation;
           }
         else
           {
             velocity = old_velocity;
-            omega = old_omega;
+            omega    = old_omega;
           }
 
         Tensor<1,dim> rotation_velocity;
@@ -364,7 +366,6 @@ namespace aspect
 
         velocity += rotation_velocity;
         old_velocity += old_rotation_velocity;
-        //            phase_func = 0.5*(1.0 + std::tanh(pressure_deviation / pressure_width));
 
         const double depth_weight = 0.5*(1.0 + std::tanh((position(dim-1)-460000)/50000));
         surf_vel += point_weight * depth_weight * velocity_time_weight * velocity;
@@ -381,7 +382,6 @@ namespace aspect
       BoxPlatesLookup<dim>::get_grid_point_position(const unsigned int x_index,
                                                     const unsigned int y_index) const
       {
-        Point<dim> spherical_position;
         switch (dim)
         {
         case 2:
@@ -440,7 +440,7 @@ namespace aspect
     {
       Assert (dynamic_cast<const GeometryModel::Box<dim>*> (&this->get_geometry_model()) != 0,
               ExcMessage ("This boundary condition can only be used if the geometry "
-                          "is a spherical shell."));
+                          "is a box."));
 
       const GeometryModel::Box<dim> *geometry_model = dynamic_cast<const GeometryModel::Box<dim> *>(&this->get_geometry_model());
       const Point<dim> grid_extent = geometry_model->get_extents();
@@ -664,7 +664,7 @@ namespace aspect
           prm.declare_entry ("Interpolation width", "0",
                              Patterns::Double (0),
                              "Determines the width of the velocity interpolation zone around the current point. "
-                             "Currently equals the arc distance between evaluation point and velocity data point that "
+                             "Currently equals the distance between evaluation point and velocity data point that "
                              "is still included in the interpolation. The weighting of the points currently only accounts "
                              "for the surface area a single data point is covering ('moving window' interpolation without "
                              "distance weighting).");
@@ -679,14 +679,6 @@ namespace aspect
     void
     BoxPlates<dim>::parse_parameters (ParameterHandler &prm)
     {
-      // Query the unit system for time since we may have to convert below.
-      // Note that we can't use this->convert_output_to_years() since this
-      // requires the SimulatorAccess base object to have been initialized,
-      // but this hasn't happened yet when we get into this function.
-      const bool
-      use_years_instead_of_seconds
-        = prm.get_bool ("Use years in output instead of seconds");
-
       prm.enter_subsection("Boundary velocity model");
       {
         prm.enter_subsection("Box plates model");
@@ -716,7 +708,9 @@ namespace aspect
           velocity_file_start_time = prm.get_double ("Velocity file start time");
           first_velocity_file_time = prm.get_double ("First velocity file time");
 
-          if (use_years_instead_of_seconds == true)
+          // If the input and output are used in years, convert it to seconds
+          // for internal usage.
+          if (this->convert_output_to_years())
             {
               time_step                *= year_in_seconds;
               velocity_file_start_time *= year_in_seconds;
@@ -739,7 +733,9 @@ namespace aspect
     ASPECT_REGISTER_VELOCITY_BOUNDARY_CONDITIONS(BoxPlates,
                                                  "box plates",
                                                  "Implementation of a model in which the boundary "
-                                                 "velocity is derived from files that are generated "
-                                                 "by the GPlates program.")
+                                                 "velocity is derived from files that are formatted "
+                                                 "as a single velocity file and one plate id file per "
+                                                 "time step. Example data files are available in "
+                                                 "data/velocity-boundary-conditions/box_plates.")
   }
 }

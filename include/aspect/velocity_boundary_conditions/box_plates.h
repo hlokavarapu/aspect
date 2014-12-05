@@ -36,10 +36,10 @@ namespace aspect
     namespace internal
     {
       /**
-       * GPlatesLookup handles all kinds of tasks around looking up a certain
-       * velocity boundary condition from a gplates .gpml file. This class
-       * keeps around the contents of two sets of files, corresponding to two
-       * instances in time where GPlates provides us with data; the boundary
+       * BoxPlatesLookup handles all kinds of tasks around looking up a certain
+       * velocity boundary condition from a velocity and id file. This class
+       * keeps around the contents of two files, corresponding to two
+       * instances in time where data is provided; the boundary
        * values at one particular time are interpolated between the two
        * currently loaded data sets.
        */
@@ -50,8 +50,7 @@ namespace aspect
 
           /**
            * Initialize all members and the two pointers referring to the
-           * actual velocities. Also calculates any necessary rotation
-           * parameters for a 2D model.
+           * actual velocities.
            */
           BoxPlatesLookup(const std::string &filename,
                           const Point<dim> &grid_extent_,
@@ -61,10 +60,7 @@ namespace aspect
                           const ConditionalOStream &pcout);
 
           /**
-           * Outputs the GPlates module information at model start. Need to be
-           * separated from Constructor because at construction time the
-           * SimulatorAccess is not initialized and only Rank 0 should give
-           * the screen output.
+           * Outputs the BoxPlates module information at model start.
            */
           void screen_output(const ConditionalOStream &pcout) const;
 
@@ -74,7 +70,7 @@ namespace aspect
           bool fexists(const std::string &filename) const;
 
           /**
-           * Loads a gplates .gpml velocity file. Throws an exception if the
+           * Loads a plate id file. Throws an exception if the
            * file does not exist.
            */
           void load_file(const std::string &filename,
@@ -101,7 +97,7 @@ namespace aspect
         private:
 
           /**
-           * Tables which contain the velocities
+           * Tables which contain the plate ids
            */
           dealii::Table<2,unsigned char > ids;
           dealii::Table<2,unsigned char > old_ids;
@@ -120,6 +116,10 @@ namespace aspect
           std::vector<double> times;
           unsigned int current_time_index;
 
+          /**
+           * Any plate velocity consists of a velocity and the rotation
+           * of the associated plate in the used map projection
+           */
           struct plate_velocity
           {
               Tensor<1,dim> velocity;
@@ -127,7 +127,7 @@ namespace aspect
           };
 
           /**
-           * Table for the data point positions.
+           * Table for the plate velocities of all times.
            */
           std::vector<std::map<unsigned char,plate_velocity > > velocity_values;
 
@@ -147,7 +147,7 @@ namespace aspect
 
           /**
            * Determines the width of the velocity interpolation zone around
-           * the current point. Currently equals the arc distance between
+           * the current point. Currently equals the distance between
            * evaluation point and velocity data point that is still included
            * in the interpolation. The weighting of the points currently only
            * accounts for the surface area a single data point is covering
@@ -169,21 +169,18 @@ namespace aspect
           /**
            * This function adds a certain data point to the interpolated
            * surface velocity at this evaluation point. This includes
-           * calculating the interpolation weight and the rotation of the
-           * velocity to the evaluation point position (the velocity need to
-           * be tangential to the surface).
+           * calculating the interpolation weight.
            */
           double
-          add_interpolation_point(Tensor<1,dim>       &surf_vel,
-                                  const Point<dim> &position,
-                                  const unsigned int          spatial_index[2],
-                                  const double       time_weight,
-                                  const bool         check_termination) const;
+          add_interpolation_point(Tensor<1,dim>      &surf_vel,
+                                  const Point<dim>   &position,
+                                  const unsigned int  spatial_index[2],
+                                  const double        time_weight,
+                                  const bool          check_termination) const;
 
 
           /**
-           * Returns the position (cartesian or spherical depending on last
-           * argument) of a data point with a given theta,phi index.
+           * Returns the position of a data point with a given x,y index.
            */
           Point<dim>
           get_grid_point_position(const unsigned int x_index,
@@ -195,7 +192,8 @@ namespace aspect
 
     /**
      * A class that implements prescribed velocity boundary conditions
-     * determined from a GPlates input files.
+     * determined from input files in the form of a single velocity file
+     * and several plate id files (one per time step).
      *
      * @ingroup VelocityBoundaryConditionsModels
      */
@@ -210,7 +208,7 @@ namespace aspect
 
         /**
          * Return the boundary velocity as a function of position. For the
-         * current class, this function returns value from gplates.
+         * current class, this function returns the value from the lookup class.
          */
         Tensor<1,dim>
         boundary_velocity (const Point<dim> &position) const;
@@ -260,7 +258,7 @@ namespace aspect
         int  current_time_step;
 
         /**
-         * Time at which the velocity file with number 0 shall be loaded.
+         * Time at which the velocity file with number 0 is loaded.
          * Previous to this time, a no-slip boundary condition is assumed.
          */
         double velocity_file_start_time;
@@ -272,7 +270,7 @@ namespace aspect
         double first_velocity_file_time;
 
         /**
-         * Directory in which the gplates velocity are present.
+         * Directory in which the velocity files are present.
          */
         std::string data_directory;
 
@@ -325,7 +323,7 @@ namespace aspect
 
         /**
          * Determines the width of the velocity interpolation zone around the
-         * current point. Currently equals the arc distance between evaluation
+         * current point. Currently equals the distance between evaluation
          * point and velocity data point that is still included in the
          * interpolation. The weighting of the points currently only accounts
          * for the surface area a single data point is covering ('moving
@@ -335,7 +333,7 @@ namespace aspect
 
         /**
          * Pointer to an object that reads and processes data we get from
-         * gplates files.
+         * the data files.
          */
         std_cxx1x::shared_ptr<internal::BoxPlatesLookup<dim> > lookup;
 
