@@ -6,6 +6,109 @@
  *
  *
  * <ol>
+ * <li> New: ASPECT now uses meshes for the spherical shell where each node is
+ * placed on concentric shells. Previously, upon mesh refinement, new vertices
+ * were placed at an averaged location of the vertices of the mother cell,
+ * leading to a certain degree of distortion of cells. It also led to a
+ * situation where not all cells are equally shaped due to this
+ * distortion. The new mesh, in contrast, is completely
+ * symmetric. Addtionally, a higher order mapping to represent curved faces is
+ * now also used for the interior cells using the manifold description of the
+ * shell/sphere.
+ * <br>
+ * (Wolfgang Bangerth, Timo Heister, 2015/01/16)
+ *
+ * <li> New: GeometryModel::has_curved_elements() will allow for optimizations
+ * if all boundaries (and manifold description) are straight.
+ * <br>
+ * (Timo Heister, 2015/01/16)
+ *
+ * <li> Fixed: the inner solvers for the Stokes block preconditioner now start
+ * with a zero initial guess. This should make the solvers more robust.
+ * <br>
+ * (Timo Heister, 2015/01/16)
+ *
+ * <li> ASPECT now requires deal.II version 8.2 or later.
+ * <br>
+ * (Timo Heister, 2015/01/13)
+ *
+ * <li> New: The parameters for the inner Algebraic Multigrid preconditioner
+ * used in the Stokes solve have been tuned to achieve a speedup of the solver
+ * phase by a factor between 1.2 and 2, depending on application.
+ * <br>
+ * (Wolfgang Bangerth, 2014/12/05)
+ *
+ * <li> New:  There is now the option to specify an origin when using the box
+ * goemetry model.
+ * <br>
+ * (Ryan Grove, 2014/12/09)
+ *
+ * <li> Changed: The behaviour when one changed the visualization
+ * output_interval during a checkpoint restart was previously undefined, 
+ * and working in slightly unexpected ways like never writing output for 
+ * the first timestep after the restart. This now works as one would expect,
+ * e.g. every timestep that ends more than output_interval after the last 
+ * output time step will produce output. Old checkpoint files will continue
+ * to work, only with a possible short gap in visualization output right
+ * after restart.
+ * <br>
+ * (Rene Gassmoeller, 2014/12/03)
+ *
+ * <li> New: There is now the possibility to interpolate the visualization
+ * output to a refined output mesh. This accounts for the fact that most
+ * visualization software only offers linear interpolation between grid points
+ * and therefore the output file is a very coarse representation of the actual
+ * solution field. The new output is still a linear interpolation, but at least
+ * on a finer grid. The visualization output quality and used disk space will
+ * increase when activating this option.
+ * <br>
+ * (Rene Gassmoeller, 2014/09/14)
+ *
+ * <li> Fixed: There was a race condition in writing output files: we
+ * write to them in a temporary location and then move them to their
+ * final location. We used to do the second step before actually closing
+ * the file we just wrote to. Under some circumstances, this could lead
+ * to incomplete or empty output files. This is now fixed.
+ * <br>
+ * (Wolfgang Bangerth, 2014/09/03)
+ *
+ * <li> Fixed: Running in release mode and with user-defined libraries
+ * loaded that were compiled against the debug version of deal.II, or the
+ * other way around, likely produces effects that are undesirable. ASPECT
+ * now tries to detect these situations and abort the program.
+ * <br>
+ * (Wolfgang Bangerth, 2014/09/02)
+ *
+ * <li> New: There is now a new section in the manual that documents running
+ * a free surface computation with a crust as a stagnant lid overlying a
+ * convecting mantle.
+ * <br>
+ * (William Durkin IV, Wolfgang Bangerth, 2014/09/01)
+ *
+ * <li> New: There is now a new section in the manual that documents running
+ * the benchmarks proposed by Davies et al.
+ * <br>
+ * (William Durkin IV, Wolfgang Bangerth, 2014/08/29)
+ *
+ * <li> Fixed: The initial condition 'adiabatic' had a minor bug in the case
+ * of using a model without adiabatic heating and a prescribed bottom boundary
+ * layer. In this case the model should create a constant temperature profile
+ * with boundary layers to the boundary temperature. Due to a bug the bottom
+ * boundary layer amplitude was calculated against an adiabatic profile instead
+ * of a constant temperature. This is fixed now.
+ * <br>
+ * (Rene Gassmoeller, 2014/08/19)
+
+ * <li> Changed: The GPlates velocity boundary plugin prescribed only the normal
+ * vector of the model plane of 2D models. Therefore it was very hard to rotate
+ * the model into its actual orientation, when comparing it with other datasets.
+ * Now the first of the user input points is always rotated to a known position
+ * (0,1,0), and the plugin outputs the according rotation angles to rotate the
+ * model into its proper orientation and the inverse angles to rotate other
+ * datasets into the model plane.
+ * <br>
+ * (Rene Gassmoeller, 2014/08/15)
+ *
  * <li> New: There are numerous places in the input file where one can or
  * has to input boundary indicators. These indicators identify individual
  * parts of the boundary of the domain, such as the inner or outer surfaces

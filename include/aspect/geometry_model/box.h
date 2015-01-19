@@ -46,10 +46,16 @@ namespace aspect
         void create_coarse_mesh (parallel::distributed::Triangulation<dim> &coarse_grid) const;
 
         /**
-         * Return a point that denotes the upper right corner of the box
+         * Return a point that denotes the size of the box in each dimension of the
          * domain.
          */
         Point<dim> get_extents () const;
+
+        /**
+         * Return a point that denotes the lower left corner of the box
+         * domain.
+         */
+        Point<dim> get_origin () const;
 
         /**
          * Return the typical length scale one would expect of features in
@@ -107,6 +113,15 @@ namespace aspect
         std::set< std::pair< std::pair<types::boundary_id, types::boundary_id>, unsigned int> >
         get_periodic_boundary_pairs () const;
 
+	/**
+	 * @copydoc Interface::has_curved_elements()
+	 *
+	 * A box has only straight boundaries and cells, so return false.
+	 */
+	virtual
+	bool
+	has_curved_elements() const;
+
         /**
          * Declare the parameters this class takes through input files.
          */
@@ -126,6 +141,11 @@ namespace aspect
          * Extent of the box in x-, y-, and z-direction (in 3d).
          */
         Point<dim> extents;
+
+        /**
+         * Origin of the box in x, y, and z (in 3d) coordinates.
+         */
+        Point<dim> box_origin;
 
         /**
          * Flag whether the box is periodic in the x-, y-, and z-direction.

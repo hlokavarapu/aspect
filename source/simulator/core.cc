@@ -124,7 +124,13 @@ namespace aspect
     material_model (MaterialModel::create_material_model<dim>(prm)),
     heating_model (HeatingModel::create_heating_model<dim>(prm)),
     gravity_model (GravityModel::create_gravity_model<dim>(prm)),
-    boundary_temperature (BoundaryTemperature::create_boundary_temperature<dim>(prm)),
+    // create a boundary temperature model, but only if we actually need
+    // it. otherwise, allow the user to simply specify nothing at all
+    boundary_temperature (parameters.fixed_temperature_boundary_indicators.empty()
+                          ?
+                          0
+                          :
+                          BoundaryTemperature::create_boundary_temperature<dim>(prm)),
     // create a boundary composition model, but only if we actually need
     // it. otherwise, allow the user to simply specify nothing at all
     boundary_composition (parameters.fixed_composition_boundary_indicators.empty()
@@ -147,10 +153,19 @@ namespace aspect
                     Triangulation<dim>::smoothing_on_coarsening),
                    parallel::distributed::Triangulation<dim>::mesh_reconstruction_after_repartitioning),
 
-    //Fourth order mapping doesn't really make sense for free surface calculations, since we detatch the
-    //boundary indicators anyways.
-    mapping (parameters.free_surface_enabled?1:4),
-
+    //Fourth order mapping doesn't really make sense for free surface
+    //calculations (we disable curved boundaries) or we we only have straight
+    //boundaries. So we either pick MappingQ(4,true) or MappingQ(1,false)
+    mapping (
+      (parameters.free_surface_enabled
+       ||
+       geometry_model->has_curved_elements() == false
+      )?1:4,
+      (parameters.free_surface_enabled
+       ||
+       geometry_model->has_curved_elements() == false
+      )?false:true),
+  
     // define the finite element. obviously, what we do here needs
     // to match the data we provide in the Introspection class
     finite_element(FE_Q<dim>(parameters.stokes_velocity_degree),
@@ -173,15 +188,17 @@ namespace aspect
     rebuild_stokes_matrix (true),
     rebuild_stokes_preconditioner (true)
   {
-    if (parameters.resume_computation)
-      log_file_stream.open((parameters.output_directory + "log.txt").c_str(), std::ios_base::app);
-    else
-      log_file_stream.open((parameters.output_directory + "log.txt").c_str());
-
-    // we already printed the header to the screen, so here we just dump it
-    // into the logfile.
     if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
-      print_aspect_header(log_file_stream);
+      {
+        // only open the logfile on processor 0, the other processors won't be
+        // writing into the stream anyway
+        log_file_stream.open((parameters.output_directory + "log.txt").c_str(),
+                             parameters.resume_computation ? std::ios_base::app : std::ios_base::out);
+
+        // we already printed the header to the screen, so here we just dump it
+        // into the logfile.
+        print_aspect_header(log_file_stream);
+      }
 
     computing_timer.enter_section("Initialization");
 
@@ -214,14 +231,14 @@ namespace aspect
                                    std::inserter(intersection, intersection.end()));
             AssertThrow (intersection.empty(),
                          ExcMessage ("Boundary indicator <"
-				     +
-				     Utilities::int_to_string(*intersection.begin())
-				     +
-				     "> with symbolic name <"
-				     +
-				     geometry_model->translate_id_to_symbol_name (*intersection.begin())
-				     +
-				     "> is listed as having more "
+                                     +
+                                     Utilities::int_to_string(*intersection.begin())
+                                     +
+                                     "> with symbolic name <"
+                                     +
+                                     geometry_model->translate_id_to_symbol_name (*intersection.begin())
+                                     +
+                                     "> is listed as having more "
                                      "than one type of velocity boundary condition in the input file."));
           }
 
@@ -283,15 +300,18 @@ namespace aspect
     gravity_model->parse_parameters (prm);
     gravity_model->initialize ();
 
-    if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(boundary_temperature.get()))
-      sim->initialize (*this);
-    boundary_temperature->parse_parameters (prm);
-    boundary_temperature->initialize ();
+    if (boundary_temperature.get())
+      {
+        if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(boundary_temperature.get()))
+          sim->initialize (*this);
+        boundary_temperature->parse_parameters (prm);
+        boundary_temperature->initialize ();
+      }
 
-    if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(boundary_composition.get()))
-      sim->initialize (*this);
     if (boundary_composition.get())
       {
+        if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(boundary_composition.get()))
+          sim->initialize (*this);
         boundary_composition->parse_parameters (prm);
         boundary_composition->initialize ();
       }
@@ -618,39 +638,39 @@ namespace aspect
           // here we create a mask for interpolate_boundary_values out of the 'selector'
           std::vector<bool> mask(introspection.component_masks.velocities.size(), false);
           Assert(introspection.component_masks.velocities[0]==true,
-		 ExcInternalError()); // in case we ever move the velocity around
+                 ExcInternalError()); // in case we ever move the velocity around
           const std::string &comp = parameters.prescribed_velocity_boundary_indicators[p->first].first;
 
           if (comp.length()>0)
             {
               for (std::string::const_iterator direction=comp.begin(); direction!=comp.end(); ++direction)
                 {
-		  switch (*direction)
-		    {
-		    case 'x':
-			  mask[0] = true;
-			  break;
-		    case 'y':
-			  mask[1] = true;
-			  break;
-		    case 'z':
-			  // we must be in 3d, or 'z' should never have gotten through
-			  Assert (dim==3, ExcInternalError());
-			  mask[2] = true;
-			  break;
-		    default:
-			  Assert (false, ExcInternalError());
-		    }
+                  switch (*direction)
+                    {
+                      case 'x':
+                        mask[0] = true;
+                        break;
+                      case 'y':
+                        mask[1] = true;
+                        break;
+                      case 'z':
+                        // we must be in 3d, or 'z' should never have gotten through
+                        Assert (dim==3, ExcInternalError());
+                        mask[2] = true;
+                        break;
+                      default:
+                        Assert (false, ExcInternalError());
+                    }
                 }
             }
           else
             {
-	      // no mask given -- take all velocities 
+              // no mask given -- take all velocities
               for (unsigned int i=0; i<introspection.component_masks.velocities.size(); ++i)
                 mask[i]=introspection.component_masks.velocities[i];
 
               Assert(introspection.component_masks.velocities[0]==true,
-		     ExcInternalError()); // in case we ever move the velocity down
+                     ExcInternalError()); // in case we ever move the velocity down
             }
 
           VectorTools::interpolate_boundary_values (dof_handler,
@@ -664,8 +684,10 @@ namespace aspect
     // do the same for the temperature variable: evaluate the current boundary temperature
     // and add these constraints as well
     {
-      //Update the temperature boundary conditon.
-      boundary_temperature->update();
+      // If there is a fixed boundary temperature,
+      // update the temperature boundary condition.
+      if (boundary_temperature.get())
+        boundary_temperature->update();
 
       // obtain the boundary indicators that belong to Dirichlet-type
       // temperature boundary conditions and interpolate the temperature
@@ -688,8 +710,15 @@ namespace aspect
                                                     current_constraints,
                                                     introspection.component_masks.temperature);
         }
+    }
 
       // now do the same for the composition variable:
+    {
+      // If there are fixed boundary compositions,
+      // update the composition boundary condition.
+      if (boundary_composition.get())
+        boundary_composition->update();
+
       // obtain the boundary indicators that belong to Dirichlet-type
       // composition boundary conditions and interpolate the composition
       // there
@@ -760,6 +789,8 @@ namespace aspect
 
 #else
     TrilinosWrappers::BlockSparsityPattern sp (system_partitioning,
+                                               system_partitioning,
+                                               introspection.index_sets.system_relevant_partitioning,
                                                mpi_communicator);
 #endif
 
@@ -811,8 +842,12 @@ namespace aspect
     LinearAlgebra::CompressedBlockSparsityPattern sp(introspection.index_sets.system_relevant_partitioning);
 
 #else
+
     TrilinosWrappers::BlockSparsityPattern sp (system_partitioning,
+                                               system_partitioning,
+                                               introspection.index_sets.system_relevant_partitioning,
                                                mpi_communicator);
+
 #endif
     DoFTools::make_sparsity_pattern (dof_handler,
                                      coupling, sp,
@@ -917,13 +952,11 @@ namespace aspect
                   == parameters.prescribed_velocity_boundary_indicators.end(),
                   ExcInternalError());
 
-#if (DEAL_II_MAJOR*100 + DEAL_II_MINOR) >= 801
           DoFTools::make_periodicity_constraints(dof_handler,
                                                  (*p).first.first,  //first boundary id
                                                  (*p).first.second, //second boundary id
                                                  (*p).second,       //cartesian direction for translational symmetry
                                                  constraints);
-#endif
         }
 
 
@@ -1255,13 +1288,13 @@ namespace aspect
 
     std::vector<const LinearAlgebra::Vector *> x_fs_system (1);
     std::auto_ptr<parallel::distributed::SolutionTransfer<dim,LinearAlgebra::Vector> >
-      freesurface_trans;
-    
+    freesurface_trans;
+
     if (parameters.free_surface_enabled)
       {
-	x_fs_system[0] = &free_surface->mesh_vertices;
-	freesurface_trans.reset (new parallel::distributed::SolutionTransfer<dim,LinearAlgebra::Vector>
-				 (free_surface->free_surface_dof_handler));
+        x_fs_system[0] = &free_surface->mesh_vertices;
+        freesurface_trans.reset (new parallel::distributed::SolutionTransfer<dim,LinearAlgebra::Vector>
+                                 (free_surface->free_surface_dof_handler));
       }
 
     triangulation.prepare_coarsening_and_refinement();
@@ -1318,10 +1351,10 @@ namespace aspect
       old_solution = old_distributed_system;
 
       if (parameters.free_surface_enabled)
-	{
-	  constraints.distribute (distributed_mesh_velocity);
-	  free_surface->mesh_velocity = distributed_mesh_velocity;
-	}
+        {
+          constraints.distribute (distributed_mesh_velocity);
+          free_surface->mesh_velocity = distributed_mesh_velocity;
+        }
     }
 
     // do the same as above also for the free surface solution
@@ -1329,7 +1362,7 @@ namespace aspect
       {
         LinearAlgebra::Vector distributed_mesh_vertices;
         distributed_mesh_vertices.reinit(free_surface->mesh_locally_owned,
-					 mpi_communicator);
+                                         mpi_communicator);
 
         std::vector<LinearAlgebra::Vector *> system_tmp (1);
         system_tmp[0] = &distributed_mesh_vertices;

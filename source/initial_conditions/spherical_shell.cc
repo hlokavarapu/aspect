@@ -44,6 +44,13 @@ namespace aspect
                    ExcMessage ("This initial condition can only be used if the geometry "
                                "is a spherical shell."));
 
+      // this initial condition only makes sense if a boundary temperature
+      // is prescribed. verify that it is indeed
+      AssertThrow (&this->get_boundary_temperature()
+                   != 0,
+                   ExcMessage ("This initial condition can only be used if a boundary "
+                               "temperature is prescribed."));
+
       const double R1 = dynamic_cast<const GeometryModel::SphericalShell<dim>&>
                         (this->get_geometry_model()).outer_radius();
 
@@ -80,7 +87,7 @@ namespace aspect
     }
 
 
-    
+
     template <int dim>
     void
     SphericalHexagonalPerturbation<dim>::declare_parameters (ParameterHandler &prm)
@@ -106,7 +113,7 @@ namespace aspect
     }
 
 
-    
+
     template <int dim>
     void
     SphericalHexagonalPerturbation<dim>::parse_parameters (ParameterHandler &prm)
@@ -123,7 +130,7 @@ namespace aspect
       prm.leave_subsection ();
     }
 
-    
+
 
     template <int dim>
     SphericalGaussianPerturbation<dim>::
@@ -158,6 +165,13 @@ namespace aspect
                    != 0,
                    ExcMessage ("This initial condition can only be used if the geometry "
                                "is a spherical shell."));
+
+      // this initial condition only makes sense if a boundary temperature
+      // is prescribed. verify that it is indeed
+      AssertThrow (&this->get_boundary_temperature()
+                   != 0,
+                   ExcMessage ("This initial condition can only be used if a boundary "
+                               "temperature is prescribed."));
       const double
       R0 = dynamic_cast<const GeometryModel::SphericalShell<dim>&> (this->get_geometry_model()).inner_radius(),
       R1 = dynamic_cast<const GeometryModel::SphericalShell<dim>&> (this->get_geometry_model()).outer_radius();
@@ -215,7 +229,7 @@ namespace aspect
     }
 
 
-    
+
     template <int dim>
     void
     SphericalGaussianPerturbation<dim>::declare_parameters (ParameterHandler &prm)
