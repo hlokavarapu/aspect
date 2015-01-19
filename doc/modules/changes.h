@@ -6,6 +6,15 @@
  *
  *
  * <ol>
+ * <li> New: A new plugin called 'ascii data' is available for boundary and
+ * initial conditions that reads in text data from files provided by the user.
+ * The plugin works for box and shell geometries and allows for time-dependent
+ * or constant boundary conditions. The data files must provide data for the
+ * whole model domain and the plugin interpolates the data from a structured
+ * grid to Aspect's mesh linearly.
+ * <br>
+ * (Eva Bredow, Rene Gassmoeller, 2015/01/19)
+ *
  * <li> New: ASPECT now uses meshes for the spherical shell where each node is
  * placed on concentric shells. Previously, upon mesh refinement, new vertices
  * were placed at an averaged location of the vertices of the mother cell,
