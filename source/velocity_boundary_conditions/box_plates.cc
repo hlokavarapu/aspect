@@ -48,7 +48,9 @@ namespace aspect
                                    const double dx,
                                    const double dy,
                                    const double interpolation_width_,
-                                   const ConditionalOStream &pcout)
+                                   const ConditionalOStream &pcout,
+                                   const double time_scale_factor,
+                                   const double velocity_scale_factor)
         :
         ids(0,0),
         old_ids(0,0),
@@ -77,9 +79,6 @@ namespace aspect
                                  filename
                                  +
                                  "> not found!"));
-
-        const double Myr_in_seconds = 1e6 * year_in_seconds;
-        const double cmyr_si = year_in_seconds * 100;
 
         std::string temp;
         std::ifstream in(filename.c_str(), std::ios::in);
@@ -111,19 +110,19 @@ namespace aspect
             switch(dim)
             {
             case 2:
-              velocity.velocity[0] = vx / cmyr_si;
+              velocity.velocity[0] = vx * velocity_scale_factor;
               break;
             case 3:
-              velocity.velocity[0] = vx / cmyr_si;
-              velocity.velocity[1] = vy / cmyr_si;
+              velocity.velocity[0] = vx * velocity_scale_factor;
+              velocity.velocity[1] = vy * velocity_scale_factor;
               break;
             default:
               AssertThrow(false,ExcNotImplemented());
               break;
             }
 
-            // omega is in [cm/yr/km] scale it to [1/s]
-            velocity.rotation = omega / cmyr_si / 1000;
+            // omega is in [velocity/km] scale it to [1/s]
+            velocity.rotation = omega * velocity_scale_factor / 1000;
 
             if (start_time > old_time + 1e-16)
               {
@@ -135,13 +134,13 @@ namespace aspect
 
                 // Correct times to years instead of Ma
                 // (start_time-time)*Myr_in_seconds
-                times.push_back(start_time*Myr_in_seconds);
+                times.push_back(start_time*time_scale_factor);
 
                 old_time = start_time;
               }
 
             velocity_slice.insert(std::pair<unsigned char,plate_velocity >
-            (plate,velocity));
+            (plate_id,velocity));
 
           }
 
@@ -165,14 +164,13 @@ namespace aspect
       }
 
       template <int dim>
-      void BoxPlatesLookup<dim>::update(const double time, const double first_velocity_file_time,
-          const ConditionalOStream &pcout)
+      void BoxPlatesLookup<dim>::update(const double time)
       {
-        if (current_time_index > 0)
+        if (time < times.back())
           {
-          if (first_velocity_file_time - time < times[current_time_index])
+          if (times.back() - time < times[current_time_index])
             {
-              --current_time_index;
+              current_time_index = (unsigned int) (times.back() - time) / (times[current_time_index+1] - times[current_time_index]);
             }
           velocity_time_weight = (time - (times.back() - times[current_time_index+1])) / (times[current_time_index+1] - times[current_time_index]);
           }
@@ -222,7 +220,6 @@ namespace aspect
         while (!in.eof())
           {
             unsigned char plate_id;
-            const double cmyr_si = 3.1557e9;
 
             in >> plate_id;
 
@@ -446,13 +443,13 @@ namespace aspect
       const Point<dim> grid_extent = geometry_model->get_extents();
 
       lookup.reset(new internal::BoxPlatesLookup<dim>(data_directory+velocity_file_name,
-                                                 grid_extent,
-                                                 x_step,
-                                                 y_step,
-                                                 interpolation_width,
-                                                 this->get_pcout()));
-
-
+                                                      grid_extent,
+                                                      x_step,
+                                                      y_step,
+                                                      interpolation_width,
+                                                      this->get_pcout(),
+                                                      year_in_seconds * 1e6,
+                                                      scale_factor));
     }
 
 
@@ -480,7 +477,7 @@ namespace aspect
 
       time_relative_to_vel_file_start_time = this->get_time() - velocity_file_start_time;
 
-      lookup->update(time_relative_to_vel_file_start_time,first_velocity_file_time,this->get_pcout());
+      lookup->update(time_relative_to_vel_file_start_time);
 
       // If the boundary condition is constant, switch off time_dependence end leave function.
       // This also sets time_weight to 1.0
@@ -598,7 +595,7 @@ namespace aspect
     boundary_velocity (const Point<dim> &position) const
     {
       if (time_relative_to_vel_file_start_time >= 0.0)
-        return scale_factor * lookup->surface_velocity(position,time_weight);
+        return lookup->surface_velocity(position,time_weight);
       else
         return Tensor<1,dim> ();
     }
@@ -655,6 +652,12 @@ namespace aspect
                              "time, a no-slip boundary condition is assumed. "
                              "Depending on the setting of the global 'Use years in output instead of seconds' flag "
                              "in the input file, this number is either interpreted as seconds or as years.");
+          prm.declare_entry ("Time scale factor", "1e6",
+                             Patterns::Double (0),
+                             "Determines the factor applied to the times in the velocity file. The unit is assumed to be"
+                             "s or yr depending on the 'Use years in output instead of "
+                             "seconds' flag. If you provide time in Ma set this "
+                             "factor to 1e6.");
           prm.declare_entry ("Scale factor", "1",
                              Patterns::Double (0),
                              "Scalar factor, which is applied to the boundary velocity. "
@@ -697,7 +700,7 @@ namespace aspect
           }
 
           velocity_file_name    = prm.get ("Velocity file name");
-          id_file_names    = prm.get ("Id file names");
+          id_file_names         = prm.get ("Id file names");
 
           interpolation_width   = prm.get_double ("Interpolation width");
           scale_factor          = prm.get_double ("Scale factor");
@@ -708,6 +711,10 @@ namespace aspect
           velocity_file_start_time = prm.get_double ("Velocity file start time");
           first_velocity_file_time = prm.get_double ("First velocity file time");
 
+          time_scale_factor     = prm.get_double ("Time scale factor");
+          scale_factor          = prm.get_double ("Scale factor");
+
+
           // If the input and output are used in years, convert it to seconds
           // for internal usage.
           if (this->convert_output_to_years())
@@ -715,6 +722,8 @@ namespace aspect
               time_step                *= year_in_seconds;
               velocity_file_start_time *= year_in_seconds;
               first_velocity_file_time *= year_in_seconds;
+              time_scale_factor        *= year_in_seconds;
+              scale_factor             /= year_in_seconds;
             }
         }
         prm.leave_subsection();

@@ -57,7 +57,9 @@ namespace aspect
                           const double dx,
                           const double dy,
                           const double interpolation_width_,
-                          const ConditionalOStream &pcout);
+                          const ConditionalOStream &pcout,
+                          const double time_scale_factor,
+                          const double velocity_scale_factor);
 
           /**
            * Outputs the BoxPlates module information at model start.
@@ -79,9 +81,7 @@ namespace aspect
           /**
            * Called once per timestep. Updates time_index if necessary.
            */
-          void update(const double time,
-                      const double first_velocity_file_time,
-                      const ConditionalOStream &pcout);
+          void update(const double time);
 
           /**
            * Returns the computed surface velocity in cartesian coordinates.
@@ -319,6 +319,14 @@ namespace aspect
          * Scale the velocity boundary condition by a scalar factor.
          */
         double scale_factor;
+
+        /**
+         * Scale the time steps of the velocity file by a scalar factor. Can be
+         * used to transform the unit of the time (if they are not
+         * specified in the default unit (s or yr depending on the
+         * "Use years in output instead of seconds" parameter).
+         */
+        double time_scale_factor;
 
 
         /**
