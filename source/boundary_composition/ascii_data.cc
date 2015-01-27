@@ -137,8 +137,8 @@ namespace aspect
           if (need_update)
             for (typename std::map<types::boundary_id,
                 std_cxx11::shared_ptr<VelocityBoundaryConditions::internal::AsciiDataLookup<dim,dim-1> > >::const_iterator
-                       boundary_id = lookups.cbegin();
-                       boundary_id != lookups.cend(); ++boundary_id)
+                       boundary_id = lookups.begin();
+                       boundary_id != lookups.end(); ++boundary_id)
                 update_data(boundary_id->first);
 
           time_weight = (this->get_time() - first_data_file_model_time) / data_file_time_step
