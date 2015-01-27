@@ -366,9 +366,7 @@ namespace aspect
 
         const double depth_weight = 0.5*(1.0 + std::tanh((position(dim-1)-460000)/50000));
         surf_vel += point_weight * depth_weight * velocity_time_weight * velocity;
-
-        if (time_weight < 1.0 - 1e-7)
-          surf_vel += point_weight * depth_weight * (1-velocity_time_weight) * old_velocity;
+        surf_vel += point_weight * depth_weight * (1-velocity_time_weight) * old_velocity;
 
         return point_weight;
       }

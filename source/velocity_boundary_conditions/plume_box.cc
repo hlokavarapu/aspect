@@ -324,8 +324,19 @@ namespace aspect
       // Next data file not found --> Constant velocities
       // by simply loading the old file twice
       if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
-        surface_lookup->load_file (create_surface_filename (file_number),
-                                   this->get_pcout());
+        {
+           double time = this->get_time();
+
+          // This happens if this function is called from initialize()
+          // In this case we pretend to be at the end of time to
+          // enforce the time_weight to use the last file available
+          if (std::isnan(time))
+            time = 0.0;
+
+          surface_lookup->update(time - first_data_file_model_time);
+          surface_lookup->load_file (create_surface_filename (file_number),
+                                     this->get_pcout());
+        }
 
       if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
         {
