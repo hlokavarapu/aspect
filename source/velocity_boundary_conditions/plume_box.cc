@@ -91,7 +91,7 @@ namespace aspect
               :
               current_file_number + 1;
 
-      if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
+      if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
         {
           surface_lookup.reset(new internal::BoxPlatesLookup<dim>(surface_data_directory+surface_velocity_file_name,
                                                                   grid_extent,
@@ -105,11 +105,9 @@ namespace aspect
           surface_lookup->load_file(create_surface_filename (current_file_number),
                                     this->get_pcout());
         }
-      else
+      if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
         {
-
           // Load side and bottom boundaries, but only if this is not the top boundary
-
           lookup.reset(new internal::AsciiDataLookup<dim,dim-1>(data_points,
                                                                 this->get_geometry_model(),
                                                                 dim,
@@ -133,16 +131,16 @@ namespace aspect
         {
           try
           {
-              if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
+              if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
                 surface_lookup->load_file(create_surface_filename (current_file_number),
                                           this->get_pcout());
-              else
+
+              if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
                 {
                   this->get_pcout() << std::endl << "   Loading Ascii data boundary file "
                       << create_filename (next_file_number) << "." << std::endl << std::endl;
                   lookup->load_file(create_filename (next_file_number));
                 }
-
           }
           catch (...)
           {
@@ -205,9 +203,10 @@ namespace aspect
           if (need_update)
             update_data();
 
-          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
+          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
             surface_lookup->update(this->get_time() - first_data_file_model_time);
-          else
+
+          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
             time_weight = (this->get_time() - first_data_file_model_time) / data_file_time_step
                           - std::abs(current_file_number - first_data_file_number);
 
@@ -252,10 +251,11 @@ namespace aspect
       if (std::abs(current_file_number - old_file_number) >= 1)
         try
           {
-            if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
+            if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
               surface_lookup->load_file (create_surface_filename (current_file_number),
                                          this->get_pcout());
-            else
+
+            if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
               {
                 this->get_pcout() << std::endl << "   Loading Ascii data boundary file "
                       << create_filename (current_file_number) << "." << std::endl << std::endl;
@@ -293,10 +293,11 @@ namespace aspect
       // Now load the data file. This part is the main purpose of this function.
       try
         {
-          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
+          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
             surface_lookup->load_file (create_surface_filename (next_file_number),
                                        this->get_pcout());
-          else
+
+          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
             {
               this->get_pcout() << std::endl << "   Loading Ascii data boundary file "
                     << create_filename (next_file_number) << "." << std::endl << std::endl;
@@ -322,10 +323,11 @@ namespace aspect
     {
       // Next data file not found --> Constant velocities
       // by simply loading the old file twice
-      if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
+      if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
         surface_lookup->load_file (create_surface_filename (file_number),
                                    this->get_pcout());
-      else
+
+      if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
         {
           this->get_pcout() << std::endl << "   Loading Ascii data boundary file "
                 << create_filename (file_number) << "." << std::endl << std::endl;
@@ -352,16 +354,27 @@ namespace aspect
     {
       if (this->get_time() - first_data_file_model_time >= 0.0)
         {
-          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
-            return surface_lookup->surface_velocity(position,time_weight);
-
           Tensor<1,dim> velocity;
-          for (unsigned int i = 0; i < dim; i++)
-            velocity[i] = lookup->get_data(position,i,time_weight);
-
+          // If at the top, only use plate velocity
+          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
+            velocity = surface_lookup->surface_velocity(position,time_weight);
           // If at the bottom, add the plume contribution
-          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "bottom")
-            velocity[dim-1] += V0 * std::exp(-std::pow((position-plume_position).norm()/R0,2));
+          else if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "bottom")
+            {
+              for (unsigned int i = 0; i < dim; i++)
+                velocity[i] = lookup->get_data(position,i,time_weight);
+              velocity[dim-1] += V0 * std::exp(-std::pow((position-plume_position).norm()/R0,2));
+            }
+          // At the sides interpolate between side and top velocity
+          else
+            {
+              const double depth_weight = 0.5*(1.0 + std::tanh((position(dim-1)-460000)/50000));
+
+              for (unsigned int i = 0; i < dim; i++)
+                velocity[i] = (1 - depth_weight) * lookup->get_data(position,i,time_weight);
+
+              velocity += depth_weight * surface_lookup->surface_velocity(position,time_weight);
+            }
 
           return velocity;
         }
