@@ -170,7 +170,7 @@ namespace aspect
          * data we get from text files.
          */
         std::map<types::boundary_id,
-                  std_cxx11::shared_ptr<::aspect::VelocityBoundaryConditions::internal::AsciiDataLookup<dim,dim-1> > > lookups;
+                  std_cxx11::shared_ptr<VelocityBoundaryConditions::internal::AsciiDataLookup<dim,dim-1> > > lookups;
 
         /**
          * Handles the update of the data in lookup.

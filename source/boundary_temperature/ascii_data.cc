@@ -54,8 +54,8 @@ namespace aspect
       const std::set<types::boundary_id> boundary_ids = this->get_fixed_temperature_boundary_indicators();
 
       for (typename std::set<types::boundary_id>::const_iterator
-                 boundary_id = boundary_ids.cbegin();
-                 boundary_id != boundary_ids.cend(); ++boundary_id)
+                 boundary_id = boundary_ids.begin();
+                 boundary_id != boundary_ids.end(); ++boundary_id)
         {
           std_cxx11::shared_ptr<VelocityBoundaryConditions::internal::AsciiDataLookup<dim,dim-1> > lookup;
           lookup.reset(new VelocityBoundaryConditions::internal::AsciiDataLookup<dim,dim-1>    (data_points,

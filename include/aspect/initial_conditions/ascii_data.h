@@ -101,7 +101,7 @@ namespace aspect
          * Pointer to an object that reads and processes data we get from
          * text files.
          */
-        std_cxx11::shared_ptr<::aspect::VelocityBoundaryConditions::internal::AsciiDataLookup<dim,dim> > lookup;
+        std_cxx11::shared_ptr<VelocityBoundaryConditions::internal::AsciiDataLookup<dim,dim> > lookup;
     };
   }
 }
