@@ -379,7 +379,9 @@ namespace aspect
           // At the sides interpolate between side and top velocity
           else
             {
-              const double depth_weight = 0.5*(1.0 + std::tanh((position(dim-1)-460000)/50000));
+              const double depth = this->get_geometry_model().depth(position);
+              const double depth_weight = 0.5*(1.0 - std::tanh((depth - lithosphere_thickness)
+                                                               / depth_interpolation_width));
 
               for (unsigned int i = 0; i < dim; i++)
                 velocity[i] = (1 - depth_weight) * lookup->get_data(position,i,time_weight);
@@ -505,6 +507,16 @@ namespace aspect
                              "is still included in the interpolation. The weighting of the points currently only accounts "
                              "for the surface area a single data point is covering ('moving window' interpolation without "
                              "distance weighting).");
+          prm.declare_entry ("Lithosphere thickness", "2e5",
+                             Patterns::Double (0),
+                             "The velocity at the sides is interpolated between a plate velocity "
+                             "at the surface and ascii data velocities below the lithosphere. "
+                             "This value is the depth of the transition between surface and side "
+                             "velocities.");
+          prm.declare_entry ("Depth interpolation width", "5e4",
+                             Patterns::Double (0),
+                             "The width of the interpolation zone described for 'lithosphere "
+                             "thickness'.");
           prm.declare_entry ("Time scale factor", "1e6",
                              Patterns::Double (0),
                              "Determines the factor applied to the times in the velocity file. The unit is assumed to be"
@@ -609,6 +621,8 @@ namespace aspect
           surface_id_file_names         = prm.get ("Id file names");
 
           interpolation_width   = prm.get_double ("Interpolation width");
+          lithosphere_thickness = prm.get_double ("Lithosphere thickness");
+          depth_interpolation_width     = prm.get_double ("Depth interpolation width");
           x_step                = prm.get_double ("X grid spacing");
           y_step                = prm.get_double ("Y grid spacing");
           surface_time_scale_factor     = prm.get_double ("Time scale factor");

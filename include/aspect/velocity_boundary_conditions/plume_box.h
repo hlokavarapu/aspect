@@ -211,6 +211,20 @@ namespace aspect
         double interpolation_width;
 
         /**
+         * The velocity at the sides is interpolated between a plate velocity
+         * at the surface and ascii data velocities below the lithosphere.
+         * This value is the depth of the transition between surface and side
+         * velocities.
+         */
+        double lithosphere_thickness;
+
+        /**
+         * The width of the interpolation zone described for 'lithosphere
+         * thickness'.
+         */
+        double depth_interpolation_width;
+
+        /**
          * Scale the time steps of the surface by a scalar factor. Can be
          * used to transform the unit of the velocities (if they are not
          * specified in the default unit (m/s or m/yr depending on the
