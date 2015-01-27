@@ -737,6 +737,12 @@ namespace aspect
 {
   namespace VelocityBoundaryConditions
   {
+    namespace internal
+    {
+      template class BoxPlatesLookup<2>;
+      template class BoxPlatesLookup<3>;
+    }
+
     ASPECT_REGISTER_VELOCITY_BOUNDARY_CONDITIONS(BoxPlates,
                                                  "box plates",
                                                  "Implementation of a model in which the boundary "
