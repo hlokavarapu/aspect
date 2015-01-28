@@ -114,7 +114,6 @@ namespace aspect
        Point<dim>
        PlumeLookup<dim>::plume_position(const double time) const
        {
-         Point<dim> position;
          if (time <= times.front())
            return plume_positions.front();
          else if (time >= times.back())
@@ -123,17 +122,20 @@ namespace aspect
            {
              for (unsigned int i = 0; i < times.size() - 1; i++)
                {
-                 if ((time > times[i])
-                     && time < times[i+1])
+                 if ((time >= times[i])
+                     && (time < times[i+1]))
                    {
                      const double timestep = times[i+1]-times[i];
+                     const double time_weight = (time - times[i]) / timestep;
 
-                     position = ((time - times[i]) / timestep) * plume_positions[i]
-                         + ((times[i+1] - time) / timestep) * plume_positions[i+1];
+                     return Point<dim> (time_weight * plume_positions[i]
+                                     + (1 - time_weight) * plume_positions[i+1]);
                    }
                }
+             AssertThrow(false,
+                         ExcMessage("Did not find time interval for plume location."))
            }
-         return position;
+         return Point<dim>();
        }
      }
 
@@ -257,34 +259,33 @@ namespace aspect
     {
 
       Assert (boundary_indicator<2*dim, ExcMessage ("Unknown boundary indicator."));
-
-      double perturbation = 0.0;
-      unsigned int bottom = 2;
-      unsigned int top = 3;
-      if (dim == 3)
-        {
-          bottom = 4;
-          top = 5;
-        }
+      Assert (this->get_adiabatic_conditions().is_initialized(),
+              ExcMessage ("The adiabatic conditions are not yet initialized,"
+                  "but they are necessary for the plume boundary temperature plugin."));
 
       double boundary_temperature = 0;
-      if (boundary_indicator == bottom)
+      types::boundary_id boundary_id(boundary_indicator);
+
+      if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "bottom")
         {
           // T=T_0*exp-(r/r_0)**2
-          const double perturbation = anomaly_amplitude * std::exp(-std::pow((position-plume_position).norm()/anomaly_radius,2));
-          boundary_temperature = temperature_[boundary_indicator] + perturbation;
+          const Point<dim> distance = position - plume_position;
+          const double perturbation = anomaly_amplitude * std::exp(-std::pow(distance.norm()/anomaly_radius,2));
+          boundary_temperature = this->get_adiabatic_conditions().temperature(position) + perturbation;
         }
-      else if (boundary_indicator == top)
+      else if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
         boundary_temperature = temperature_[boundary_indicator];
-
-      if (side_boundary_type == initial)
-        boundary_temperature = this->get_initial_conditions().initial_temperature(position);
-      else if (side_boundary_type == constant)
-        boundary_temperature = temperature_[boundary_indicator];
-      else if (side_boundary_type == adiabatic)
-        boundary_temperature = adiabatic_temperature(position);
       else
-        AssertThrow (false, ExcNotImplemented());
+        {
+          if (side_boundary_type == initial)
+            boundary_temperature = this->get_initial_conditions().initial_temperature(position);
+          else if (side_boundary_type == constant)
+            boundary_temperature = temperature_[boundary_indicator];
+          else if (side_boundary_type == adiabatic)
+            boundary_temperature = adiabatic_temperature(position);
+          else
+            AssertThrow (false, ExcNotImplemented());
+        }
 
       return boundary_temperature;
     }
@@ -391,24 +392,24 @@ namespace aspect
                              "This function is one-dimensional and depends only on depth. The format of this "
                              "functions follows the syntax understood by the "
                              "muparser library, see Section~\\ref{sec:muparser-format}.");
-          prm.declare_entry ("Left temperature", "1",
+          prm.declare_entry ("Left temperature", "1613",
                              Patterns::Double (),
                              "Temperature at the left boundary (at minimal x-value). Units: K.");
-          prm.declare_entry ("Right temperature", "0",
+          prm.declare_entry ("Right temperature", "1613",
                              Patterns::Double (),
                              "Temperature at the right boundary (at maximal x-value). Units: K.");
-          prm.declare_entry ("Bottom temperature", "0",
+          prm.declare_entry ("Bottom temperature", "4000",
                              Patterns::Double (),
                              "Temperature at the bottom boundary (at minimal z-value). Units: K.");
-          prm.declare_entry ("Top temperature", "0",
+          prm.declare_entry ("Top temperature", "273",
                              Patterns::Double (),
                              "Temperature at the top boundary (at maximal x-value). Units: K.");
           if (dim==3)
             {
-              prm.declare_entry ("Front temperature", "0",
+              prm.declare_entry ("Front temperature", "1613",
                                  Patterns::Double (),
                                  "Temperature at the front boundary (at minimal y-value). Units: K.");
-              prm.declare_entry ("Back temperature", "0",
+              prm.declare_entry ("Back temperature", "1613",
                                  Patterns::Double (),
                                  "Temperature at the back boundary (at maximal y-value). Units: K.");
             }
