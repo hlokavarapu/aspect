@@ -23,8 +23,10 @@
 #define __aspect__compositional_initial_conditions_ascii_data_h
 
 #include <aspect/compositional_initial_conditions/interface.h>
-#include <aspect/velocity_boundary_conditions/ascii_data.h>
+#include <aspect/initial_conditions/ascii_data.h>
+
 #include <aspect/simulator_access.h>
+#include <aspect/utilities.h>
 
 
 namespace aspect
@@ -40,7 +42,7 @@ namespace aspect
      * @ingroup CompositionalInitialConditionsModels
      */
     template <int dim>
-    class AsciiData : public Interface<dim>, public SimulatorAccess<dim>
+    class AsciiData : public Interface<dim>, public InitialConditions::internal::AsciiDataInitial<dim>
     {
       public:
         /**
@@ -76,33 +78,6 @@ namespace aspect
          */
         void
         parse_parameters (ParameterHandler &prm);
-
-      private:
-        /**
-         * Directory in which the data files are present.
-         */
-        std::string data_directory;
-
-        /**
-         * Filename of data file.
-         */
-        std::string data_file_name;
-
-        /**
-         * Number of grid points in data file
-         */
-        std_cxx11::array<unsigned int,3> data_points;
-
-        /**
-         * Scale the data by a scalar factor.
-         */
-        double scale_factor;
-
-        /**
-         * Pointer to an object that reads and processes data we get from
-         * text files.
-         */
-        std_cxx11::shared_ptr<VelocityBoundaryConditions::internal::AsciiDataLookup<dim,dim> > lookup;
     };
   }
 }

@@ -24,17 +24,55 @@
 
 #include <aspect/geometry_model/box.h>
 #include <aspect/geometry_model/spherical_shell.h>
-#include <aspect/utilities.h>
 
 namespace aspect
 {
   namespace InitialConditions
   {
+    namespace internal
+    {
+      template <int dim>
+      AsciiDataInitial<dim>::AsciiDataInitial ()
+      {}
+
+
+      template <int dim>
+      void
+      AsciiDataInitial<dim>::initialize (const unsigned int components)
+      {
+        lookup.reset(new Utilities::AsciiDataLookup<dim> (components,
+                                                          Utilities::AsciiDataBase<dim>::scale_factor));
+
+        const std::string filename = Utilities::AsciiDataBase<dim>::data_directory
+                                     + Utilities::AsciiDataBase<dim>::data_file_name;
+
+        this->get_pcout() << std::endl << "   Loading Ascii data initial file "
+                          << filename << "." << std::endl << std::endl;
+        lookup->load_file(filename);
+      }
+
+      template <int dim>
+      double
+      AsciiDataInitial<dim>::
+      get_data_component (const Point<dim>                    &position,
+                          const unsigned int                   component) const
+      {
+        Point<dim> internal_position = position;
+
+        if (dynamic_cast<const GeometryModel::SphericalShell<dim>*> (&this->get_geometry_model()) != 0)
+          {
+            const std_cxx11::array<double,dim> spherical_position =
+              ::aspect::Utilities::spherical_coordinates(position);
+
+            for (unsigned int i = 0; i < dim; i++)
+              internal_position[i] = spherical_position[i];
+          }
+        return lookup->get_data(internal_position,component);
+      }
+    }
+
     template <int dim>
     AsciiData<dim>::AsciiData ()
-      :
-    scale_factor(1.0),
-    lookup()
     {}
 
 
@@ -42,20 +80,7 @@ namespace aspect
     void
     AsciiData<dim>::initialize ()
     {
-      lookup.reset(new VelocityBoundaryConditions::internal::AsciiDataLookup<dim,dim> (data_points,
-                                                                                       this->get_geometry_model(),
-                                                                                       1,
-                                                                                       scale_factor));
-
-      lookup->screen_output(this->get_pcout());
-
-      this->get_pcout() << std::endl << "   Loading Ascii data initial file "
-          << data_directory+data_file_name << "." << std::endl << std::endl;
-
-      // We load the file twice, this is because AsciiDataLookup also performs time
-      // interpolation for the boundary conditions, which is not necessary here.
-      lookup->load_file(data_directory+data_file_name);
-      lookup->load_file(data_directory+data_file_name);
+      internal::AsciiDataInitial<dim>::initialize(1);
     }
 
 
@@ -64,51 +89,19 @@ namespace aspect
     AsciiData<dim>::
     initial_temperature (const Point<dim> &position) const
     {
-      return lookup->get_data(position,0,0);
+      return internal::AsciiDataInitial<dim>::get_data_component(position,0);
     }
+
 
     template <int dim>
     void
     AsciiData<dim>::declare_parameters (ParameterHandler &prm)
     {
-      prm.enter_subsection ("Initial conditions");
+      prm.enter_subsection("Initial conditions");
       {
-        prm.enter_subsection ("Ascii data model");
-        {
-          prm.declare_entry ("Data directory",
-                             "$ASPECT_SOURCE_DIR/data/initial-conditions/ascii-data/test/",
-                             Patterns::DirectoryName (),
-                             "The name of a directory that contains the model data. This path "
-                             "may either be absolute (if starting with a '/') or relative to "
-                             "the current directory. The path may also include the special "
-                             "text '$ASPECT_SOURCE_DIR' which will be interpreted as the path "
-                             "in which the ASPECT source files were located when ASPECT was "
-                             "compiled. This interpretation allows, for example, to reference "
-                             "files located in the 'data/' subdirectory of ASPECT. ");
-          prm.declare_entry ("Data file name",
-                             "box_2d_%s.%d.csv",
-                             Patterns::Anything (),
-                             "The file name of the material data. Provide file in format: "
-                             "(Data file name).\\%s%d where \\\\%s is a string specifying "
-                             "the boundary of the model according to the names of the boundary "
-                             "indicators (of a box or a spherical shell).%d is any sprintf integer "
-                             "qualifier, specifying the format of the current file number. ");
-          prm.declare_entry ("Number of x grid points", "0",
-                             Patterns::Integer (0),
-                             "Number of grid points in x direction.");
-          prm.declare_entry ("Number of y grid points", "0",
-                             Patterns::Integer (0),
-                             "Number of grid points in y direction.");
-          prm.declare_entry ("Number of z grid points", "0",
-                             Patterns::Integer (0),
-                             "Number of grid points in z direction.");
-          prm.declare_entry ("Scale factor", "1",
-                             Patterns::Double (0),
-                             "Scalar factor, which is applied to the boundary data. "
-                             "You might want to use this to scale the data to a "
-                             "reference model.");
-        }
-        prm.leave_subsection();
+        Utilities::AsciiDataBase<dim>::declare_parameters(prm,
+                                                          "$ASPECT_SOURCE_DIR/data/initial-conditions/ascii-data/test/",
+                                                          "box_2d.txt");
       }
       prm.leave_subsection();
     }
@@ -120,33 +113,10 @@ namespace aspect
     {
       prm.enter_subsection("Initial conditions");
       {
-        prm.enter_subsection("Ascii data model");
-        {
-          // Get the path to the data files. If it contains a reference
-          // to $ASPECT_SOURCE_DIR, replace it by what CMake has given us
-          // as a #define
-          data_directory    = prm.get ("Data directory");
-          {
-            const std::string      subst_text = "$ASPECT_SOURCE_DIR";
-            std::string::size_type position;
-            while (position = data_directory.find (subst_text),  position!=std::string::npos)
-              data_directory.replace (data_directory.begin()+position,
-                                      data_directory.begin()+position+subst_text.size(),
-                                      ASPECT_SOURCE_DIR);
-          }
-
-          data_file_name    = prm.get ("Data file name");
-
-          scale_factor      = prm.get_double ("Scale factor");
-          data_points[0]    = prm.get_integer ("Number of x grid points");
-          data_points[1]    = prm.get_integer ("Number of y grid points");
-          data_points[2]    = prm.get_integer ("Number of z grid points");
-        }
-        prm.leave_subsection();
+        Utilities::AsciiDataBase<dim>::parse_parameters(prm);
       }
       prm.leave_subsection();
     }
-
   }
 }
 
@@ -155,12 +125,22 @@ namespace aspect
 {
   namespace InitialConditions
   {
+    namespace internal
+    {
+      template class AsciiDataInitial<2>;
+      template class AsciiDataInitial<3>;
+    }
+
     ASPECT_REGISTER_INITIAL_CONDITIONS(AsciiData,
                                        "ascii data",
                                        "Implementation of a model in which the initial "
                                        "temperature is derived from files containing data "
                                        "in ascii format. Note the required format of the "
-                                       "input data: The order of the columns "
+                                       "input data: The first lines may contain any number of comments"
+                                       "if they begin with '#', but one of these lines needs to"
+                                       "contain the number of grid points in each dimension as"
+                                       "for example '# POINTS: 3 3'."
+                                       "The order of the data columns "
                                        "has to be 'x', 'y', 'Temperature [K]' in a 2d model and "
                                        " 'x', 'y', 'z', 'Temperature [K]' in a 3d model, which means that "
                                        "there has to be a single column "

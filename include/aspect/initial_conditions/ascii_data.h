@@ -23,8 +23,8 @@
 #define __aspect__initial_conditions_ascii_data_h
 
 #include <aspect/initial_conditions/interface.h>
-#include <aspect/velocity_boundary_conditions/ascii_data.h>
 #include <aspect/simulator_access.h>
+#include <aspect/utilities.h>
 
 
 namespace aspect
@@ -33,6 +33,44 @@ namespace aspect
   {
     using namespace dealii;
 
+    namespace internal
+    {
+      /**
+       * A base class that implements initial conditions
+       * determined from a AsciiData input file.
+       */
+      template <int dim>
+      class AsciiDataInitial : public Utilities::AsciiDataBase<dim>
+      {
+        public:
+          /**
+           * Constructor
+           */
+          AsciiDataInitial();
+
+          /**
+           * Initialization function. This function is called once at the
+           * beginning of the program. Checks preconditions.
+           */
+          virtual
+          void
+          initialize (const unsigned int components);
+
+
+          double
+          get_data_component (const Point<dim>                    &position,
+                              const unsigned int                   component) const;
+
+        protected:
+          /**
+           * Pointer to an object that reads and processes data we get from
+           * text files.
+           */
+          std_cxx11::shared_ptr<::aspect::Utilities::AsciiDataLookup<dim> > lookup;
+
+      };
+    }
+
     /**
      * A class that implements a prescribed temperature field
      * determined from a AsciiData input file.
@@ -40,7 +78,7 @@ namespace aspect
      * @ingroup InitialConditionsModels
      */
     template <int dim>
-    class AsciiData : public Interface<dim>, public SimulatorAccess<dim>
+    class AsciiData : public internal::AsciiDataInitial<dim>, public Interface<dim>
     {
       public:
         /**
@@ -75,33 +113,6 @@ namespace aspect
          */
         void
         parse_parameters (ParameterHandler &prm);
-
-      private:
-        /**
-         * Directory in which the data files are present.
-         */
-        std::string data_directory;
-
-        /**
-         * Filename of data file.
-         */
-        std::string data_file_name;
-
-        /**
-         * Number of grid points in data file
-         */
-        std_cxx11::array<unsigned int,3> data_points;
-
-        /**
-         * Scale the data by a scalar factor.
-         */
-        double scale_factor;
-
-        /**
-         * Pointer to an object that reads and processes data we get from
-         * text files.
-         */
-        std_cxx11::shared_ptr<VelocityBoundaryConditions::internal::AsciiDataLookup<dim,dim> > lookup;
     };
   }
 }
