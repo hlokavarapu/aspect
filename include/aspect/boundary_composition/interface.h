@@ -58,8 +58,8 @@ namespace aspect
 
         /**
          * Initialization function. This function is called once at the
-         * beginning of the program after parse_parameters is run and after the
-         * SimulatorAccess (if applicable) is initialized.
+         * beginning of the program after parse_parameters is run and after
+         * the SimulatorAccess (if applicable) is initialized.
          */
         virtual void initialize ();
 
@@ -92,6 +92,8 @@ namespace aspect
          * composition.
          * @param compositional_field The number of the compositional field
          * for which we are requesting the composition.
+         * @param compositional_field The index of the compositional field
+         * between 0 and @p parameters.n_compositional_fields.
          */
         virtual
         double composition (const GeometryModel::Interface<dim> &geometry_model,
@@ -148,8 +150,8 @@ namespace aspect
      * object that describes it. Ownership of the pointer is transferred to
      * the caller.
      *
-     * The model object returned is not yet initialized and has not
-     * read its runtime parameters yet.
+     * The model object returned is not yet initialized and has not read its
+     * runtime parameters yet.
      *
      * @ingroup BoundaryCompositions
      */
