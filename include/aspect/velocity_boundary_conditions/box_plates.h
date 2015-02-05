@@ -25,6 +25,8 @@
 #include <aspect/velocity_boundary_conditions/interface.h>
 #include <aspect/simulator_access.h>
 
+#include <deal.II/base/table_indices.h>
+#include <deal.II/base/function_lib.h>
 
 namespace aspect
 {
@@ -32,163 +34,104 @@ namespace aspect
   {
     using namespace dealii;
 
-
     namespace internal
     {
       /**
-       * BoxPlatesLookup handles all kinds of tasks around looking up a certain
-       * velocity boundary condition from a velocity and id file. This class
-       * keeps around the contents of two files, corresponding to two
-       * instances in time where data is provided; the boundary
-       * values at one particular time are interpolated between the two
-       * currently loaded data sets.
+       * AsciiDataLookup reads in files containing input data
+         in ascii format. Note the required format of the
+         input data: The first lines may contain any number of comments
+         if they begin with '#', but one of these lines needs to
+         contain the number of grid points in each dimension as
+         for example '# POINTS: 3 3'. The order of the columns
+         has to be 'coordinates data' with @p dim coordinate columns
+         and @p components data columns. Note that the data in the input
+         files need to be sorted in a specific order:
+         the first coordinate needs to ascend first,
+         followed by the second and so on in order to
+         assign the correct data to the prescribed coordinates.
        */
       template <int dim>
       class BoxPlatesLookup
       {
         public:
-
-          /**
-           * Initialize all members and the two pointers referring to the
-           * actual velocities.
-           */
           BoxPlatesLookup(const std::string &filename,
-                          const Point<dim> &grid_extent_,
-                          const double dx,
-                          const double dy,
-                          const double interpolation_width_,
-                          const ConditionalOStream &pcout,
+                          const unsigned int components,
                           const double time_scale_factor,
                           const double velocity_scale_factor);
 
           /**
-           * Outputs the BoxPlates module information at model start.
+           * Loads a data text file. Throws an exception if the file does not exist,
+           * if the data file format is incorrect or if the file grid changes over model runtime.
            */
-          void screen_output(const ConditionalOStream &pcout) const;
+          void
+          load_file(const std::string &filename,
+                    const double time);
 
           /**
-           * Check whether a file named @p filename exists.
-           */
-          bool fexists(const std::string &filename) const;
-
-          /**
-           * Loads a plate id file. Throws an exception if the
-           * file does not exist.
-           */
-          void load_file(const std::string &filename,
-                         const ConditionalOStream &pcout);
-
-          /**
-           * Called once per timestep. Updates time_index if necessary.
-           */
-          void update(const double time);
-
-          /**
-           * Returns the computed surface velocity in cartesian coordinates.
-           * Takes as input the position and current time weight.
+           * Returns the computed velocity
+           * in cartesian coordinates.
            *
-           * @param position The current position to compute velocity
-           * @param time_weight A weighting between the two current timesteps
-           * n and n+1
+           * @param position The current position to compute the data (velocity, temperature, etc.)
+           * @param component Number of the component that is requested
            */
-          Tensor<1,dim> surface_velocity(const Point<dim> &position,
-                                         const double time_weight) const;
+          double
+          get_data(const Point<dim> &position,
+                   const unsigned int component) const;
 
         private:
+          /**
+           * The number of data components read in (=columns in the data file).
+           */
+          const unsigned int components;
 
           /**
-           * Tables which contain the plate ids
+           * Interpolation functions to access the data.
            */
-          dealii::Table<2,unsigned char > ids;
-          dealii::Table<2,unsigned char > old_ids;
+          std::vector<Functions::InterpolatedUniformGridData<dim> *> data;
 
           /**
-           * Pointers to the actual tables. Used to avoid unnecessary copying
-           * of values. These pointers point to either ids or
-           * old_ids.
+           * Model size
            */
-          dealii::Table<2,unsigned char > *id_values;
-          dealii::Table<2,unsigned char > *old_id_values;
+          std_cxx11::array<std::pair<double,double>,dim> grid_extent;
 
           /**
-           *
+           * Number of points in the data grid.
            */
-          std::vector<double> times;
-          unsigned int current_time_index;
+          TableIndices<dim> table_points;
+
+          /**
+           * Scales the data times by a scalar factor. Can be
+           * used to transform the unit of the data.
+           */
+          const double time_scale_factor;
+
+          /**
+           * Scales the data boundary velocity by a scalar factor. Can be
+           * used to transform the unit of the data.
+           */
+          const double velocity_scale_factor;
 
           /**
            * Any plate velocity consists of a velocity and the rotation
            * of the associated plate in the used map projection
            */
-          struct plate_velocity
-          {
-              Tensor<1,dim> velocity;
-              double rotation;
-          };
+          typedef std::pair<Tensor<1,dim+1>,double> plate_velocity;
+
+          typedef std::map<unsigned char,plate_velocity > velocity_map;
 
           /**
            * Table for the plate velocities of all times.
            */
-          std::vector<std::map<unsigned char,plate_velocity > > velocity_values;
-
-          double velocity_time_weight;
+          std::vector<std::pair<double, velocity_map> > velocity_values;
 
           /**
-           * Distances between adjacent point in the x/y grid
+           * Computes the table indices of each entry in the input data file.
+           * The index depends on dim, grid_dim and the number of components.
            */
-          const double delta_x;
-          const double delta_y;
-
-          const Point<dim> grid_extent;
-
-          const unsigned int nx;
-          const unsigned int ny;
-
-
-          /**
-           * Determines the width of the velocity interpolation zone around
-           * the current point. Currently equals the distance between
-           * evaluation point and velocity data point that is still included
-           * in the interpolation. The weighting of the points currently only
-           * accounts for the surface area a single data point is covering
-           * ('moving window' interpolation without distance weighting).
-           */
-          const double interpolation_width;
-
-          /**
-           * calculates the index given a certain position
-           *
-           * @param index Reference to the index field, which is modified.
-           * @param position Input position, which is converted to spatial
-           * index
-           */
-          void
-          calculate_spatial_index(unsigned int *index,
-                                  const Point<dim> &position) const;
-
-          /**
-           * This function adds a certain data point to the interpolated
-           * surface velocity at this evaluation point. This includes
-           * calculating the interpolation weight.
-           */
-          double
-          add_interpolation_point(Tensor<1,dim>      &surf_vel,
-                                  const Point<dim>   &position,
-                                  const unsigned int  spatial_index[2],
-                                  const double        time_weight,
-                                  const bool          check_termination) const;
-
-
-          /**
-           * Returns the position of a data point with a given x,y index.
-           */
-          Point<dim>
-          get_grid_point_position(const unsigned int x_index,
-                                  const unsigned int y_index) const;
-
+          TableIndices<dim>
+          compute_table_indices(const unsigned int line) const;
       };
     }
-
 
     /**
      * A class that implements prescribed velocity boundary conditions
@@ -343,7 +286,7 @@ namespace aspect
          * Pointer to an object that reads and processes data we get from
          * the data files.
          */
-        std_cxx1x::shared_ptr<internal::BoxPlatesLookup<dim> > lookup;
+        std_cxx1x::shared_ptr<internal::BoxPlatesLookup<dim-1> > lookup;
 
         /**
          * Handles the update of the velocity data in lookup.

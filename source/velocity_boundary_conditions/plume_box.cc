@@ -23,8 +23,6 @@
 #include <aspect/velocity_boundary_conditions/plume_box.h>
 #include <aspect/geometry_model/box.h>
 
-#include <aspect/utilities.h>
-
 #include <deal.II/base/parameter_handler.h>
 
 
@@ -60,9 +58,12 @@ namespace aspect
               ExcMessage ("This boundary model is only implemented if the geometry is "
                           "in fact a box."));
 
-      // First find the boundary_id this plugin is responsible for
+      // Initialize the bottom plume influx
+      plume_lookup.reset(new BoundaryTemperature::internal::PlumeLookup<dim>(plume_data_directory+plume_file_name,
+                                                                             this->get_pcout()));
+
       const std::map<types::boundary_id,std_cxx1x::shared_ptr<VelocityBoundaryConditions::Interface<dim> > >
-        bvs = this->get_prescribed_velocity_boundary_conditions();
+      bvs = this->get_prescribed_velocity_boundary_conditions();
       for (typename std::map<types::boundary_id,std_cxx1x::shared_ptr<VelocityBoundaryConditions::Interface<dim> > >::const_iterator
            p = bvs.begin();
            p != bvs.end(); ++p)
@@ -73,82 +74,120 @@ namespace aspect
       AssertThrow(boundary_id != numbers::invalid_boundary_id,
                   ExcMessage("Did not find the boundary indicator for the prescribed data plugin."));
 
-
-      // Initialize the bottom plume influx
-      plume_lookup.reset(new BoundaryTemperature::internal::PlumeLookup<dim>(plume_data_directory+plume_file_name,
-                                                                             this->get_pcout()));
-
-      // Initialize the surface plate velocities
-      const GeometryModel::Box<dim> *geometry_model = dynamic_cast<const GeometryModel::Box<dim> *>(&this->get_geometry_model());
-      const Point<dim> grid_extent = geometry_model->get_extents();
-
       // Set the first file number and load the first files
       current_file_number = first_data_file_number;
 
       const int next_file_number =
-          (decreasing_file_order) ?
-              current_file_number - 1
-              :
-              current_file_number + 1;
+        (decreasing_file_order) ?
+        current_file_number - 1
+        :
+        current_file_number + 1;
 
       if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
         {
-          surface_lookup.reset(new internal::BoxPlatesLookup<dim>(surface_data_directory+surface_velocity_file_name,
-                                                                  grid_extent,
-                                                                  x_step,
-                                                                  y_step,
-                                                                  interpolation_width,
-                                                                  this->get_pcout(),
-                                                                  surface_time_scale_factor,
-                                                                  surface_scale_factor));
+          surface_lookup.reset(new internal::BoxPlatesLookup<dim-1>(surface_data_directory+surface_velocity_file_name,
+                                                                    dim,
+                                                                    surface_time_scale_factor,
+                                                                    surface_scale_factor));
 
-          surface_lookup->load_file(create_surface_filename (current_file_number),
-                                    this->get_pcout());
+          old_surface_lookup.reset(new internal::BoxPlatesLookup<dim-1>(surface_data_directory+surface_velocity_file_name,
+                                                                        dim,
+                                                                        surface_time_scale_factor,
+                                                                        surface_scale_factor));
+
+          const std::string surface_filename (create_surface_filename (current_file_number));
+          this->get_pcout() << std::endl << "   Loading BoxPlates data boundary file "
+              << surface_filename << "." << std::endl << std::endl;
+
+          if (Utilities::fexists(surface_filename))
+            surface_lookup->load_file(surface_filename,0.0);
+          else
+            AssertThrow(false,
+                ExcMessage (std::string("Ascii data file <")
+                            +
+                            surface_filename
+                            +
+                            "> not found!"));
         }
       if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
         {
           // Load side and bottom boundaries, but only if this is not the top boundary
-          lookup.reset(new internal::AsciiDataLookup<dim,dim-1>(data_points,
-                                                                this->get_geometry_model(),
-                                                                dim,
-                                                                scale_factor,
-                                                                boundary_id));
+          lookup.reset(new Utilities::AsciiDataLookup<dim-1> (dim,
+                      scale_factor));
 
-          lookup->screen_output(this->get_pcout());
+          old_lookup.reset(new Utilities::AsciiDataLookup<dim-1> (dim,
+                          scale_factor));
 
+          const std::string filename (create_filename (current_file_number));
           this->get_pcout() << std::endl << "   Loading Ascii data boundary file "
-              << create_filename (current_file_number) << "." << std::endl << std::endl;
-          lookup->load_file(create_filename (current_file_number));
+                            << filename << "." << std::endl << std::endl;
+
+          if (Utilities::fexists(filename))
+            lookup->load_file(filename);
+          else
+            AssertThrow(false,
+                        ExcMessage (std::string("Ascii data file <")
+          +
+          filename
+          +
+          "> not found!"));
         }
 
+          // If the boundary condition is constant, switch
+          // off time_dependence immediately. This also sets time_weight to 1.0.
+          // If not, also load the second file for interpolation.
+          if (create_filename (current_file_number) == create_filename (current_file_number+1))
+              end_time_dependence ();
+          else
+            {
+              const std::string filename (create_filename (next_file_number));
+              const std::string surface_filename (create_surface_filename (next_file_number));
 
-      // If the boundary condition is constant, switch
-      // off time_dependence immediately. This also sets time_weight to 1.0.
-      // If not, also load the second file for interpolation.
-      if (create_filename (current_file_number) == create_filename (current_file_number+1))
-        end_time_dependence (current_file_number);
-      else
-        {
-          try
-          {
-              if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
-                surface_lookup->load_file(create_surface_filename (current_file_number),
-                                          this->get_pcout());
-
-              if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
+              if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
                 {
-                  this->get_pcout() << std::endl << "   Loading Ascii data boundary file "
-                      << create_filename (next_file_number) << "." << std::endl << std::endl;
-                  lookup->load_file(create_filename (next_file_number));
+                  this->get_pcout() << std::endl << "   Loading BoxPlates data boundary file "
+                      << surface_filename << "." << std::endl << std::endl;
+                  if (Utilities::fexists(surface_filename))
+                    {
+                      surface_lookup.swap(old_surface_lookup);
+                      surface_lookup->load_file(surface_filename,
+                                                std::abs(next_file_number-first_data_file_number)*data_file_time_step);
+                    }
+                  else
+                    end_time_dependence();
                 }
-          }
-          catch (...)
-          {
-              end_time_dependence (current_file_number);
-          }
-        }
-    }
+              else if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "bottom")
+                {
+                  this->get_pcout() << std::endl << "   Loading Ascii data data boundary file "
+                      << filename << "." << std::endl << std::endl;
+                  if (Utilities::fexists(filename))
+                    {
+                      lookup.swap(old_lookup);
+                      lookup->load_file(filename);
+                    }
+                  else
+                    end_time_dependence();
+                }
+              else
+                {
+                  this->get_pcout() << std::endl << "   Loading BoxPlates data boundary file "
+                      << surface_filename << "." << std::endl << std::endl;
+                  this->get_pcout() << std::endl << "   Loading Ascii data boundary file "
+                      << filename << "." << std::endl << std::endl;
 
+                  if (Utilities::fexists(filename) && Utilities::fexists(surface_filename))
+                    {
+                      surface_lookup.swap(old_surface_lookup);
+                      surface_lookup->load_file(surface_filename,
+                                                std::abs(next_file_number-first_data_file_number)*data_file_time_step);
+                      lookup.swap(old_lookup);
+                      lookup->load_file(filename);
+                    }
+                  else
+                    end_time_dependence ();
+                }
+            }
+    }
 
     template <int dim>
     std::string
@@ -201,14 +240,32 @@ namespace aspect
               > std::abs(current_file_number - first_data_file_number);
 
           if (need_update)
-            update_data();
+            {
+              // The last file, which was tried to be loaded was
+              // number current_file_number +/- 1, because current_file_number
+              // is the file older than the current model time
+              const int old_file_number =
+                  (decreasing_file_order) ?
+                      current_file_number - 1
+                      :
+                      current_file_number + 1;
 
-          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
-            surface_lookup->update(this->get_time() - first_data_file_model_time);
+              //Calculate new file_number
+              current_file_number =
+                  (decreasing_file_order) ?
+                      first_data_file_number
+                        - static_cast<unsigned int> ((this->get_time() - first_data_file_model_time) / data_file_time_step)
+                      :
+                      first_data_file_number
+                        + static_cast<unsigned int> ((this->get_time() - first_data_file_model_time) / data_file_time_step);
 
-          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
-            time_weight = (this->get_time() - first_data_file_model_time) / data_file_time_step
-                          - std::abs(current_file_number - first_data_file_number);
+              const bool load_both_files = std::abs(current_file_number - old_file_number) >= 1;
+
+              update_data(load_both_files);
+            }
+
+          time_weight = (this->get_time() - first_data_file_model_time) / data_file_time_step
+                        - std::abs(current_file_number - first_data_file_number);
 
           Assert ((0 <= time_weight) && (time_weight <= 1),
                   ExcMessage (
@@ -219,25 +276,8 @@ namespace aspect
 
     template <int dim>
     void
-    PlumeBox<dim>::update_data ()
+    PlumeBox<dim>::update_data (const bool load_both_files)
     {
-      // The last file, which was tried to be loaded was
-      // number current_file_number +/- 1, because current_file_number
-      // is the file older than the current model time
-      const int old_file_number =
-          (decreasing_file_order) ?
-              current_file_number - 1
-              :
-              current_file_number + 1;
-
-      //Calculate new file_number
-      current_file_number =
-          (decreasing_file_order) ?
-              first_data_file_number
-                - static_cast<unsigned int> ((this->get_time() - first_data_file_model_time) / data_file_time_step)
-              :
-              first_data_file_number
-                + static_cast<unsigned int> ((this->get_time() - first_data_file_model_time) / data_file_time_step);
 
       const int next_file_number =
           (decreasing_file_order) ?
@@ -248,108 +288,114 @@ namespace aspect
       // If the time step was large enough to move forward more
       // then one data file we need to load both current files
       // to stay accurate in interpolation
-      if (std::abs(current_file_number - old_file_number) >= 1)
-        try
-          {
-            if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
-              surface_lookup->load_file (create_surface_filename (current_file_number),
-                                         this->get_pcout());
-
-            if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
-              {
-                this->get_pcout() << std::endl << "   Loading Ascii data boundary file "
-                      << create_filename (current_file_number) << "." << std::endl << std::endl;
-                lookup->load_file (create_filename (current_file_number));
-              }
-
-          }
-        catch (...)
-          // If loading current_time_step failed, end time dependent part with old_file_number.
-          {
-            try
-              {
-                end_time_dependence (old_file_number);
-                return;
-              }
-            catch (...)
-              {
-                // If loading the old file fails (e.g. there was no old file), cancel the model run.
-                // We might get here, if the model time step is so large that step t is before the
-                // whole boundary condition while step t+1 is already behind all files in time.
-                AssertThrow (false,
-                             ExcMessage (
-                               "Loading new and old data file did not succeed. "
-                               "Maybe the time step was so large we jumped over all files "
-                               "or the files were removed during the model run. "
-                               "Another possible way here is to restart a model with "
-                               "previously time-dependent boundary condition after the "
-                               "last file was already read. Aspect has no way to find the "
-                               "last readable file from the current model time. Please "
-                               "prescribe the last data file manually in such a case. "
-                               "Cancelling calculation."));
-              }
-          }
-
-      // Now load the data file. This part is the main purpose of this function.
-      try
+      if (load_both_files)
         {
-          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
-            surface_lookup->load_file (create_surface_filename (next_file_number),
-                                       this->get_pcout());
+          const std::string filename (create_filename (current_file_number));
+          const std::string surface_filename (create_surface_filename (current_file_number));
 
-          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
+          if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
             {
+              this->get_pcout() << std::endl << "   Loading BoxPlates data boundary file "
+                  << surface_filename << "." << std::endl << std::endl;
+              if (Utilities::fexists(surface_filename))
+                {
+                  surface_lookup.swap(old_surface_lookup);
+                  surface_lookup->load_file(surface_filename,
+                      std::abs(next_file_number-first_data_file_number)*data_file_time_step);
+                }
+              else
+                end_time_dependence();
+            }
+          else if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "bottom")
+            {
+              this->get_pcout() << std::endl << "   Loading Ascii data data boundary file "
+                  << filename << "." << std::endl << std::endl;
+              if (Utilities::fexists(filename))
+                {
+                  lookup.swap(old_lookup);
+                  lookup->load_file(filename);
+                }
+              else
+                end_time_dependence();
+            }
+          else
+            {
+              this->get_pcout() << std::endl << "   Loading BoxPlates data boundary file "
+                  << surface_filename << "." << std::endl << std::endl;
               this->get_pcout() << std::endl << "   Loading Ascii data boundary file "
-                    << create_filename (next_file_number) << "." << std::endl << std::endl;
-              lookup->load_file (create_filename (next_file_number));
+                  << filename << "." << std::endl << std::endl;
+
+              if (Utilities::fexists(filename) && Utilities::fexists(surface_filename))
+                {
+                  surface_lookup.swap(old_surface_lookup);
+                  surface_lookup->load_file(surface_filename,
+                      std::abs(next_file_number-first_data_file_number)*data_file_time_step);
+                  lookup.swap(old_lookup);
+                  lookup->load_file(filename);
+                }
+              else
+                end_time_dependence ();
             }
         }
 
-      // If loading current_time_step + 1 failed, end time dependent part with current_time_step.
-      // We do not need to check for success here, because current_file_number was guaranteed to be
-      // at least tried to be loaded before, and if it fails, it should have done before (except from
-      // hard drive errors, in which case the exception is the right thing to be thrown).
+      // Now load the data file. This part is the main purpose of this function.
+      const std::string filename (create_filename (next_file_number));
+      const std::string surface_filename (create_surface_filename (next_file_number));
 
-      catch (...)
+      if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
         {
-          end_time_dependence (current_file_number);
+          this->get_pcout() << std::endl << "   Loading BoxPlates data boundary file "
+              << surface_filename << "." << std::endl << std::endl;
+          if (Utilities::fexists(surface_filename))
+            {
+              surface_lookup.swap(old_surface_lookup);
+              surface_lookup->load_file(surface_filename,
+                  std::abs(next_file_number-first_data_file_number)*data_file_time_step);
+            }
+          else
+            end_time_dependence();
+        }
+      else if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "bottom")
+        {
+          this->get_pcout() << std::endl << "   Loading Ascii data data boundary file "
+              << filename << "." << std::endl << std::endl;
+          if (Utilities::fexists(filename))
+            {
+              lookup.swap(old_lookup);
+              lookup->load_file(filename);
+            }
+          else
+            end_time_dependence();
+        }
+      else
+        {
+          this->get_pcout() << std::endl << "   Loading BoxPlates data boundary file "
+              << surface_filename << "." << std::endl << std::endl;
+          this->get_pcout() << std::endl << "   Loading Ascii data boundary file "
+              << filename << "." << std::endl << std::endl;
+
+          if (Utilities::fexists(filename) && Utilities::fexists(surface_filename))
+            {
+              surface_lookup.swap(old_surface_lookup);
+              surface_lookup->load_file(surface_filename,
+                  std::abs(next_file_number-first_data_file_number)*data_file_time_step);
+              lookup.swap(old_lookup);
+              lookup->load_file(filename);
+            }
+          else
+            end_time_dependence ();
         }
     }
 
 
     template <int dim>
     void
-    PlumeBox<dim>::end_time_dependence (const int file_number)
+    PlumeBox<dim>::end_time_dependence ()
     {
-      // Next data file not found --> Constant velocities
-      // by simply loading the old file twice
-      if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "bottom")
-        {
-           double time = this->get_time();
-
-          // This happens if this function is called from initialize()
-          // In this case we pretend to be at the end of time to
-          // enforce the time_weight to use the last file available
-          if (std::isnan(time))
-            time = 0.0;
-
-          surface_lookup->update(time - first_data_file_model_time);
-          surface_lookup->load_file (create_surface_filename (file_number),
-                                     this->get_pcout());
-        }
-
-      if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) != "top")
-        {
-          this->get_pcout() << std::endl << "   Loading Ascii data boundary file "
-                << create_filename (file_number) << "." << std::endl << std::endl;
-          lookup->load_file (create_filename (file_number));
-        }
-
       // no longer consider the problem time dependent from here on out
       // this cancels all attempts to read files at the next time steps
+      // TODO: implement support for varying length of surface and side files
       time_dependent = false;
-      // this cancels the time interpolation in lookup
-      time_weight = 1.0;
       // Give warning if first processor
       this->get_pcout() << std::endl
                         << "   Loading new data file did not succeed." << std::endl
@@ -357,6 +403,101 @@ namespace aspect
                         << std::endl << std::endl;
     }
 
+    template <int dim>
+    Tensor<1,dim>
+    PlumeBox<dim>::
+    get_velocity (const Point<dim> position) const
+    {
+      const std_cxx11::array<unsigned int,dim-1> boundary_dimensions =
+                  get_boundary_dimensions();
+
+      Point<dim-1> data_position;
+      for (unsigned int i = 0; i < dim-1; i++)
+        data_position[i] = position[boundary_dimensions[i]];
+
+      Tensor<1,dim> velocity,old_velocity;
+      for (unsigned int i = 0; i < dim; i++)
+          velocity[i] = lookup->get_data(data_position,i);
+
+      if (!time_dependent)
+        return velocity;
+
+      for (unsigned int i = 0; i < dim; i++)
+        old_velocity[i] = old_lookup->get_data(data_position,i);
+
+      return time_weight * velocity + (1 - time_weight) * old_velocity;
+    }
+
+    template <int dim>
+    Tensor<1,dim>
+    PlumeBox<dim>::
+    get_surface_velocity (const Point<dim> position) const
+    {
+      Point<dim-1> data_position;
+      for (unsigned int i = 0; i < dim-1; i++)
+        data_position[i] = position[i];
+
+      Tensor<1,dim> surface_velocity,old_surface_velocity;
+      for (unsigned int i = 0; i < dim; i++)
+          surface_velocity[i] = surface_lookup->get_data(data_position,i);
+
+      if (!time_dependent)
+        return surface_velocity;
+
+      for (unsigned int i = 0; i < dim; i++)
+        old_surface_velocity[i] = old_surface_lookup->get_data(data_position,i);
+
+      return time_weight * surface_velocity + (1 - time_weight) * old_surface_velocity;
+    }
+
+    template <int dim>
+    std_cxx11::array<unsigned int,dim-1>
+    PlumeBox<dim>::get_boundary_dimensions () const
+    {
+      std_cxx11::array<unsigned int,dim-1> boundary_dimensions;
+
+      switch (dim)
+      {
+      case 2:
+        if ((boundary_id == 2) || (boundary_id == 3))
+          {
+            boundary_dimensions[0] = 0;
+          }
+        else if ((boundary_id == 0) || (boundary_id == 1))
+          {
+            boundary_dimensions[0] = 1;
+          }
+        else
+          AssertThrow(false,ExcNotImplemented());
+
+        break;
+
+      case 3:
+        if ((boundary_id == 4) || (boundary_id == 5))
+          {
+            boundary_dimensions[0] = 0;
+            boundary_dimensions[1] = 1;
+          }
+        else if ((boundary_id == 0) || (boundary_id == 1))
+          {
+            boundary_dimensions[0] = 1;
+            boundary_dimensions[1] = 2;
+          }
+        else if ((boundary_id == 2) || (boundary_id == 3))
+          {
+            boundary_dimensions[0] = 0;
+            boundary_dimensions[1] = 2;
+          }
+        else
+          AssertThrow(false,ExcNotImplemented());
+
+        break;
+
+      default:
+        AssertThrow(false,ExcNotImplemented());
+      }
+      return boundary_dimensions;
+    }
 
     template <int dim>
     Tensor<1,dim>
@@ -368,12 +509,11 @@ namespace aspect
           Tensor<1,dim> velocity;
           // If at the top, only use plate velocity
           if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
-            velocity = surface_lookup->surface_velocity(position,time_weight);
+            velocity = get_surface_velocity(position);
           // If at the bottom, add the plume contribution
           else if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "bottom")
             {
-              for (unsigned int i = 0; i < dim; i++)
-                velocity[i] = lookup->get_data(position,i,time_weight);
+              velocity = get_velocity(position);
               velocity[dim-1] += V0 * std::exp(-std::pow((position-plume_position).norm()/R0,2));
             }
           // At the sides interpolate between side and top velocity
@@ -383,10 +523,8 @@ namespace aspect
               const double depth_weight = 0.5*(1.0 - std::tanh((depth - lithosphere_thickness)
                                                                / depth_interpolation_width));
 
-              for (unsigned int i = 0; i < dim; i++)
-                velocity[i] = (1 - depth_weight) * lookup->get_data(position,i,time_weight);
-
-              velocity += depth_weight * surface_lookup->surface_velocity(position,time_weight);
+              velocity = (1 - depth_weight) * get_velocity(position);
+              velocity += depth_weight * get_surface_velocity(position);
             }
 
           return velocity;
@@ -428,19 +566,6 @@ namespace aspect
                              "Depending on the setting of the global 'Use years in output instead of seconds' flag "
                              "in the input file, this number is either interpreted as seconds or as years. "
                              "The default is one million, i.e., either one million seconds or one million years.");
-          prm.declare_entry ("Number of x grid points", "0",
-                             Patterns::Double (0),
-                             "Number of grid points in x direction. You need to either set this variable in the "
-                             "parameter file or provide a '# POINTS: x [y]' line in your first data file. You "
-                             "can also set both or include the line in every data file, but in this case ASPECT "
-                             "crashes if there are conflicts between the numbers. Dimensions that are not used "
-                             "in the model or for this boundary plugin are ignored.");
-          prm.declare_entry ("Number of y grid points", "0",
-                             Patterns::Double (0),
-                             "Number of grid points in y direction.");
-          prm.declare_entry ("Number of z grid points", "0",
-                             Patterns::Double (0),
-                             "Number of grid points in z direction.");
           prm.declare_entry ("First data file model time", "0",
                              Patterns::Double (0),
                              "Time from which on the velocity file with number 'First velocity "
@@ -494,19 +619,6 @@ namespace aspect
                              "The file name of the material data. Provide file in format: "
                              "(Velocity file name).\\%d.gpml where \\%d is any sprintf integer "
                              "qualifier, specifying the format of the current file number.");
-          prm.declare_entry ("X grid spacing", "20e3",
-                             Patterns::Double (0),
-                             "Distance between two grid points in x direction.");
-          prm.declare_entry ("Y grid spacing", "20e3",
-                             Patterns::Double (0),
-                             "Distance between two grid points in y direction.");
-          prm.declare_entry ("Interpolation width", "0",
-                             Patterns::Double (0),
-                             "Determines the width of the velocity interpolation zone around the current point. "
-                             "Currently equals the distance between evaluation point and velocity data point that "
-                             "is still included in the interpolation. The weighting of the points currently only accounts "
-                             "for the surface area a single data point is covering ('moving window' interpolation without "
-                             "distance weighting).");
           prm.declare_entry ("Lithosphere thickness", "2e5",
                              Patterns::Double (0),
                              "The velocity at the sides is interpolated between a plate velocity "
@@ -584,9 +696,6 @@ namespace aspect
           data_file_name    = prm.get ("Data file name");
 
           scale_factor      = prm.get_double ("Scale factor");
-          data_points[0]    = prm.get_double ("Number of x grid points");
-          data_points[1]    = prm.get_double ("Number of y grid points");
-          data_points[2]    = prm.get_double ("Number of z grid points");
 
           data_file_time_step             = prm.get_double ("Data file time step");
           first_data_file_model_time      = prm.get_double ("First data file model time");
@@ -620,11 +729,8 @@ namespace aspect
           surface_velocity_file_name    = prm.get ("Velocity file name");
           surface_id_file_names         = prm.get ("Id file names");
 
-          interpolation_width   = prm.get_double ("Interpolation width");
           lithosphere_thickness = prm.get_double ("Lithosphere thickness");
           depth_interpolation_width     = prm.get_double ("Depth interpolation width");
-          x_step                = prm.get_double ("X grid spacing");
-          y_step                = prm.get_double ("Y grid spacing");
           surface_time_scale_factor     = prm.get_double ("Time scale factor");
           surface_scale_factor  = prm.get_double ("Scale factor");
 

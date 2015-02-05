@@ -52,19 +52,13 @@ subsection Boundary velocity model
   subsection Box plates model
     set Data directory           = $ASPECT_SOURCE_DIR/data/velocity-boundary-conditions/box-plates/test/
     set Id file names            = plates_%d
-    set Interpolation width      = 0
     set Velocity file name       = velocities
     set Scale factor             = 1.0
-    set X grid spacing           = 1100000
-    set Y grid spacing           = 1100000
   end
 
   subsection Ascii data model
     set Data file name       = box_3d_%s.%d.csv
     set Data directory = $ASPECT_SOURCE_DIR/data/velocity-boundary-conditions/plume-box/test/
-    set Number of x grid points = 3
-    set Number of y grid points = 3
-    set Number of z grid points = 3
     set Data file time step = 1e6
     set Scale factor = 1.0
   end

@@ -44,36 +44,19 @@ namespace aspect
     {
       template <int dim>
       BoxPlatesLookup<dim>::BoxPlatesLookup(const std::string &filename,
-                                   const Point<dim> &grid_extent_,
-                                   const double dx,
-                                   const double dy,
-                                   const double interpolation_width_,
-                                   const ConditionalOStream &pcout,
-                                   const double time_scale_factor,
-                                   const double velocity_scale_factor)
+                                            const unsigned int components,
+                                            const double time_scale_factor,
+                                            const double velocity_scale_factor)
         :
-        ids(0,0),
-        old_ids(0,0),
-        id_values (&ids),
-        old_id_values (&old_ids),
-        current_time_index(0),
-        delta_x(dx),
-        delta_y(dy),
-        grid_extent(grid_extent_),
-        nx((grid_extent_(0) / dx)),
-        ny((dim == 3) ?
-            (grid_extent_(1) / dy)
-            : nx),
-        interpolation_width(interpolation_width_)
+          components(components),
+          data(components),
+          time_scale_factor(time_scale_factor),
+          velocity_scale_factor(velocity_scale_factor)
       {
-
-        pcout << std::endl << "   Loading Plate velocity file: "
-              << filename << "." << std::endl << std::endl;
-
         // Check whether file exists, we do not want to throw
         // an exception in case it does not, because it could be by purpose
         // (i.e. the end of the boundary condition is reached)
-        AssertThrow (fexists(filename),
+        AssertThrow (Utilities::fexists(filename),
                      ExcMessage (std::string("Plate velocity file <")
                                  +
                                  filename
@@ -84,334 +67,251 @@ namespace aspect
         std::ifstream in(filename.c_str(), std::ios::in);
         AssertThrow (in,
                      ExcMessage (std::string("Couldn't open file <") + filename));
-
         getline(in, temp); // eat first line
 
 
-        double old_time = -1;
-
-        // each time will contain a map from plate character to velocity
-        std::map<unsigned char, plate_velocity > velocity_slice;
-
-        while (!in.eof())
+        double old_time (std::numeric_limits<double>::quiet_NaN());
+        velocity_map velocity_slice;
+        double start_time,end_time,vx,vy,omega;
+        unsigned char plate_id;
+        while (in >> start_time >> end_time >> plate_id >> vx >> vy >> omega)
           {
-            double start_time,end_time,vx,vy,omega;
-            unsigned char plate_id;
-            in >> start_time >> end_time >> plate_id >> vx >> vy >> omega;
+            // scale all properties
+            vx *= velocity_scale_factor;
+            vy *= velocity_scale_factor;
+            // omega is in [velocity/km] scale it to [1/s]
+            omega *= velocity_scale_factor / 1000;
+            start_time *= time_scale_factor;
+            end_time *= time_scale_factor;
 
-            getline(in, temp);
-            if (in.eof())
+            // If we have just read in the next time slice
+            // save the last one and start a new one
+            if (start_time > old_time + 1e-16)
               {
-                velocity_values.push_back(velocity_slice);
-                break;
+                velocity_values.push_back(std::make_pair(old_time,velocity_slice));
+                velocity_slice = velocity_map();
               }
 
+            // each time will contain a map from plate character to velocity
             plate_velocity velocity;
             switch(dim)
             {
-            case 2:
-              velocity.velocity[0] = vx * velocity_scale_factor;
+            case 1:
+              velocity.first[0] = vx;
               break;
-            case 3:
-              velocity.velocity[0] = vx * velocity_scale_factor;
-              velocity.velocity[1] = vy * velocity_scale_factor;
+            case 2:
+              velocity.first[0] = vx;
+              velocity.first[1] = vy;
               break;
             default:
               AssertThrow(false,ExcNotImplemented());
               break;
             }
 
-            // omega is in [velocity/km] scale it to [1/s]
-            velocity.rotation = omega * velocity_scale_factor / 1000;
-
-            if (start_time > old_time + 1e-16)
-              {
-                if (times.size() > 0)
-                  {
-                  velocity_values.push_back(velocity_slice);
-                  velocity_slice = std::map<unsigned char, plate_velocity > ();
-                  }
-
-                // Correct times to years instead of Ma
-                // (start_time-time)*Myr_in_seconds
-                times.push_back(start_time*time_scale_factor);
-
-                old_time = start_time;
-              }
+            velocity.second = omega;
 
             velocity_slice.insert(std::pair<unsigned char,plate_velocity >
             (plate_id,velocity));
 
+            old_time = start_time;
           }
 
-        // We read in the velocity values from today backwards, therefore if
-        // we start the model run in the past we start at the last velocity_values
-        // slice and move to the first element over time
-        current_time_index = velocity_values.size()-2;
-      }
-
-      template <int dim>
-      void BoxPlatesLookup<dim>::screen_output(const ConditionalOStream &pcout) const
-      {
-        std::ostringstream output;
-
-        output << std::setprecision (3) << std::setw(3) << std::fixed << std::endl
-               << "   Set up Box plates boundary velocity module."  << std::endl
-               << "   The grid extents to: " << grid_extent
-               << std::endl;
-
-        pcout << output.str();
-      }
-
-      template <int dim>
-      void BoxPlatesLookup<dim>::update(const double time)
-      {
-        if (time < times.back())
-          {
-          if (times.back() - time < times[current_time_index])
-            {
-              current_time_index = (unsigned int) (times.back() - time) / (times[current_time_index+1] - times[current_time_index]);
-            }
-          velocity_time_weight = (time - (times.back() - times[current_time_index+1])) / (times[current_time_index+1] - times[current_time_index]);
-          }
-        else
-          velocity_time_weight = 1.0;
-      }
-
-      template <int dim>
-      bool
-      BoxPlatesLookup<dim>::fexists(const std::string &filename) const
-      {
-        std::ifstream ifile(filename.c_str());
-        return !(!ifile); // only in c++11 you can convert to bool directly
+        //save the last slice
+        velocity_values.push_back(std::make_pair(start_time,velocity_slice));
       }
 
       template <int dim>
       void
-      BoxPlatesLookup<dim>::load_file(const std::string &filename, const ConditionalOStream &pcout)
+      BoxPlatesLookup<dim>::load_file(const std::string &filename,
+                                      const double time)
       {
-        pcout << std::endl << "   Loading Box plates boundary velocity file "
-              << filename << "." << std::endl << std::endl;
+        const double time_until_end = velocity_values.back().first - time;
+        unsigned int old_index,next_index;
+
+        for (unsigned int i = 0; i < velocity_values.size(); i++)
+            if (time_until_end <= velocity_values[i].first)
+                old_index = i;
+
+        if (old_index == 0)
+          next_index = 0;
+        else
+          next_index = old_index - 1;
+
+        const velocity_map old_map = velocity_values[old_index].second;
+        const velocity_map next_map = velocity_values[next_index].second;
+
+        double velocity_time_weight = 1.0;
+        if (next_index != old_index)
+          velocity_time_weight = (velocity_values[old_index].first - time_until_end) / (velocity_values[old_index].first - velocity_values[next_index].first);
 
         // Check whether file exists, we do not want to throw
         // an exception in case it does not, because it could be by purpose
         // (i.e. the end of the boundary condition is reached)
-        AssertThrow (fexists(filename),
-                     ExcMessage (std::string("Box plates file <")
+        AssertThrow (Utilities::fexists(filename),
+                     ExcMessage (std::string("Ascii data file <")
                                  +
                                  filename
                                  +
                                  "> not found!"));
 
-        std::string temp;
         std::ifstream in(filename.c_str(), std::ios::in);
         AssertThrow (in,
-                     ExcMessage (std::string("Couldn't find ids. Is file in the right format for plate ids?")));
+                     ExcMessage (std::string("Couldn't open data file <"
+                                             +
+                                             filename
+                                             +
+                                             ">.")));
 
-        // swap pointers to old and new values, we overwrite the old ones
-        // and the new ones become the old ones
-        std::swap (id_values, old_id_values);
+        // Read header lines and if necessary reinit tables
+        while (in.peek() == '#')
+          {
+            std::string line;
+            getline(in,line);
+            std::stringstream linestream(line);
+            std::string word;
+            while (linestream >> word)
+              if (word == "POINTS:")
+                for (unsigned int i = 0; i < dim; i++)
+                  {
+                    unsigned int temp_index;
+                    linestream >> temp_index;
 
-        (*id_values).reinit(nx,ny);
+                    if (table_points[i] == 0)
+                      table_points[i] = temp_index;
+                    else
+                      AssertThrow (table_points[i] == temp_index,
+                                   ExcMessage("The file grid must not change over model runtime. "
+                                              "Either you prescribed a conflicting number of points in "
+                                              "the input file, or the POINTS comment in your data files "
+                                              "is changing between following files."));
+                  }
+          }
 
+        /**
+         * Table for the new data. This peculiar reinit is necessary, because
+         * there is no constructor for Table, which takes TableIndices as
+         * argument.
+         */
+        Table<dim,double> data_table;
+        data_table.TableBase<dim,double>::reinit(table_points);
+        std::vector<Table<dim,double> > data_tables(components+dim,data_table);
 
-        unsigned int i = 0;
-        char sep;
+        // Read data lines
+        unsigned int line = 0;
+        double temp_data;
+
         while (!in.eof())
           {
-            unsigned char plate_id;
+            Point<dim> position;
+             for (unsigned int i = 0; i < dim; i++)
+               {
+                 if (!(in >> position[i]))
+                   break;
+                 data_tables[i](compute_table_indices(line)) = position[i];
+               }
 
-            in >> plate_id;
+             char plate_id;
+             if (!(in >> plate_id))
+               break;
 
-            if (in.eof())
-              break;
+            Tensor<1,dim+1> old_velocity = old_map.find(plate_id)->second.first;
+            const double old_omega = old_map.find(plate_id)->second.second;
 
-            const unsigned int idx_x = i % nx;
-            const unsigned int idx_y = i / nx;
+            Tensor<1,dim+1> velocity;
+            double omega;
 
-            (*id_values)[idx_x][idx_y] = plate_id;
+            // It might happen that the current plate disappears in the next time step
+            // In case the plate is not longer there, use the old velocity
+            if (old_map.find(plate_id) != old_map.end())
+              {
+                velocity = next_map.find(plate_id)->second.first;
+                omega    = next_map.find(plate_id)->second.second;
+              }
+            else
+              {
+                velocity = old_velocity;
+                omega    = old_omega;
+              }
 
-            i++;
+
+             Tensor<1,dim+1> rotation_velocity;
+             Tensor<1,dim+1> old_rotation_velocity;
+
+             if (dim == 2)
+               {
+                 rotation_velocity[0] = -omega*position[1];
+                 rotation_velocity[1] = omega*position[0];
+                 old_rotation_velocity[0] = -old_omega*position[1];
+                 old_rotation_velocity[1] = old_omega*position[0];
+               }
+             else if (dim == 1)
+               {
+                 rotation_velocity[0] = -omega*position[0];
+                 old_rotation_velocity[0] = -old_omega*position[0];
+               }
+
+             velocity += rotation_velocity;
+             old_velocity += old_rotation_velocity;
+
+             const Tensor<1,dim+1> surface_velocity = velocity_time_weight * velocity
+                                                      + (1-velocity_time_weight) * old_velocity;
+
+             for (unsigned int i = 0; i < dim+1; i++)
+               data_tables[dim+i](compute_table_indices(line)) = surface_velocity[i];
+
+            line++;
+
+            // TODO: add checks for coordinate ordering in data files
           }
 
-        AssertThrow(i == nx*ny,
-                    ExcMessage (std::string("Number of read in points does not match number of assumed points. File corrupted?")));
+        AssertThrow(line == data_table.n_elements(),
+                    ExcMessage (std::string("Number of read in points does not match number of expected points. File corrupted?")));
+
+        std_cxx11::array<unsigned int,dim> table_intervals;
+
+        for (unsigned int i = 0; i < dim; i++)
+          {
+            table_intervals[i] = table_points[i] - 1;
+
+            TableIndices<dim> idx;
+            grid_extent[i].first = data_tables[i](idx);
+            idx[i] = table_points[i] - 1;
+            grid_extent[i].second = data_tables[i](idx);
+          }
+
+        for (unsigned int i = 0; i < components; i++)
+          {
+            if (data[i])
+              delete data[i];
+            data[i] = new Functions::InterpolatedUniformGridData<dim> (grid_extent,
+                                                                       table_intervals,
+                                                                       data_tables[dim+i]);
+          }
       }
 
+
       template <int dim>
-      Tensor<1,dim>
-      BoxPlatesLookup<dim>::surface_velocity(const Point<dim> &position,
-                                      const double time_weight) const
+      TableIndices<dim>
+      BoxPlatesLookup<dim>::compute_table_indices(const unsigned int line) const
       {
+        TableIndices<dim> idx;
+        idx[0] = line % table_points[0];
+        if (dim >= 2)
+          idx[1] = (line / table_points[0]) % table_points[1];
+        if (dim == 3)
+          idx[2] = line / (table_points[0] * table_points[1]);
 
-        Tensor<1,dim> surf_vel;
-
-        unsigned int spatial_index[2] = {0,0};
-        calculate_spatial_index(spatial_index,position);
-
-        // always use closest point, ensured by the check_termination = false setting
-        double n_interpolation_weight = add_interpolation_point(surf_vel,position,spatial_index,time_weight,false);
-
-        // If interpolation is requested, loop over points in x, y direction until we exit a circle of
-        // interpolation_width radius around the evaluation point position
-        if (interpolation_width > 0)
-          {
-            unsigned int i = 0;
-            unsigned int j = 1;
-            do
-              {
-                do
-                  {
-                    const unsigned int idx[2][2] = { {(unsigned int)(spatial_index[0]+i), (unsigned int)(spatial_index[1]+j)},
-                      {(unsigned int)(spatial_index[0]-i), (unsigned int)(spatial_index[1]-j)}
-                    };
-
-                    const double weight_1 = add_interpolation_point(surf_vel,position,idx[0],time_weight,true);
-                    const double weight_2 = add_interpolation_point(surf_vel,position,idx[1],time_weight,true);
-
-                    // termination criterion, our interpolation points are outside of the defined circle
-                    if ((std::abs(weight_1 + 1) < 1e-14) || (std::abs(weight_2 + 1) < 1e-14))
-                      {
-                        if (j == 0)
-                          {
-                            // If we are outside of the interpolation circle even without extending phi (j), we have
-                            // visited all possible interpolation points. Return current surf_vel.
-                            return surf_vel / n_interpolation_weight;
-                          }
-                        else
-                          {
-                            // We are outside of the interpolation circle, but resetting j to 0 (phi to original index)
-                            // and moving forward in theta direction (i) might show us more interpolation points.
-                            break;
-                          }
-                      }
-
-                    n_interpolation_weight += weight_1;
-                    n_interpolation_weight += weight_2;
-
-                    j++;
-                  }
-                while (j < id_values->n_cols() / 2);
-                j = 0;
-                i++;
-              }
-            while (i < id_values->n_rows() / 2);
-          }
-
-        // We have interpolated over the whole dataset of the provided velocities, which is ok.
-        // Velocity will be constant for all evaluation points in this case.
-
-        return surf_vel / n_interpolation_weight;
+        return idx;
       }
 
       template <int dim>
       double
-      BoxPlatesLookup<dim>::add_interpolation_point(Tensor<1,dim>       &surf_vel,
-                                                    const Point<dim> &position,
-                                                    const unsigned int          grid_index[2],
-                                                    const double       time_weight,
-                                                    const bool         check_termination) const
+      BoxPlatesLookup<dim>::get_data(const Point<dim> &position,
+                                     const unsigned int component) const
       {
-        const double distance = (position - get_grid_point_position(grid_index[0],
-                                                                   grid_index[1])).norm();
-
-        // termination criterion, our interpolation points are outside of the defined circle
-        if (check_termination && (distance > interpolation_width))
-          {
-            return -1;
-          }
-
-        const double point_weight = 1.0;
-
-        const unsigned char plate_id = (*id_values)[grid_index[0]][grid_index[1]];
-        const unsigned char old_plate_id = (*old_id_values)[grid_index[0]][grid_index[1]];
-
-        Tensor<1,dim> old_velocity = velocity_values[current_time_index+1].find(plate_id)->second.velocity;
-        const double old_omega = velocity_values[current_time_index+1].find(plate_id)->second.rotation;
-
-        Tensor<1,dim> velocity;
-        double omega;
-
-        // It might happen that the current plate disappears in the next time step
-        // In case the plate is not longer there, use the old velocity
-        if (velocity_values[current_time_index].find(plate_id) != velocity_values[current_time_index].end())
-          {
-            velocity = velocity_values[current_time_index].find(plate_id)->second.velocity;
-            omega    = velocity_values[current_time_index].find(plate_id)->second.rotation;
-          }
-        else
-          {
-            velocity = old_velocity;
-            omega    = old_omega;
-          }
-
-        Tensor<1,dim> rotation_velocity;
-        Tensor<1,dim> old_rotation_velocity;
-
-        if (dim == 3)
-          {
-            rotation_velocity[0] = -omega*position[1];
-            rotation_velocity[1] = omega*position[0];
-            old_rotation_velocity[0] = -old_omega*position[1];
-            old_rotation_velocity[1] = old_omega*position[0];
-          }
-        else if (dim == 2)
-          {
-            rotation_velocity[0] = -omega*position[1];
-            old_rotation_velocity[0] = -old_omega*position[1];
-          }
-
-        velocity += rotation_velocity;
-        old_velocity += old_rotation_velocity;
-
-        const double depth_weight = 0.5*(1.0 + std::tanh((position(dim-1)-460000)/50000));
-        surf_vel += point_weight * depth_weight * velocity_time_weight * velocity;
-        surf_vel += point_weight * depth_weight * (1-velocity_time_weight) * old_velocity;
-
-        return point_weight;
+        return data[component]->value(position);
       }
 
-
-      template <int dim>
-      Point<dim>
-      BoxPlatesLookup<dim>::get_grid_point_position(const unsigned int x_index,
-                                                    const unsigned int y_index) const
-      {
-        switch (dim)
-        {
-        case 2:
-          return Point<dim> (x_index * delta_x, 0);
-          break;
-        case 3:
-          return Point<dim> (x_index * delta_x, y_index * delta_y, 0);
-          break;
-        default:
-          AssertThrow(false,
-              ExcNotImplemented());
-          break;
-        }
-        return Point<dim>();
-      }
-
-      template <int dim>
-      void
-      BoxPlatesLookup<dim>::calculate_spatial_index(unsigned int *index,
-                                             const Point<dim> &position) const
-      {
-        switch (dim)
-        {
-        case 2:
-          index[0] = std::min(static_cast<unsigned int> (position[0]/delta_x),nx-1);
-          index[1] = 0;
-          break;
-        case 3:
-          index[0] = std::min(static_cast<unsigned int> (position[0]/delta_x),nx-1);
-          index[1] = std::min(static_cast<unsigned int> ((grid_extent[1] - position[1])/delta_y),ny-1);
-          break;
-        default:
-          AssertThrow(false,ExcNotImplemented());
-        }
-      }
     }
 
 
@@ -426,7 +326,10 @@ namespace aspect
       time_dependent(true),
       interpolation_width(0.0),
       lookup()
-    {}
+    {
+      AssertThrow(false,
+          ExcMessage("This plugin is currently not functional!!! Debug it before use."));
+    }
 
 
     template <int dim>
@@ -440,14 +343,14 @@ namespace aspect
       const GeometryModel::Box<dim> *geometry_model = dynamic_cast<const GeometryModel::Box<dim> *>(&this->get_geometry_model());
       const Point<dim> grid_extent = geometry_model->get_extents();
 
-      lookup.reset(new internal::BoxPlatesLookup<dim>(data_directory+velocity_file_name,
-                                                      grid_extent,
-                                                      x_step,
-                                                      y_step,
-                                                      interpolation_width,
-                                                      this->get_pcout(),
-                                                      year_in_seconds * 1e6,
-                                                      scale_factor));
+//      lookup.reset(new internal::BoxPlatesLookup<dim>(data_directory+velocity_file_name,
+//                                                      grid_extent,
+//                                                      x_step,
+//                                                      y_step,
+//                                                      interpolation_width,
+//                                                      this->get_pcout(),
+//                                                      year_in_seconds * 1e6,
+//                                                      scale_factor));
     }
 
 
@@ -475,24 +378,24 @@ namespace aspect
 
       time_relative_to_vel_file_start_time = this->get_time() - velocity_file_start_time;
 
-      lookup->update(time_relative_to_vel_file_start_time);
+//      lookup->update(time_relative_to_vel_file_start_time);
 
       // If the boundary condition is constant, switch off time_dependence end leave function.
       // This also sets time_weight to 1.0
       if ((create_filename (current_time_step) == create_filename (current_time_step+1)) && time_dependent)
         {
-          lookup->screen_output(this->get_pcout());
-
-          lookup->load_file(create_filename (current_time_step),
-                             this->get_pcout());
+//          lookup->screen_output(this->get_pcout());
+//
+//          lookup->load_file(create_filename (current_time_step),
+//                             this->get_pcout());
           end_time_dependence (current_time_step);
           return;
         }
 
       if (time_dependent && (time_relative_to_vel_file_start_time >= 0.0))
         {
-          if (current_time_step < 0)
-            lookup->screen_output (this->get_pcout());
+//          if (current_time_step < 0)
+//            lookup->screen_output (this->get_pcout());
 
           if (static_cast<int> (time_relative_to_vel_file_start_time / time_step) > current_time_step)
             {
@@ -522,7 +425,7 @@ namespace aspect
         try
           {
             lookup->load_file (create_filename (current_time_step),
-                               this->get_pcout());
+                               0.0);
           }
         catch (...)
           // If loading current_time_step failed, end time dependent part with old_time_step.
@@ -554,7 +457,7 @@ namespace aspect
       try
         {
           lookup->load_file (create_filename (current_time_step+1),
-                             this->get_pcout());
+                             0.0);
         }
 
       // If loading current_time_step + 1 failed, end time dependent part with current_time_step.
@@ -574,7 +477,7 @@ namespace aspect
     {
       // Next velocity file not found --> Constant velocities
       // by simply loading the old file twice
-      lookup->load_file (create_filename (timestep), this->get_pcout());
+      lookup->load_file (create_filename (timestep), 0.0);
       // no longer consider the problem time dependent from here on out
       // this cancels all attempts to read files at the next time steps
       time_dependent = false;
@@ -593,7 +496,8 @@ namespace aspect
     boundary_velocity (const Point<dim> &position) const
     {
       if (time_relative_to_vel_file_start_time >= 0.0)
-        return lookup->surface_velocity(position,time_weight);
+        return Tensor<1,dim> ();
+        //return lookup->surface_velocity(position,time_weight);
       else
         return Tensor<1,dim> ();
     }
@@ -739,6 +643,7 @@ namespace aspect
   {
     namespace internal
     {
+      template class BoxPlatesLookup<1>;
       template class BoxPlatesLookup<2>;
       template class BoxPlatesLookup<3>;
     }

@@ -25,12 +25,11 @@
 #include <aspect/velocity_boundary_conditions/interface.h>
 
 // Additional lookup classes are within these
-#include <aspect/velocity_boundary_conditions/ascii_data.h>
-#include <aspect/velocity_boundary_conditions/box_plates.h>
 #include <aspect/boundary_temperature/plume.h>
-
+#include <aspect/velocity_boundary_conditions/box_plates.h>
 
 #include <aspect/simulator_access.h>
+#include <aspect/utilities.h>
 
 namespace aspect
 {
@@ -244,13 +243,17 @@ namespace aspect
          * Pointer to an object that reads and processes data we get from
          * text files.
          */
-        std_cxx11::shared_ptr<internal::AsciiDataLookup<dim,dim-1> > lookup;
+        std_cxx11::shared_ptr<Utilities::AsciiDataLookup<dim-1> > lookup;
+        std_cxx11::shared_ptr<Utilities::AsciiDataLookup<dim-1> > old_lookup;
+
 
         /**
          * Pointer to an object that reads and processes data we get from
          * text files.
          */
-        std_cxx11::shared_ptr<internal::BoxPlatesLookup<dim> > surface_lookup;
+        std_cxx11::shared_ptr<internal::BoxPlatesLookup<dim-1> > surface_lookup;
+        std_cxx11::shared_ptr<internal::BoxPlatesLookup<dim-1> > old_surface_lookup;
+
 
         /**
          * Pointer to an object that reads and processes data we get from
@@ -288,14 +291,14 @@ namespace aspect
          * Handles the update of the data in lookup.
          */
         void
-        update_data ();
+        update_data (const bool load_both_files);
 
         /**
          * Handles settings and user notification in case the time-dependent
          * part of the boundary condition is over.
          */
         void
-        end_time_dependence (const int timestep);
+        end_time_dependence ();
 
         /**
          * Create a filename out of the name template for the side and bottom
@@ -311,6 +314,25 @@ namespace aspect
         std::string
         create_surface_filename (const int filenumber) const;
 
+        Tensor<1,dim>
+        get_velocity (const Point<dim> position) const;
+
+        Tensor<1,dim>
+        get_surface_velocity (const Point<dim> position) const;
+
+        /**
+         * Determines which of the dimensions of the position is used to find
+         * the data point in the data grid. E.g. the left boundary of a box model extents in
+         * the y and z direction (position[1] and position[2]), therefore the function
+         * would return [1,2] for dim==3 or [1] for dim==2. We are lucky that these indices are
+         * identical for the box and the spherical shell (if we use spherical coordinates for the
+         * spherical shell), therefore we do not need to distinguish between them. For the initial
+         * condition this function is trivial, because the position in the data grid is the same as
+         * the actual position (the function returns [0,1,2] or [0,1]), but for the boundary
+         * conditions it matters.
+         */
+        std_cxx11::array<unsigned int,dim-1>
+        get_boundary_dimensions () const;
     };
   }
 }
