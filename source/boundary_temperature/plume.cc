@@ -163,10 +163,7 @@ namespace aspect
     Plume<dim>::
     update ()
     {
-      Point<dim> extents = (dynamic_cast<const GeometryModel::Box<dim> *>(&this->get_geometry_model()))->get_extents();
-      extents(dim-1) = 0;
-      extents /= 2.0;
-      plume_position = lookup->plume_position(this->get_time()) + extents;
+      plume_position = lookup->plume_position(this->get_time());
     }
 
     template <int dim>
