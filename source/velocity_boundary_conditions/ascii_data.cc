@@ -50,8 +50,8 @@ namespace aspect
       AssertThrow(*(boundary_ids.begin()) != numbers::invalid_boundary_id,
                   ExcMessage("Did not find the boundary indicator for the prescribed data plugin."));
 
-      BoundaryTemperature::internal::AsciiDataBoundary<dim>::initialize(boundary_ids,
-                                                                        dim);
+      Utilities::AsciiDataBoundary<dim>::initialize(boundary_ids,
+                                                    dim);
     }
 
     template <int dim>
@@ -60,7 +60,7 @@ namespace aspect
     {
       Interface<dim>::update ();
 
-      BoundaryTemperature::internal::AsciiDataBoundary<dim>::update();
+      Utilities::AsciiDataBoundary<dim>::update();
     }
 
 
@@ -71,9 +71,9 @@ namespace aspect
     {
       Tensor<1,dim> velocity;
       for (unsigned int i = 0; i < dim; i++)
-        velocity[i] = BoundaryTemperature::internal::AsciiDataBoundary<dim>::get_data_component(*(boundary_ids.begin()),
-                      position,
-                      i);
+        velocity[i] = Utilities::AsciiDataBoundary<dim>::get_data_component(*(boundary_ids.begin()),
+                                                                            position,
+                                                                            i);
       return velocity;
     }
 
@@ -84,9 +84,9 @@ namespace aspect
     {
       prm.enter_subsection("Boundary velocity model");
       {
-        BoundaryTemperature::internal::AsciiDataBoundary<dim>::declare_parameters(prm,
-                                                                                  "$ASPECT_SOURCE_DIR/data/velocity-boundary-conditions/ascii-data/test/",
-                                                                                  "box_2d_%s.%d.txt");
+        Utilities::AsciiDataBoundary<dim>::declare_parameters(prm,
+                                                              "$ASPECT_SOURCE_DIR/data/velocity-boundary-conditions/ascii-data/test/",
+                                                              "box_2d_%s.%d.txt");
       }
       prm.leave_subsection();
     }
@@ -98,7 +98,7 @@ namespace aspect
     {
       prm.enter_subsection("Boundary velocity model");
       {
-        BoundaryTemperature::internal::AsciiDataBoundary<dim>::parse_parameters(prm);
+        Utilities::AsciiDataBoundary<dim>::parse_parameters(prm);
 
         if (this->convert_output_to_years() == true)
           {
