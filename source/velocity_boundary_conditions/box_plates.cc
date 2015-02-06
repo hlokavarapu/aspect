@@ -129,7 +129,7 @@ namespace aspect
         unsigned int old_index,next_index;
 
         for (unsigned int i = 0; i < velocity_values.size(); i++)
-            if (time_until_end <= velocity_values[i].first)
+            if (time_until_end >= velocity_values[i].first)
                 old_index = i;
 
         if (old_index == 0)
@@ -143,6 +143,9 @@ namespace aspect
         double velocity_time_weight = 1.0;
         if (next_index != old_index)
           velocity_time_weight = (velocity_values[old_index].first - time_until_end) / (velocity_values[old_index].first - velocity_values[next_index].first);
+
+        Assert((0.0 <= velocity_time_weight) && (1.0 >= velocity_time_weight),
+               ExcMessage ("Velocity time weight is wrong"));
 
         // Check whether file exists, we do not want to throw
         // an exception in case it does not, because it could be by purpose
