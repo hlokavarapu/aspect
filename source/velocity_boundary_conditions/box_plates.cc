@@ -127,22 +127,34 @@ namespace aspect
       {
         const double time_until_end = velocity_values.back().first - time;
         unsigned int old_index,next_index;
+        double velocity_time_weight;
 
-        for (unsigned int i = 0; i < velocity_values.size(); i++)
-            if (time_until_end >= velocity_values[i].first)
-                old_index = i;
-
-        if (old_index == 0)
-          next_index = 0;
+        if (time_until_end > velocity_values.back().first)
+          {
+            old_index = velocity_values.size();
+            next_index = velocity_values.size();
+            velocity_time_weight = 0.0;
+          }
+        else if (time_until_end < 0.0)
+          {
+            old_index = 0;
+            next_index = 0;
+            velocity_time_weight = 1.0;
+          }
         else
-          next_index = old_index - 1;
+          {
+            for (unsigned int i = velocity_values.size() - 2; i >= 0; i--)
+                if (time_until_end >= velocity_values[i].first)
+                  {
+                    old_index = i + 1;
+                    next_index = i;
+                    velocity_time_weight = (velocity_values[old_index].first - time_until_end) / (velocity_values[old_index].first - velocity_values[next_index].first);
+                    break;
+                  }
+          }
 
         const velocity_map old_map = velocity_values[old_index].second;
         const velocity_map next_map = velocity_values[next_index].second;
-
-        double velocity_time_weight = 1.0;
-        if (next_index != old_index)
-          velocity_time_weight = (velocity_values[old_index].first - time_until_end) / (velocity_values[old_index].first - velocity_values[next_index].first);
 
         Assert((0.0 <= velocity_time_weight) && (1.0 >= velocity_time_weight),
                ExcMessage ("Velocity time weight is wrong"));
