@@ -202,6 +202,14 @@ namespace aspect
                   }
           }
 
+        for (unsigned int i = 0; i < dim; i++)
+          AssertThrow (table_points[i] != 0,
+                       ExcMessage("There was no POINTS: keyword in the data file, or it could not "
+                           "be parsed correctly. Ensure that at least the first data file contains "
+                           "an information about the grid size in the form '# POINTS: x y', where "
+                           "x y (only x in 2D) are the number of points in the coordinate directions"
+                           " of the boundary grid."));
+
         /**
          * Table for the new data. This peculiar reinit is necessary, because
          * there is no constructor for Table, which takes TableIndices as
@@ -237,7 +245,7 @@ namespace aspect
 
             // It might happen that the current plate disappears in the next time step
             // In case the plate is not longer there, use the old velocity
-            if (old_map.find(plate_id) != old_map.end())
+            if (next_map.find(plate_id) != next_map.end())
               {
                 velocity = next_map.find(plate_id)->second.first;
                 omega    = next_map.find(plate_id)->second.second;
