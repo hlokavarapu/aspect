@@ -135,7 +135,7 @@ namespace aspect
             next_index = velocity_values.size();
             velocity_time_weight = 0.0;
           }
-        else if (time_until_end < 0.0)
+        else if (time_until_end < velocity_values[0].first)
           {
             old_index = 0;
             next_index = 0;
