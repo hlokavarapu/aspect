@@ -223,12 +223,8 @@ namespace aspect
     {
       Interface<dim>::update ();
 
-      // First update the plume position, the coordinate system of the plume data files centers around 0
-      // but that is the origin of our box, so we add half of the extent to align the two systems
-      Point<dim> half_extents = (dynamic_cast<const GeometryModel::Box<dim> *>(&this->get_geometry_model()))->get_extents();
-      half_extents(dim-1) = 0;
-      half_extents /= 2.0;
-      plume_position = plume_lookup->plume_position(this->get_time()) + half_extents;
+      // First update the plume position
+      plume_position = plume_lookup->plume_position(this->get_time());
 
       if (time_dependent && (this->get_time() - first_data_file_model_time >= 0.0))
         {
