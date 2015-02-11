@@ -892,6 +892,7 @@ namespace aspect
                                              cell,
                                              true,
                                              scratch.material_model_inputs);
+        scratch.material_model_inputs.cell = cell;
 
         material_model->evaluate(scratch.material_model_inputs,scratch.material_model_outputs);
 
@@ -995,6 +996,7 @@ namespace aspect
                                          cell,
                                          true,
                                          scratch.material_model_inputs);
+    scratch.material_model_inputs.cell = cell;
 
     material_model->evaluate(scratch.material_model_inputs,
                              scratch.material_model_outputs);
@@ -1189,6 +1191,7 @@ namespace aspect
                                          cell,
                                          rebuild_stokes_matrix,
                                          scratch.material_model_inputs);
+    scratch.material_model_inputs.cell = cell;
 
     material_model->evaluate(scratch.material_model_inputs,
                              scratch.material_model_outputs);
