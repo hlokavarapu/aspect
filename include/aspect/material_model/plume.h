@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011, 2012 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2015 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -19,10 +19,11 @@
 */
 
 
-#ifndef __aspect__model_steinberger_h
-#define __aspect__model_steinberger_h
+#ifndef __aspect__model_plume_h
+#define __aspect__model_plume_h
 
 #include <aspect/material_model/interface.h>
+#include <aspect/material_model/steinberger.h>
 #include <aspect/simulator_access.h>
 
 namespace aspect
@@ -31,108 +32,6 @@ namespace aspect
   {
     using namespace dealii;
 
-    namespace internal
-    {
-      class MaterialLookup
-      {
-        public:
-          MaterialLookup(const std::string &filename,
-                         const bool interpol);
-
-          double
-          specific_heat(double temperature,
-                        double pressure) const;
-
-          double
-          density(double temperature,
-                  double pressure) const;
-
-          double
-          thermal_expansivity(const double temperature,
-                              const double pressure) const;
-
-          double
-          seismic_Vp(const double temperature,
-                     const double pressure) const;
-
-          double
-          seismic_Vs(const double temperature,
-                     const double pressure) const;
-
-          double
-          dHdT (const double temperature,
-                const double pressure) const;
-
-          double
-          dHdp (const double temperature,
-                const double pressure) const;
-
-          double
-          dRhodp (const double temperature,
-                  const double pressure) const;
-
-          double
-          value (const double temperature,
-                 const double pressure,
-                 const dealii::Table<2,
-                 double> &values,
-                 bool interpol) const;
-
-        private:
-
-          double get_nT(double temperature) const;
-
-          double get_np(double pressure) const;
-
-          dealii::Table<2,double> density_values;
-          dealii::Table<2,double> thermal_expansivity_values;
-          dealii::Table<2,double> specific_heat_values;
-          dealii::Table<2,double> vp_values;
-          dealii::Table<2,double> vs_values;
-          dealii::Table<2,double> enthalpy_values;
-
-          double delta_press;
-          double min_press;
-          double max_press;
-          double delta_temp;
-          double min_temp;
-          double max_temp;
-          unsigned int numtemp;
-          unsigned int numpress;
-          bool interpolation;
-      };
-
-      class LateralViscosityLookup
-      {
-        public:
-          LateralViscosityLookup(const std::string &filename);
-
-          double lateral_viscosity(double depth);
-
-          int get_nslices() const;
-
-        private:
-          std::vector<double> values;
-          double min_depth;
-          double delta_depth;
-          double max_depth;
-
-      };
-
-      class RadialViscosityLookup
-      {
-        public:
-          RadialViscosityLookup(const std::string &filename);
-
-          double radial_viscosity(double depth);
-
-        private:
-          std::vector<double> values;
-          double min_depth;
-          double delta_depth;
-          double max_depth;
-      };
-    }
     /**
      * A variable viscosity material model that reads the essential values of
      * coefficients from tables in input files.
@@ -146,7 +45,7 @@ namespace aspect
      * @ingroup MaterialModels
      */
     template <int dim>
-    class Steinberger: public MaterialModel::Interface<dim>, public ::aspect::SimulatorAccess<dim>
+    class Plume: public MaterialModel::Interface<dim>, public ::aspect::SimulatorAccess<dim>
     {
       public:
 
@@ -197,6 +96,12 @@ namespace aspect
                                                       const double      pressure,
                                                       const std::vector<double> &compositional_fields,
                                                       const Point<dim> &position) const;
+
+        virtual double entropy_derivative (const double temperature,
+                                           const double pressure,
+                                           const std::vector<double> &compositional_fields,
+                                           const Point<dim> &position,
+                                           const NonlinearDependence::Dependence dependence) const;
 
         virtual double seismic_Vp (const double      temperature,
                                    const double      pressure,
@@ -327,6 +232,87 @@ namespace aspect
         unsigned int n_material_data;
         std::string radial_viscosity_file_name;
         std::string lateral_viscosity_file_name;
+
+        /**
+         * The thermal conductivity.
+         */
+        double k_value;
+
+        /**
+         * Parameters for anhydrous melting of peridotite after Katz, 2003
+         */
+
+        // for the solidus temperature
+        double A1;   // °C
+        double A2; // °C/Pa
+        double A3; // °C/(Pa^2)
+
+        // for the lherzolite liquidus temperature
+        double B1;   // °C
+        double B2;   // °C/Pa
+        double B3; // °C/(Pa^2)
+
+        // for the liquidus temperature
+        double C1;   // °C
+        double C2;  // °C/Pa
+        double C3; // °C/(Pa^2)
+
+        // for the reaction coefficient of pyroxene
+        double r1;     // cpx/melt
+        double r2;     // cpx/melt/GPa
+        double M_cpx;  // mass fraction of pyroxene
+
+        // melt fraction exponent
+        double beta;
+
+        // entropy change upon melting
+        double peridotite_melting_entropy_change;
+
+        /**
+         * Parameters for melting of pyroxenite after Sobolev et al., 2011
+         */
+
+        // for the melting temperature
+        double D1;    // °C
+        double D2;  // °C/Pa
+        double D3; // °C/(Pa^2)
+        // for the melt-fraction dependence of productivity
+        double E1;
+        double E2;
+
+        // for the maximum melt fraction of pyroxenite
+        double F_px_max;
+
+        // the relative density of molten material (compared to solid)
+        double relative_melt_density;
+        double melt_thermal_alpha;
+
+        double pyroxenite_melting_entropy_change;
+
+        /**
+         * Percentage of material that is molten. Melting model after Katz,
+         * 2003 (for peridotite) and Sobolev et al., 2011 (for pyroxenite)
+         */
+        virtual
+        double
+        melt_fraction (const double temperature,
+                       const double pressure,
+                       const std::vector<double> &compositional_fields,
+                       const Point<dim> &position) const;
+
+        virtual
+        double
+        peridotite_melt_fraction (const double temperature,
+                                  const double pressure,
+                                  const std::vector<double> &compositional_fields,
+                                  const Point<dim> &position) const;
+
+        virtual
+        double
+        pyroxenite_melt_fraction (const double temperature,
+                                  const double pressure,
+                                  const std::vector<double> &compositional_fields,
+                                  const Point<dim> &position) const;
 
         /**
          * In the incompressible case we need to adjust the temperature as if
