@@ -59,7 +59,7 @@ namespace aspect
 
         for (unsigned int q=0; q<n_quadrature_points; ++q)
           {
-            const double pressure    = uh[q][this->introspection().component_indices.pressure];
+            const double pressure    = this->get_adiabatic_conditions().pressure(evaluation_points[q]);
             const double temperature = uh[q][this->introspection().component_indices.temperature];
             std::vector<double> composition(this->n_compositional_fields());
 

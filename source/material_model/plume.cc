@@ -264,38 +264,7 @@ namespace aspect
              const std::vector<double> &compositional_fields,
              const Point<dim> &position) const
     {
-//      if (compressible
-//          || !(this->get_adiabatic_conditions().is_initialized()))
-//        {
-//          // fourth, melt fraction dependence
-//          double melt_dependence = (1.0 - relative_melt_density)
-//                                   * melt_fraction(temperature, pressure, compositional_fields, position);
-//
-//          // in the end, all the influences are added up
-//          return get_compressible_density(temperature,pressure,compositional_fields,position)
-//                 * (1.0 - melt_dependence);
-//        }
-//      else
-//        {
-//          // fourth, melt fraction dependence
-//          double melt_dependence = (1.0 - relative_melt_density)
-//                                   * melt_fraction(temperature, pressure, compositional_fields, position);
-//
-//          // in the end, all the influences are added up
-//          return get_corrected_density(temperature,pressure,compositional_fields,position)
-//                 * (1.0 - melt_dependence);
-//        }
       if (!(this->get_adiabatic_conditions().is_initialized()))
-        {
-          // fourth, melt fraction dependence
-          double melt_dependence = (1.0 - relative_melt_density)
-                                   * melt_fraction(temperature, pressure, compositional_fields, position);
-
-          // in the end, all the influences are added up
-          return get_compressible_density(temperature,0,compositional_fields,position)
-                 * (1.0 - melt_dependence);
-        }
-      if (compressible)
         {
           // fourth, melt fraction dependence
           double melt_dependence = (1.0 - relative_melt_density)
@@ -305,11 +274,21 @@ namespace aspect
           return get_compressible_density(temperature,pressure,compositional_fields,position)
                  * (1.0 - melt_dependence);
         }
+      if (compressible)
+        {
+          // fourth, melt fraction dependence
+          const double melt_dependence = (1.0 - relative_melt_density)
+                                         * melt_fraction(temperature, this->get_adiabatic_conditions().pressure(position), compositional_fields, position);
+
+          // in the end, all the influences are added up
+          return get_compressible_density(temperature,pressure,compositional_fields,position)
+                 * (1.0 - melt_dependence);
+        }
       else
         {
           // fourth, melt fraction dependence
-          double melt_dependence = (1.0 - relative_melt_density)
-                                   * melt_fraction(temperature, pressure, compositional_fields, position);
+         const double melt_dependence = (1.0 - relative_melt_density)
+                                        * melt_fraction(temperature, this->get_adiabatic_conditions().pressure(position), compositional_fields, position);
 
           // in the end, all the influences are added up
           return get_corrected_density(temperature,pressure,compositional_fields,position)
@@ -355,7 +334,7 @@ namespace aspect
       if (!(this->get_adiabatic_conditions().is_initialized()))
         return alpha;
 
-      const double melt_frac = melt_fraction(temperature, pressure, compositional_fields, position);
+      const double melt_frac = melt_fraction(temperature, this->get_adiabatic_conditions().pressure(position), compositional_fields, position);
       return alpha * (1-melt_frac) + melt_thermal_alpha * melt_frac;
     }
 
@@ -739,6 +718,13 @@ namespace aspect
                                                             in.pressure[i],
                                                             in.position[i]);
 
+          const double adiabatic_pressure = (this->get_adiabatic_conditions().is_initialized())
+                  ?
+                      this->get_adiabatic_conditions().pressure(in.position[i])
+                      :
+                      pressure;
+
+
           /* We are only asked to give viscosities if strain_rate.size() > 0
            * and we can only calculate it if adiabatic_conditions are available.
            * Note that the used viscosity formulation needs the not
@@ -761,8 +747,13 @@ namespace aspect
           out.specific_heat[i]                  = specific_heat                 (temperature, pressure, in.composition[i], in.position[i]);
           out.thermal_conductivities[i]         = thermal_conductivity          (temperature, pressure, in.composition[i], in.position[i]);
           out.compressibilities[i]              = compressibility               (temperature, pressure, in.composition[i], in.position[i]);
-          out.entropy_derivative_pressure[i]    = entropy_derivative            (temperature, pressure, in.composition[i], in.position[i], NonlinearDependence::pressure);
-          out.entropy_derivative_temperature[i] = entropy_derivative            (temperature, pressure, in.composition[i], in.position[i], NonlinearDependence::temperature);
+
+          /*
+           * We use the adiabatic pressure for the latent heat and melting, since dynamic pressure does not contribute much
+           * and is often negative close to the surface, which would be compensated in reality by a free surface.
+           */
+          out.entropy_derivative_pressure[i]    = entropy_derivative            (temperature, adiabatic_pressure, in.composition[i], in.position[i], NonlinearDependence::pressure);
+          out.entropy_derivative_temperature[i] = entropy_derivative            (temperature, adiabatic_pressure, in.composition[i], in.position[i], NonlinearDependence::temperature);
           for (unsigned int c=0; c<in.composition[i].size(); ++c)
             out.reaction_terms[i][c]            = 0;
         }
