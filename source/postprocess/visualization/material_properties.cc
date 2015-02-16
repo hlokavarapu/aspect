@@ -22,6 +22,9 @@
 #include <aspect/postprocess/visualization/material_properties.h>
 #include <aspect/simulator_access.h>
 
+#include <aspect/material_model/damage_rheology.h>
+#include <deal.II/numerics/data_out.h>
+#include <deal.II/grid/grid_tools.h>
 #include <algorithm>
 
 
@@ -128,7 +131,12 @@ namespace aspect
             for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
               in.composition[q][c] = uh[q][this->introspection().component_indices.compositional_fields[c]];
           }
-        in.cell = this->get_dof_handler().end(); // we do not know the cell index
+
+        const bool material_model_needs_cell = (dynamic_cast<const MaterialModel::DamageRheology<dim> *>(&this->get_material_model()) != 0);
+        if (material_model_needs_cell)
+          {
+            in.cell = GridTools::find_active_cell_around_point(this->get_dof_handler(),in.position[0]);
+          }
 
         this->get_material_model().evaluate(in, out);
 
