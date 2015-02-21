@@ -527,11 +527,11 @@ namespace aspect
       const double dT_lherz_liquidus_dp = B2 + 2 * B3 * pressure;
       const double dT_liquidus_dp       = C2 + 2 * C3 * pressure;
 
-      const double peridotite_fraction = (this->n_compositional_fields()>0
-                                          ?
-                                          1.0 - compositional_fields[0]
-                                          :
-                                          1.0);
+      const double peridotite_fraction = (this->introspection().compositional_name_exists("peridotite_fraction"))
+      ?
+          compositional_fields[this->introspection().compositional_index_for_name("peridotite_fraction")]
+                               :
+          1.0;
 
       if (temperature > T_solidus && temperature < T_liquidus && pressure < 1.3e10)
         {
@@ -582,7 +582,7 @@ namespace aspect
 
 
       // for melting of pyroxenite after Sobolev et al., 2011
-      if (this->n_compositional_fields()>0)
+      if (this->introspection().compositional_name_exists("pyroxenite_fraction"))
         {
           // calculate change of entropy for melting all material
           const double X = pyroxenite_melt_fraction(temperature, pressure, compositional_fields, position);
@@ -605,7 +605,8 @@ namespace aspect
                 AssertThrow(false, ExcMessage("not implemented"));
             }
 
-          entropy_gradient += melt_fraction_derivative * pyroxenite_melting_entropy_change * compositional_fields[0];
+          entropy_gradient += melt_fraction_derivative * pyroxenite_melting_entropy_change
+              * compositional_fields[this->introspection().compositional_index_for_name("pyroxenite_fraction")];
         }
 
       return entropy_gradient;
@@ -686,13 +687,13 @@ namespace aspect
                    const std::vector<double> &composition, /*composition*/
                    const Point<dim> &position) const
     {
-      return (this->n_compositional_fields()>0
+      return (this->introspection().compositional_name_exists("pyroxenite_fraction"))
               ?
               pyroxenite_melt_fraction(temperature, pressure, composition, position)
-              * composition[0]
+              * compositional_fields[this->introspection().compositional_index_for_name("pyroxenite_fraction")]
               +
               peridotite_melt_fraction(temperature, pressure, composition, position)
-              * (1.0 - composition[0])
+              * compositional_fields[this->introspection().compositional_index_for_name("peridotite_fraction")]
               :
               peridotite_melt_fraction(temperature, pressure, composition, position));
 
@@ -756,6 +757,14 @@ namespace aspect
           out.entropy_derivative_temperature[i] = entropy_derivative            (temperature, adiabatic_pressure, in.composition[i], in.position[i], NonlinearDependence::temperature);
           for (unsigned int c=0; c<in.composition[i].size(); ++c)
             out.reaction_terms[i][c]            = 0;
+
+          if (this->introspection().compositional_name_exists("maximum_melt_fraction"))
+            {
+              const double melt_index = this->introspection().compositional_index_for_name("maximum_melt_fraction");
+              const double melt_frac = melt_fraction(temperature, pressure, in.composition[i], in.position[i]);
+              if (in.composition[i][melt_index] < melt_frac)
+                out.reaction_terms[i][melt_index] = melt_frac - in.composition[i][melt_index];
+            }
         }
     }
 
