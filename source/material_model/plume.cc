@@ -690,12 +690,12 @@ namespace aspect
       return (this->introspection().compositional_name_exists("pyroxenite_fraction"))
               ?
               pyroxenite_melt_fraction(temperature, pressure, composition, position)
-              * compositional_fields[this->introspection().compositional_index_for_name("pyroxenite_fraction")]
+              * composition[this->introspection().compositional_index_for_name("pyroxenite_fraction")]
               +
               peridotite_melt_fraction(temperature, pressure, composition, position)
-              * compositional_fields[this->introspection().compositional_index_for_name("peridotite_fraction")]
+              * composition[this->introspection().compositional_index_for_name("peridotite_fraction")]
               :
-              peridotite_melt_fraction(temperature, pressure, composition, position));
+              peridotite_melt_fraction(temperature, pressure, composition, position);
 
     }
 
