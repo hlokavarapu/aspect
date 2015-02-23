@@ -255,7 +255,11 @@ namespace aspect
             prm.enter_subsection("Vertical integral");
             {
               name_of_compositional_field = prm.get("Name of compositional field");
-              time_of_output         = prm.get_double("Time of output");
+
+              time_of_output              = prm.get_double("Time of output");
+              if (this->convert_output_to_years())
+                time_of_output *= year_in_seconds;
+
               output_format               = DataOutBase::parse_output_format(prm.get("Output format"));
             }
             prm.leave_subsection();
