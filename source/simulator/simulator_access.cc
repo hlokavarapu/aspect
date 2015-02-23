@@ -81,6 +81,13 @@ namespace aspect
   }
 
 
+  template <int dim>
+  double SimulatorAccess<dim>::get_old_timestep () const
+  {
+    return simulator->old_time_step;
+  }
+
+
 
   template <int dim>
   unsigned int SimulatorAccess<dim>::get_timestep_number () const

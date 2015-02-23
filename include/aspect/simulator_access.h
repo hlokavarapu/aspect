@@ -145,6 +145,14 @@ namespace aspect
       get_timestep () const;
 
       /**
+       * Return the size of the old time step. This is useful in postprocessing,
+       * because this timestep is actually the last one (timestep is already
+       * updated as the next timestep).
+       */
+      double
+      get_old_timestep () const;
+
+      /**
        * Return the current number of a time step.
        */
       unsigned int
