@@ -87,6 +87,21 @@ namespace aspect
          * determines the extension of the file name to which to write.
          */
         DataOutBase::OutputFormat output_format;
+
+        /**
+         * A parameter that can be used to exclude the upper part
+         * of the model from integration. All cells with a smaller
+         * depth are ignored.
+         */
+        double minimum_depth;
+
+        /**
+         * A parameter that can be used to exclude the lower part
+         * of the model from integration. All cells with a larger
+         * depth are ignored. The default value of 0 will be
+         * replaced by the maximum depth of the model.
+         */
+        double maximum_depth;
     };
   }
 }
