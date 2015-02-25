@@ -101,12 +101,13 @@ namespace aspect
         const double surface_area_per_point = surface_area
             / number_of_surface_points;
 
+        std::vector<double> surface_grid(number_of_surface_points);
+
         AssertThrow (this->introspection().compositional_name_exists(name_of_compositional_field),
                      ExcMessage("The compositional field " + name_of_compositional_field +
                                 " you asked for is not used in the simulation."));
         const unsigned int compositional_index = this->introspection().compositional_index_for_name(name_of_compositional_field);
 
-        std::vector<double> surface_grid(number_of_surface_points);
 
         const QMidpoint<dim> quadrature_formula;
 
@@ -142,39 +143,36 @@ namespace aspect
                 for (unsigned int q=0; q<quadrature_formula.size(); ++q)
                   {
                     const Point<dim> location = fe_values.quadrature_point(q);
-                    std::vector<unsigned int> index(dim-1);
-                    for (unsigned int i = 0; i<dim-1; i++)
-                      index[i] = static_cast<unsigned int> (surface_grid_points[i] * (location[i]-grid_origin[i])/grid_extent[i]);
 
-                    // JxW provides the volume quadrature weights. This is a general formulation
-                    // necessary for when a quadrature formula is used that has more than one point.
-                    surface_grid[get_index(index,surface_grid_points)] += composition[q] * fe_values.JxW(q);
+                    if ((geometry_model->depth(location) > minimum_depth)
+                        && (geometry_model->depth(location) < maximum_depth))
+                      {
+                        std::vector<unsigned int> index(dim-1);
+                        for (unsigned int i = 0; i<dim-1; i++)
+                          index[i] = static_cast<unsigned int> (surface_grid_points[i] * (location[i]-grid_origin[i])/grid_extent[i]);
+
+                        // JxW provides the volume quadrature weights. This is a general formulation
+                        // necessary for when a quadrature formula is used that has more than one point.
+                        surface_grid[get_index(index,surface_grid_points)] += composition[q] * fe_values.JxW(q);
+                      }
                   }
               }
 
+        // This does a MPI_AllReduce which is more expensive than MPI_Reduce,
+        // but the grid has dim-1 dimensions only and we are writing in serial
+        // anyway, so supposedly it does not matter
         Utilities::MPI::sum (surface_grid,
                              this->get_mpi_communicator(),
                              surface_grid);
 
-        // Simple output routine
         const std::string filename = this->get_output_directory() +
                                      "vertically_integrated_" + name_of_compositional_field + "." +
                                      Utilities::int_to_string(this->get_timestep_number(), 5)
                                      + DataOutBase::default_suffix(output_format);
-//
-//        // on processor 0, collect all of the data the individual processors send
-//        // and add and write them into one file
-//        if (Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
-//          {
-//            std::ofstream file (filename.c_str());
-//            // output the field
-//            for (unsigned int i = 0; i < surface_grid.size(); ++i)
-//              file << surface_grid[i] << std::endl;
-//          }
 
-        // On the root process, write out the file. do this using the DataOutStack
+        // On the root process, write out the file. do this using the DataOut
         // class on a piecewise constant finite element space on
-        // a 1d mesh with the correct subdivisions
+        // a dim-1 dimensional mesh with the correct subdivisions
         if (Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
           {
             Triangulation<dim-1> mesh;
@@ -184,13 +182,9 @@ namespace aspect
                                                        grid_origin+grid_extent);
 
             FE_DGQ<dim-1> fe(0);
-//            FEFaceValues<dim-1> fe_face_values (this->get_mapping(),
-//                                                fe,
-//                                                quadrature_formula_face,
-//                                                update_JxW_values);
+
             DoFHandler<dim-1> dof_handler (mesh);
             dof_handler.distribute_dofs(fe);
-            //Assert (dof_handler.n_dofs() == n_depth_zones, ExcInternalError());
 
             DataOut<dim-1> data_out;
             const std::string variables = "vertically_integrated_" + name_of_compositional_field;
@@ -239,6 +233,17 @@ namespace aspect
                                  "The format in which the output shall be produced. The "
                                  "format in which the output is generated also determiens "
                                  "the extension of the file into which data is written.");
+              prm.declare_entry ("Minimum depth", "0.0",
+                                 Patterns::Double (),
+                                 "A parameter that can be used to exclude the upper part "
+                                 "of the model from integration. All cells with a smaller "
+                                 "depth are ignored.");
+              prm.declare_entry ("Maximum depth", "0.0",
+                                 Patterns::Double (),
+                                 "A parameter that can be used to exclude the lower part "
+                                 "of the model from integration. All cells with a larger "
+                                 "depth are ignored. The default value of 0 will be "
+                                 "replaced by the maximum depth of the model.");
             }
             prm.leave_subsection();
           }
@@ -261,6 +266,11 @@ namespace aspect
                 time_of_output *= year_in_seconds;
 
               output_format               = DataOutBase::parse_output_format(prm.get("Output format"));
+
+              minimum_depth               = prm.get_double("Minimum depth");
+              maximum_depth               = prm.get_double("Maximum depth");
+              if (maximum_depth == 0.0)
+                maximum_depth = this->get_geometry_model().maximal_depth();
             }
             prm.leave_subsection();
           }
