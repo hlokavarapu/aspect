@@ -63,8 +63,9 @@ namespace aspect
       VerticalIntegral<dim>::execute (TableHandler &statistics)
       {
         // TODO: This criterion does not work for time_of_output == 0.0
-        if ((this->get_time() < time_of_output)
+        if (((this->get_time() < time_of_output)
               || (this->get_time() - this->get_old_timestep() >= time_of_output))
+            && (time_of_output != 0.0))
           return std::pair<std::string,std::string>();
 
         const GeometryModel::Box<dim> *
@@ -227,7 +228,8 @@ namespace aspect
               prm.declare_entry ("Time of output", "0.0",
                                  Patterns::Double (),
                                  "A parameter that denotes, at what time this "
-                                 "postprocessor will be executed.");
+                                 "postprocessor will be executed. The default value of 0.0 "
+                                 "is interpreted to produce output every timestep.");
               prm.declare_entry ("Output format", "vtu",
                                  Patterns::Selection(DataOutBase::get_output_format_names()),
                                  "The format in which the output shall be produced. The "

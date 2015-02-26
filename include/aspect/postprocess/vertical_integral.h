@@ -78,7 +78,8 @@ namespace aspect
 
         /**
          * A parameter that we read from the input file that denotes, at what
-         * time this postprocessor will be executed.
+         * time this postprocessor will be executed. The default value of 0.0
+         * is interpreted to produce output every timestep.
          */
         double time_of_output;
 
