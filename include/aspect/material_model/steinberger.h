@@ -25,18 +25,14 @@
 #include <aspect/material_model/interface.h>
 #include <aspect/simulator_access.h>
 
+#include <aspect/material_model/modules.h>
+
 namespace aspect
 {
   namespace MaterialModel
   {
     using namespace dealii;
 
-    namespace internal
-    {
-      class MaterialLookup;
-      class LateralViscosityLookup;
-      class RadialViscosityLookup;
-    }
     /**
      * A variable viscosity material model that reads the essential values of
      * coefficients from tables in input files.
