@@ -336,7 +336,7 @@ namespace aspect
                 depths.push_back(depth);
               }
             Table<1,double> table_values (values.size(),values.begin());
-            std::array<std::vector<double>,1> coordinate_values;
+            std_cxx11::array<std::vector<double>,1> coordinate_values;
             coordinate_values[0] = depths;
 
             data.reset(new Functions::InterpolatedTensorProductGridData<1> (coordinate_values,
