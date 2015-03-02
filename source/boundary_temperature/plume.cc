@@ -274,6 +274,7 @@ namespace aspect
         boundary_temperature = temperature_[boundary_indicator];
       else
         {
+          //TODO: initial is not working properly right now, it returns 0 at the surface
           if (side_boundary_type == initial)
             boundary_temperature = this->get_initial_conditions().initial_temperature(position);
           else if (side_boundary_type == constant)
