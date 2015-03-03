@@ -233,6 +233,14 @@ namespace aspect
       n_compositional_fields () const;
 
       /**
+       * Return the maximum refinement level of the computation. This is
+       * computed like in the main simulator as the sum of the initial global
+       * refinement and the initial adaptive refinement.
+       */
+      unsigned int
+      get_max_refinement_level () const;
+
+      /**
        * Compute the error indicators in the same way they are normally used
        * for mesh refinement. The mesh is not refined when doing so, but the
        * indicators can be used when generating graphical output to check why
