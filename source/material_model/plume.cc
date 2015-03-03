@@ -761,7 +761,7 @@ namespace aspect
           if (this->introspection().compositional_name_exists("maximum_melt_fraction"))
             {
               const double melt_index = this->introspection().compositional_index_for_name("maximum_melt_fraction");
-              const double melt_frac = melt_fraction(temperature, pressure, in.composition[i], in.position[i]);
+              const double melt_frac = melt_fraction(temperature, adiabatic_pressure, in.composition[i], in.position[i]);
               if (in.composition[i][melt_index] < melt_frac)
                 out.reaction_terms[i][melt_index] = melt_frac - in.composition[i][melt_index];
             }
