@@ -76,7 +76,7 @@ namespace aspect
 
         const Point<dim> model_origin = geometry_model->get_origin();
         const Point<dim> model_extent = geometry_model->get_extents();
-        const unsigned int refinement = this->get_triangulation().n_levels() - 1;
+        const unsigned int refinement = this->get_max_refinement_level();
         const unsigned int intervals = std::pow(2,refinement);
         std::vector<unsigned int> repetitions = geometry_model->get_repetitions();
         repetitions.resize(dim-1);
