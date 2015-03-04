@@ -220,7 +220,7 @@ namespace aspect
                 DataOutBase::default_suffix(output_format)).c_str());
             data_out.write (f, output_format);
 
-            if (output_format==DataOutBase::OutputFormat::vtu)
+            if (DataOutBase::default_suffix(output_format).compare(".vtu") == 0)
               {
                 // Write summary files
                 std::vector<std::string> filenames;
