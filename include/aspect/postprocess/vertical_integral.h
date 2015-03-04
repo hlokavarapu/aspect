@@ -47,6 +47,8 @@ namespace aspect
         public SimulatorAccess<dim>
     {
       public:
+        VerticalIntegral();
+
         /**
          * Evaluate the solution for the vertical integral of a given
          * compositional field.
@@ -69,19 +71,32 @@ namespace aspect
         void
         parse_parameters (ParameterHandler &prm);
 
+
+        /**
+         * Save the state of this object.
+         */
+        virtual
+        void save (std::map<std::string, std::string> &status_strings) const;
+
+        /**
+         * Restore the state of the object.
+         */
+        virtual
+        void load (const std::map<std::string, std::string> &status_strings);
+
+        /**
+         * Serialize the contents of this class as far as they are not read
+         * from input parameter files.
+         */
+        template <class Archive>
+        void serialize (Archive &ar, const unsigned int version);
+
       private:
         /**
          * A parameter that we read from the input file that denotes, which
          * compositional field to integrate.
          */
         std::string name_of_compositional_field;
-
-        /**
-         * A parameter that we read from the input file that denotes, at what
-         * time this postprocessor will be executed. The default value of 0.0
-         * is interpreted to produce output every timestep.
-         */
-        double time_of_output;
 
         /**
          * The format in which to produce graphical output. This also
@@ -103,6 +118,52 @@ namespace aspect
          * replaced by the maximum depth of the model.
          */
         double maximum_depth;
+
+        /**
+         * Interval between the generation of graphical output. This parameter
+         * is read from the input file and consequently is not part of the
+         * state that needs to be saved and restored.
+         */
+        double output_interval;
+
+        /**
+         * A time (in seconds) at which the last graphical output was supposed
+         * to be produced. Used to check for the next necessary output time.
+         */
+        double last_output_time;
+
+        /**
+         * Consecutively counted number indicating the how-manyth time we will
+         * create output the next time we get to it.
+         */
+        unsigned int output_file_number;
+
+        /**
+         * Set the time output was supposed to be written. In the simplest
+         * case, this is the previous last output time plus the interval, but
+         * in general we'd like to ensure that it is the largest supposed
+         * output time, which is smaller than the current time, to avoid
+         * falling behind with last_output_time and having to catch up once
+         * the time step becomes larger. This is done after every output.
+         */
+        void set_last_output_time (const double current_time);
+
+        /**
+         * A list of pairs (time, pvtu_filename) that have so far been written
+         * and that we will pass to DataOutInterface::write_pvd_record to
+         * create a master file that can make the association between
+         * simulation time and corresponding file name (this is done because
+         * there is no way to store the simulation time inside the .pvtu or
+         * .vtu files).
+         */
+        std::vector<std::pair<double,std::string> > times_and_vtu_names;
+
+        /**
+         * A list of list of filenames, sorted by timestep, that correspond to
+         * what has been created as output. This is used to create a master
+         * .visit file for the entire simulation.
+         */
+        std::vector<std::vector<std::string> > output_file_names_by_timestep;
     };
   }
 }

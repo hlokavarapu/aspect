@@ -58,14 +58,31 @@ namespace aspect
       }
     }
 
+    template <int dim>
+    VerticalIntegral<dim>::VerticalIntegral ()
+      :
+      // the following value is later read from the input file
+      output_interval (0),
+      // initialize this to a nonsensical value; set it to the actual time
+      // the first time around we get to check it
+      last_output_time (std::numeric_limits<double>::quiet_NaN()),
+      output_file_number (0)
+    {}
+
       template <int dim>
       std::pair<std::string,std::string>
       VerticalIntegral<dim>::execute (TableHandler &statistics)
       {
-        // TODO: This criterion does not work for time_of_output == 0.0
-        if (((this->get_time() < time_of_output)
-              || (this->get_time() - this->get_old_timestep() >= time_of_output))
-            && (time_of_output != 0.0))
+        // if this is the first time we get here, set the last output time
+        // to the current time - output_interval. this makes sure we
+        // always produce data during the first time step
+        if (std::isnan(last_output_time))
+          {
+            last_output_time = this->get_time() - output_interval;
+          }
+
+        // return if graphical output is not requested at this time
+        if (this->get_time() < last_output_time + output_interval)
           return std::pair<std::string,std::string>();
 
         const GeometryModel::Box<dim> *
@@ -166,10 +183,8 @@ namespace aspect
                              this->get_mpi_communicator(),
                              surface_grid);
 
-        const std::string filename = this->get_output_directory() +
-                                     "vertically_integrated_" + name_of_compositional_field + "." +
-                                     Utilities::int_to_string(this->get_timestep_number(), 5)
-                                     + DataOutBase::default_suffix(output_format);
+        const std::string solution_file_prefix = "vertically_integrated_" + name_of_compositional_field
+                                                  + "." + Utilities::int_to_string (output_file_number, 5);
 
         // On the root process, write out the file. do this using the DataOut
         // class on a piecewise constant finite element space on
@@ -202,13 +217,122 @@ namespace aspect
                                       DataOut<dim-1>::type_cell_data);
             data_out.build_patches ();
 
-            std::ofstream f (filename.c_str());
+            std::ofstream f ((this->get_output_directory() + solution_file_prefix +
+                DataOutBase::default_suffix(output_format)).c_str());
             data_out.write (f, output_format);
+
+            if (output_format==DataOutBase::OutputFormat::vtu)
+              {
+                // Write summary files
+                std::vector<std::string> filenames;
+                filenames.push_back (solution_file_prefix + DataOutBase::default_suffix(output_format));
+
+                const double time_in_years_or_seconds = (this->convert_output_to_years() ?
+                                                         this->get_time() / year_in_seconds :
+                                                         this->get_time());
+
+                // now also generate a .pvd file that matches simulation
+                // time and corresponding .vtu record
+                times_and_vtu_names.push_back(std::make_pair(time_in_years_or_seconds,
+                                                              solution_file_prefix +
+                                                              DataOutBase::default_suffix(output_format)));
+                const std::string
+                pvd_master_filename = (this->get_output_directory() + "vertically_integrated_"
+                                       + name_of_compositional_field + ".pvd");
+                std::ofstream pvd_master (pvd_master_filename.c_str());
+                data_out.write_pvd_record (pvd_master, times_and_vtu_names);
+
+                // finally, do the same for Visit via the .visit file for this
+                // time step, as well as for all time steps together
+                const std::string
+                visit_master_filename = (this->get_output_directory() +
+                                         solution_file_prefix +
+                                         ".visit");
+                std::ofstream visit_master (visit_master_filename.c_str());
+                data_out.write_visit_record (visit_master, filenames);
+
+                output_file_names_by_timestep.push_back (filenames);
+
+                std::ofstream global_visit_master ((this->get_output_directory() +
+                    "vertically_integrated_" + name_of_compositional_field + ".visit").c_str());
+                data_out.write_visit_record (global_visit_master, output_file_names_by_timestep);
+              }
           }
 
+        // record the file base file name in the output file
+        statistics.add_value ("Vertical integral file name",
+                              this->get_output_directory() + solution_file_prefix);
+
+        // up the counter of the number of the file by one; also
+        // up the next time we need output
+        ++output_file_number;
+        set_last_output_time (this->get_time());
+
+
         return std::pair<std::string,std::string>("Writing vertical integral file: ",
-                                                  filename);
+                                                  solution_file_prefix +
+                                                  DataOutBase::default_suffix(output_format));
       }
+
+
+
+      template <int dim>
+      template <class Archive>
+      void VerticalIntegral<dim>::serialize (Archive &ar, const unsigned int)
+      {
+        ar &last_output_time
+        & output_file_number
+        & times_and_vtu_names
+        & output_file_names_by_timestep
+        ;
+      }
+
+
+      template <int dim>
+      void
+      VerticalIntegral<dim>::save (std::map<std::string, std::string> &status_strings) const
+      {
+        std::ostringstream os;
+        aspect::oarchive oa (os);
+        oa << (*this);
+
+        status_strings["Visualization"] = os.str();
+      }
+
+
+      template <int dim>
+      void
+      VerticalIntegral<dim>::load (const std::map<std::string, std::string> &status_strings)
+      {
+        // see if something was saved
+        if (status_strings.find("Visualization") != status_strings.end())
+          {
+            std::istringstream is (status_strings.find("Visualization")->second);
+            aspect::iarchive ia (is);
+            ia >> (*this);
+          }
+      }
+
+
+      template <int dim>
+      void
+      VerticalIntegral<dim>::set_last_output_time (const double current_time)
+      {
+        // if output_interval is positive, then update the last supposed output
+        // time
+        if (output_interval > 0)
+          {
+            // We need to find the last time output was supposed to be written.
+            // this is the last_output_time plus the largest positive multiple
+            // of output_intervals that passed since then. We need to handle the
+            // edge case where last_output_time+output_interval==current_time,
+            // we did an output and std::floor sadly rounds to zero. This is done
+            // by forcing std::floor to round 1.0-eps to 1.0.
+            const double magic = 1.0+2.0*std::numeric_limits<double>::epsilon();
+            last_output_time = last_output_time + std::floor((current_time-last_output_time)/output_interval*magic) * output_interval/magic;
+          }
+      }
+
 
       template <int dim>
       void
@@ -221,15 +345,19 @@ namespace aspect
             {
               prm.declare_entry ("Name of compositional field", "",
                                  Patterns::Anything (),
-                                 "Option to remove the mean dynamic topography "
-                                 "in the outputted data file (not visualization). "
-                                 "'true' subtracts the mean, 'false' leaves "
-                                 "the calculated dynamic topography as is. ");
-              prm.declare_entry ("Time of output", "0.0",
+                                 "Name of the compositional field to be integrated "
+                                 "by this postprocessor. The names are used as "
+                                 "provided in the 'Compositional fields' section "
+                                 "with C_i as default value, where i is the number "
+                                 "of the compositional field.");
+              prm.declare_entry ("Time between graphical output", "0.0",
                                  Patterns::Double (),
-                                 "A parameter that denotes, at what time this "
-                                 "postprocessor will be executed. The default value of 0.0 "
-                                 "is interpreted to produce output every timestep.");
+                                 "The time interval between each generation of "
+                                 "graphical output files. A value of zero indicates "
+                                 "that output should be generated in each time step. "
+                                 "Units: years if the "
+                                 "'Use years in output instead of seconds' parameter is set; "
+                                 "seconds otherwise.");
               prm.declare_entry ("Output format", "vtu",
                                  Patterns::Selection(DataOutBase::get_output_format_names()),
                                  "The format in which the output shall be produced. The "
@@ -263,9 +391,9 @@ namespace aspect
             {
               name_of_compositional_field = prm.get("Name of compositional field");
 
-              time_of_output              = prm.get_double("Time of output");
+              output_interval              = prm.get_double("Time between graphical output");
               if (this->convert_output_to_years())
-                time_of_output *= year_in_seconds;
+                output_interval *= year_in_seconds;
 
               output_format               = DataOutBase::parse_output_format(prm.get("Output format"));
 

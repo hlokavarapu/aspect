@@ -100,8 +100,8 @@ subsection Postprocess
   set List of postprocessors = vertical integral
 
   subsection Vertical integral
-    set Name of compositional field = Lithosphere
-    set Time of output = 0.05
+    set Name of compositional field   = Lithosphere
+    set Time between graphical output = 0.05
     set Minimum depth  = 0.25
     set Maximum depth  = 0.75
     set Output format  = gnuplot
