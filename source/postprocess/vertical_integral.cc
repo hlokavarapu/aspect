@@ -138,8 +138,8 @@ namespace aspect
 
         std::vector<double> composition(quadrature_formula.size());
 
-        // loop over all of the surface cells and if one less than h/3 away from
-        // the top surface, evaluate the stress at its center
+        // loop over all of the cells and add their respective volume of the
+        // compositional field to the surface cell
         typename DoFHandler<dim>::active_cell_iterator
         cell = this->get_dof_handler().begin_active(),
         endc = this->get_dof_handler().end();
@@ -149,8 +149,7 @@ namespace aspect
               {
                 fe_values.reinit (cell);
 
-                // get the various components of the composition, then
-                // evaluate the material properties there
+                // get the selected component of the composition
                 fe_values[this->introspection().extractors.compositional_fields[compositional_index]]
                 .get_function_values(this->get_solution(),
                                      composition);
