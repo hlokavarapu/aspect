@@ -295,7 +295,7 @@ namespace aspect
         aspect::oarchive oa (os);
         oa << (*this);
 
-        status_strings["Visualization"] = os.str();
+        status_strings["VerticalIntegral"] = os.str();
       }
 
 
@@ -304,9 +304,9 @@ namespace aspect
       VerticalIntegral<dim>::load (const std::map<std::string, std::string> &status_strings)
       {
         // see if something was saved
-        if (status_strings.find("Visualization") != status_strings.end())
+        if (status_strings.find("VerticalIntegral") != status_strings.end())
           {
-            std::istringstream is (status_strings.find("Visualization")->second);
+            std::istringstream is (status_strings.find("VerticalIntegral")->second);
             aspect::iarchive ia (is);
             ia >> (*this);
           }
