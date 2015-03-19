@@ -46,12 +46,14 @@ namespace aspect
       BoxPlatesLookup<dim>::BoxPlatesLookup(const std::string &filename,
                                             const unsigned int components,
                                             const double time_scale_factor,
-                                            const double velocity_scale_factor)
+                                            const double velocity_scale_factor,
+                                            const bool interpolate_velocity)
         :
           components(components),
           data(components),
           time_scale_factor(time_scale_factor),
-          velocity_scale_factor(velocity_scale_factor)
+          velocity_scale_factor(velocity_scale_factor),
+          interpolate_velocity(interpolate_velocity)
       {
         // Check whether file exists, we do not want to throw
         // an exception in case it does not, because it could be by purpose
@@ -276,8 +278,14 @@ namespace aspect
              velocity += rotation_velocity;
              old_velocity += old_rotation_velocity;
 
-             const Tensor<1,dim+1> surface_velocity = velocity_time_weight * velocity
-                                                      + (1-velocity_time_weight) * old_velocity;
+             Tensor<1,dim+1> surface_velocity;
+             if (interpolate_velocity)
+               {
+                 surface_velocity = velocity_time_weight * velocity
+                                   + (1-velocity_time_weight) * old_velocity;
+               }
+             else
+               surface_velocity = old_velocity;
 
              for (unsigned int i = 0; i < dim+1; i++)
                data_tables[dim+i](compute_table_indices(line)) = surface_velocity[i];

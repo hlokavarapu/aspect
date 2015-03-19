@@ -57,7 +57,8 @@ namespace aspect
           BoxPlatesLookup(const std::string &filename,
                           const unsigned int components,
                           const double time_scale_factor,
-                          const double velocity_scale_factor);
+                          const double velocity_scale_factor,
+                          const bool interpolate_velocity);
 
           /**
            * Loads a data text file. Throws an exception if the file does not exist,
@@ -110,6 +111,12 @@ namespace aspect
            * used to transform the unit of the data.
            */
           const double velocity_scale_factor;
+
+          /**
+           * Determines whether to interpolate between old and new plate
+           * velocities. If false, only the old one will be used.
+           */
+          const bool interpolate_velocity;
 
           /**
            * Any plate velocity consists of a velocity and the rotation

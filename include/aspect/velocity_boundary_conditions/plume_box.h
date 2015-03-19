@@ -240,6 +240,12 @@ namespace aspect
         double surface_scale_factor;
 
         /**
+         * Determines whether to interpolate between old and new plate
+         * velocities. If false, only the old one will be used.
+         */
+        bool interpolate_velocity;
+
+        /**
          * Pointer to an object that reads and processes data we get from
          * text files.
          */

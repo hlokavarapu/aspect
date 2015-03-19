@@ -88,12 +88,14 @@ namespace aspect
           surface_lookup.reset(new internal::BoxPlatesLookup<dim-1>(surface_data_directory+surface_velocity_file_name,
                                                                     dim,
                                                                     surface_time_scale_factor,
-                                                                    surface_scale_factor));
+                                                                    surface_scale_factor,
+                                                                    interpolate_velocity));
 
           old_surface_lookup.reset(new internal::BoxPlatesLookup<dim-1>(surface_data_directory+surface_velocity_file_name,
                                                                         dim,
                                                                         surface_time_scale_factor,
-                                                                        surface_scale_factor));
+                                                                        surface_scale_factor,
+                                                                        interpolate_velocity));
 
           const std::string surface_filename (create_surface_filename (current_file_number));
           this->get_pcout() << std::endl << "   Loading BoxPlates data boundary file "
@@ -637,6 +639,11 @@ namespace aspect
                              "You might want to use this to scale the velocities to a "
                              "reference model (e.g. with free-slip boundary) or another "
                              "plate reconstruction.");
+          prm.declare_entry ("Interpolate plate velocity", "true",
+                             Patterns::Bool (),
+                             "A boolean value, which determines whether to interpolate "
+                             "between old and new plate velocities. If false, only the "
+                             "old one will be used for a piecewise-constant velocity.");
         }
         prm.leave_subsection();
       }
@@ -729,6 +736,8 @@ namespace aspect
           depth_interpolation_width     = prm.get_double ("Depth interpolation width");
           surface_time_scale_factor     = prm.get_double ("Time scale factor");
           surface_scale_factor  = prm.get_double ("Scale factor");
+          interpolate_velocity  = prm.get_bool ("Interpolate plate velocity");
+
 
           if (this->convert_output_to_years() == true)
             {
