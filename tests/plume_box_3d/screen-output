@@ -6,30 +6,18 @@
    Loading Plume position file for boundary temperature: ASPECT_DIR/data/boundary-temperature/plume/Tristan.sur.
 
 
-   Loading Plate velocity file: ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/velocities.
+   Loading BoxPlates data boundary file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
 
-
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
-
-
-   Set up Ascii Data boundary module.
-   The grid extents to: 3300000.000 660000.000
 
    Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_left.0.csv.
 
 
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
+   Loading BoxPlates data boundary file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_1.
 
 
    Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_left.1.csv.
 
 
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
-
-
-   Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_left.0.csv.
-
-
    Loading new data file did not succeed.
    Assuming constant boundary conditions for rest of model run.
 
@@ -37,30 +25,18 @@
    Loading Plume position file for boundary temperature: ASPECT_DIR/data/boundary-temperature/plume/Tristan.sur.
 
 
-   Loading Plate velocity file: ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/velocities.
+   Loading BoxPlates data boundary file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
 
-
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
-
-
-   Set up Ascii Data boundary module.
-   The grid extents to: 3300000.000 660000.000
 
    Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_right.0.csv.
 
 
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
+   Loading BoxPlates data boundary file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_1.
 
 
    Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_right.1.csv.
 
 
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
-
-
-   Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_right.0.csv.
-
-
    Loading new data file did not succeed.
    Assuming constant boundary conditions for rest of model run.
 
@@ -68,30 +44,18 @@
    Loading Plume position file for boundary temperature: ASPECT_DIR/data/boundary-temperature/plume/Tristan.sur.
 
 
-   Loading Plate velocity file: ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/velocities.
+   Loading BoxPlates data boundary file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
 
-
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
-
-
-   Set up Ascii Data boundary module.
-   The grid extents to: 3300000.000 660000.000
 
    Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_front.0.csv.
 
 
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
+   Loading BoxPlates data boundary file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_1.
 
 
    Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_front.1.csv.
 
 
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
-
-
-   Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_front.0.csv.
-
-
    Loading new data file did not succeed.
    Assuming constant boundary conditions for rest of model run.
 
@@ -99,28 +63,29 @@
    Loading Plume position file for boundary temperature: ASPECT_DIR/data/boundary-temperature/plume/Tristan.sur.
 
 
-   Loading Plate velocity file: ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/velocities.
+   Loading BoxPlates data boundary file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
 
-
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
-
-
-   Set up Ascii Data boundary module.
-   The grid extents to: 3300000.000 660000.000
 
    Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_back.0.csv.
 
 
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
+   Loading BoxPlates data boundary file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_1.
 
 
    Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_back.1.csv.
 
 
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
+   Loading new data file did not succeed.
+   Assuming constant boundary conditions for rest of model run.
 
 
-   Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_back.0.csv.
+   Loading Plume position file for boundary temperature: ASPECT_DIR/data/boundary-temperature/plume/Tristan.sur.
+
+
+   Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_bottom.0.csv.
+
+
+   Loading Ascii data data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_bottom.1.csv.
 
 
    Loading new data file did not succeed.
@@ -130,32 +95,10 @@
    Loading Plume position file for boundary temperature: ASPECT_DIR/data/boundary-temperature/plume/Tristan.sur.
 
 
-   Set up Ascii Data boundary module.
-   The grid extents to: 3300000.000 3300000.000
-
-   Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_bottom.0.csv.
+   Loading BoxPlates data boundary file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
 
 
-   Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_bottom.1.csv.
-
-
-   Loading Ascii data boundary file ASPECT_DIR/data/velocity-boundary-conditions/plume-box/test/box_3d_bottom.0.csv.
-
-
-   Loading new data file did not succeed.
-   Assuming constant boundary conditions for rest of model run.
-
-
-   Loading Plume position file for boundary temperature: ASPECT_DIR/data/boundary-temperature/plume/Tristan.sur.
-
-
-   Loading Plate velocity file: ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/velocities.
-
-
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
-
-
-   Loading Box plates boundary velocity file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_0.
+   Loading BoxPlates data boundary file ASPECT_DIR/data/velocity-boundary-conditions/box-plates/test/plates_1.
 
 Number of active cells: 200 (on 2 levels)
 Number of degrees of freedom: 9,183 (6,615+363+2,205)
@@ -163,32 +106,22 @@ Number of degrees of freedom: 9,183 (6,615+363+2,205)
 *** Timestep 0:  t=0 years
    Solving temperature system... 0 iterations.
    Rebuilding Stokes preconditioner...
-   Solving Stokes system... 30+48 iterations.
+   Solving Stokes system... 30+45 iterations.
 
    Postprocessing:
-     RMS, max velocity:                  1.6 m/year, 3.44 m/year
+     RMS, max velocity:                  1.06 m/year, 2.21 m/year
      Temperature min/avg/max:            273 K, 1554 K, 2111 K
-     Heat fluxes through boundary parts: -8.021e+09 W, -8.021e+09 W, -8.021e+09 W, -8.021e+09 W, -1.267e+10 W, 4.966e+11 W
+     Heat fluxes through boundary parts: -7.955e+09 W, -8.021e+09 W, -8.032e+09 W, -8.021e+09 W, -1.287e+10 W, 4.966e+11 W
 
-*** Timestep 1:  t=46462.9 years
+*** Timestep 1:  t=50000 years
    Solving temperature system... 10 iterations.
    Rebuilding Stokes preconditioner...
-   Solving Stokes system... 30+55 iterations.
+   Solving Stokes system... 30+58 iterations.
 
    Postprocessing:
-     RMS, max velocity:                  1.71 m/year, 3.6 m/year
-     Temperature min/avg/max:            273 K, 1556 K, 2059 K
-     Heat fluxes through boundary parts: -7.517e+09 W, -6.123e+09 W, -3.757e+09 W, -9.593e+09 W, -7.454e+09 W, 4.993e+11 W
-
-*** Timestep 2:  t=50000 years
-   Solving temperature system... 9 iterations.
-   Rebuilding Stokes preconditioner...
-   Solving Stokes system... 30+38 iterations.
-
-   Postprocessing:
-     RMS, max velocity:                  1.73 m/year, 3.61 m/year
-     Temperature min/avg/max:            273 K, 1554 K, 2046 K
-     Heat fluxes through boundary parts: -7.563e+09 W, -6.248e+09 W, -3.747e+09 W, -9.713e+09 W, -7.094e+09 W, 4.957e+11 W
+     RMS, max velocity:                  1.1 m/year, 2.22 m/year
+     Temperature min/avg/max:            273 K, 1544 K, 2077 K
+     Heat fluxes through boundary parts: -8.903e+09 W, -7.496e+09 W, -6.66e+09 W, -1.124e+10 W, -1.096e+10 W, 4.789e+11 W
 
 Termination requested by criterion: end time
 
