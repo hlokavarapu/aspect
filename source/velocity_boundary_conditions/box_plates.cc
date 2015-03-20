@@ -131,13 +131,13 @@ namespace aspect
         unsigned int old_index,next_index;
         double velocity_time_weight;
 
-        if (time_until_end > velocity_values.back().first)
+        if (time_until_end >= velocity_values.back().first)
           {
-            old_index = velocity_values.size();
-            next_index = velocity_values.size();
+            old_index = velocity_values.size()-1;
+            next_index = velocity_values.size()-1;
             velocity_time_weight = 0.0;
           }
-        else if (time_until_end < velocity_values[0].first)
+        else if (time_until_end <= velocity_values[0].first)
           {
             old_index = 0;
             next_index = 0;
@@ -146,7 +146,7 @@ namespace aspect
         else
           {
             for (unsigned int i = velocity_values.size() - 2; i >= 0; i--)
-                if (time_until_end >= velocity_values[i].first)
+                if (time_until_end > velocity_values[i].first)
                   {
                     old_index = i + 1;
                     next_index = i;
