@@ -1,7 +1,7 @@
 set Dimension                              = 3
 
 set Use years in output instead of seconds = true
-set End time                               = 5e4
+set End time                               = 0
 
 set Linear solver tolerance                = 1e-5
 
@@ -27,6 +27,7 @@ subsection Initial conditions
     set Radius    = 250000
     set Position  = coordinates
     set Midpoint coordinates = 1707126.5,2029972.6,0
+    set Use lithosphere thickness file = true
   end
 end
 

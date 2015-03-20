@@ -24,8 +24,8 @@ subsection Geometry model
 end
 
 subsection Initial conditions
-  set Model name = adiabatic
-  subsection Adiabatic
+  set Model name = plume
+  subsection Plume
     set Age top boundary layer = 2e8
     set Amplitude = 300
     set Radius    = 250000
