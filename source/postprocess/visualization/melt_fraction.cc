@@ -113,6 +113,8 @@ namespace aspect
 
             double melt_fraction;
             if (this->n_compositional_fields()>0)
+              // if nonadiabatic_temperature > 50
+              // composition_fraction = 10 %
               melt_fraction = composition[0] * pyroxenite_melt_fraction +
                               (1-composition[0]) * peridotite_melt_fraction;
             else

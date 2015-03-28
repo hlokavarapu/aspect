@@ -119,7 +119,9 @@ namespace aspect
         const double surface_area_per_point = surface_area
             / number_of_surface_points;
 
-        std::vector<double> surface_grid(number_of_surface_points);
+        std::vector<double> composition_grid(number_of_surface_points);
+        std::vector<double> reaction_grid(number_of_surface_points);
+        std::vector<double> difference_grid(number_of_surface_points);
 
         AssertThrow (this->introspection().compositional_name_exists(name_of_compositional_field),
                      ExcMessage("The compositional field " + name_of_compositional_field +
@@ -133,10 +135,16 @@ namespace aspect
                                  this->get_fe(),
                                  quadrature_formula,
                                  update_values |
+                                 update_gradients |
                                  update_q_points |
                                  update_JxW_values);
 
         std::vector<double> composition(quadrature_formula.size());
+        std::vector<double> old_composition(quadrature_formula.size());
+        std::vector<std::vector<double> > composition_values (this->n_compositional_fields(),std::vector<double> (quadrature_formula.size()));
+
+        typename MaterialModel::Interface<dim>::MaterialModelInputs in(fe_values.n_quadrature_points, this->n_compositional_fields());
+        typename MaterialModel::Interface<dim>::MaterialModelOutputs out(fe_values.n_quadrature_points, this->n_compositional_fields());
 
         // loop over all of the cells and add their respective volume of the
         // compositional field to the surface cell
@@ -154,6 +162,35 @@ namespace aspect
                 .get_function_values(this->get_solution(),
                                      composition);
 
+                // get the selected component of the old composition
+                fe_values[this->introspection().extractors.compositional_fields[compositional_index]]
+                .get_function_values(this->get_old_solution(),
+                                     old_composition);
+
+                // get the various components of the solution, then
+                // evaluate the material properties there
+                fe_values[this->introspection().extractors.temperature]
+                .get_function_values (this->get_solution(), in.temperature);
+                fe_values[this->introspection().extractors.pressure]
+                .get_function_values (this->get_solution(), in.pressure);
+                fe_values[this->introspection().extractors.velocities]
+                .get_function_symmetric_gradients (this->get_solution(), in.strain_rate);
+
+
+                in.position = fe_values.get_quadrature_points();
+
+                for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
+                  fe_values[this->introspection().extractors.compositional_fields[c]]
+                            .get_function_values(this->get_old_solution(),
+                                composition_values[c]);
+                for (unsigned int q=0; q<quadrature_formula.size(); ++q)
+                  {
+                    for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
+                      in.composition[q][c] = composition_values[c][q];
+                  }
+
+                this->get_material_model().evaluate(in, out);
+
                 // Compute the integral of the compositional field
                 // over the entire cell, by looping over all quadrature points
                 // (currently, there is only one, but the code is generic).
@@ -170,7 +207,9 @@ namespace aspect
 
                         // JxW provides the volume quadrature weights. This is a general formulation
                         // necessary for when a quadrature formula is used that has more than one point.
-                        surface_grid[get_index(index,surface_grid_points)] += composition[q] * fe_values.JxW(q);
+                        composition_grid[get_index(index,surface_grid_points)] += composition[q] * fe_values.JxW(q);
+                        difference_grid[get_index(index,surface_grid_points)] += (composition[q] - old_composition[q]) * fe_values.JxW(q);
+                        reaction_grid[get_index(index,surface_grid_points)] += out.reaction_terms[q][compositional_index];
                       }
                   }
               }
@@ -178,9 +217,15 @@ namespace aspect
         // This does a MPI_AllReduce which is more expensive than MPI_Reduce,
         // but the grid has dim-1 dimensions only and we are writing in serial
         // anyway, so supposedly it does not matter
-        Utilities::MPI::sum (surface_grid,
+        Utilities::MPI::sum (composition_grid,
                              this->get_mpi_communicator(),
-                             surface_grid);
+                             composition_grid);
+        Utilities::MPI::sum (difference_grid,
+                             this->get_mpi_communicator(),
+                             difference_grid);
+        Utilities::MPI::sum (reaction_grid,
+                             this->get_mpi_communicator(),
+                             reaction_grid);
 
         const std::string solution_file_prefix = "vertically_integrated_" + name_of_compositional_field
                                                   + "." + Utilities::int_to_string (output_file_number, 5);
@@ -202,18 +247,46 @@ namespace aspect
             dof_handler.distribute_dofs(fe);
 
             DataOut<dim-1> data_out;
-            const std::string variables = "vertically_integrated_" + name_of_compositional_field;
+
+            std::vector<std::string> variables;
+            variables.push_back ("vertically_integrated_" + name_of_compositional_field);
+            variables.push_back ("vertically_integrated_difference_of_" + name_of_compositional_field);
+            variables.push_back ("vertically_integrated_reaction_term");
 
             data_out.attach_dof_handler (dof_handler);
 
-            Vector<double> tmp(number_of_surface_points);
-            std::copy (surface_grid.begin(),
-                       surface_grid.end(),
-                       tmp.begin());
-            tmp /= surface_area_per_point;
-            data_out.add_data_vector (tmp,
-                                      variables,
+            Vector<double> tmp_composition(number_of_surface_points);
+            Vector<double> tmp_difference(number_of_surface_points);
+            Vector<double> tmp_reaction(number_of_surface_points);
+
+
+            //Add vertical integral
+            std::copy (composition_grid.begin(),
+                       composition_grid.end(),
+                       tmp_composition.begin());
+            tmp_composition /= surface_area_per_point;
+            data_out.add_data_vector (tmp_composition,
+                                      variables[0],
                                       DataOut<dim-1>::type_cell_data);
+
+            //Add vertical integral difference
+            std::copy (difference_grid.begin(),
+                       difference_grid.end(),
+                       tmp_difference.begin());
+            tmp_difference /= surface_area_per_point;
+            data_out.add_data_vector (tmp_difference,
+                                      variables[1],
+                                      DataOut<dim-1>::type_cell_data);
+
+            //Add vertical integral reaction term
+            std::copy (reaction_grid.begin(),
+                       reaction_grid.end(),
+                       tmp_reaction.begin());
+            tmp_reaction /= surface_area_per_point;
+            data_out.add_data_vector (tmp_reaction,
+                                      variables[2],
+                                      DataOut<dim-1>::type_cell_data);
+
             data_out.build_patches ();
 
             std::ofstream f ((this->get_output_directory() + solution_file_prefix +
