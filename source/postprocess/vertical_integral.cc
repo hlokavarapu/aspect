@@ -209,7 +209,7 @@ namespace aspect
                         // necessary for when a quadrature formula is used that has more than one point.
                         composition_grid[get_index(index,surface_grid_points)] += composition[q] * fe_values.JxW(q);
                         difference_grid[get_index(index,surface_grid_points)] += (composition[q] - old_composition[q]) * fe_values.JxW(q);
-                        reaction_grid[get_index(index,surface_grid_points)] += out.reaction_terms[q][compositional_index];
+                        reaction_grid[get_index(index,surface_grid_points)] += out.reaction_terms[q][compositional_index] * fe_values.JxW(q);
                       }
                   }
               }
