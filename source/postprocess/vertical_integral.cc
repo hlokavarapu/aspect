@@ -85,6 +85,10 @@ namespace aspect
         if (this->get_time() < last_output_time + output_interval)
           return std::pair<std::string,std::string>();
 
+        // note that the old_timestep is the one from the most recent computation step, because timestep
+        // is already updated to the next timestep
+        const double old_timestep = this->get_old_timestep();
+
         const GeometryModel::Box<dim> *
               geometry_model = dynamic_cast <const GeometryModel::Box<dim>*> (&this->get_geometry_model());
         AssertThrow (geometry_model,
@@ -211,10 +215,11 @@ namespace aspect
                         difference_grid[get_index(index,surface_grid_points)] += (composition[q] - old_composition[q]) * fe_values.JxW(q);
 
                         // the reaction grid contains the amount of crust generated since the last output time
-                        // note that the old_timestep is the one from the most recent computation step, because timestep
-                        // is already updated to the next timestep
-                        reaction_grid[get_index(index,surface_grid_points)] += out.reaction_terms[q][compositional_index] * fe_values.JxW(q)
-                                                                               / this->get_old_timestep() * output_interval;
+                        if (old_timestep > std::numeric_limits<double>::min())
+                          reaction_grid[get_index(index,surface_grid_points)] += out.reaction_terms[q][compositional_index] * fe_values.JxW(q)
+                                                                                 / old_timestep * (this->get_time() - last_output_time);
+                        else
+                          reaction_grid[get_index(index,surface_grid_points)] += out.reaction_terms[q][compositional_index] * fe_values.JxW(q);
                       }
                   }
               }
