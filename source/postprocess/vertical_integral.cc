@@ -209,7 +209,12 @@ namespace aspect
                         // necessary for when a quadrature formula is used that has more than one point.
                         composition_grid[get_index(index,surface_grid_points)] += composition[q] * fe_values.JxW(q);
                         difference_grid[get_index(index,surface_grid_points)] += (composition[q] - old_composition[q]) * fe_values.JxW(q);
-                        reaction_grid[get_index(index,surface_grid_points)] += out.reaction_terms[q][compositional_index] * fe_values.JxW(q);
+
+                        // the reaction grid contains the amount of crust generated since the last output time
+                        // note that the old_timestep is the one from the most recent computation step, because timestep
+                        // is already updated to the next timestep
+                        reaction_grid[get_index(index,surface_grid_points)] += out.reaction_terms[q][compositional_index] * fe_values.JxW(q)
+                                                                               / this->get_old_timestep() * output_interval;
                       }
                   }
               }
@@ -251,7 +256,7 @@ namespace aspect
             std::vector<std::string> variables;
             variables.push_back ("vertically_integrated_" + name_of_compositional_field);
             variables.push_back ("vertically_integrated_difference_of_" + name_of_compositional_field);
-            variables.push_back ("vertically_integrated_reaction_term");
+            variables.push_back ("vertically_integrated_reaction_rate_times_output_interval");
 
             data_out.attach_dof_handler (dof_handler);
 
