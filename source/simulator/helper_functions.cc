@@ -1045,6 +1045,37 @@ namespace aspect
     compute_depth_average(values, f);
   }
 
+  namespace
+  {
+    template <int dim>
+    class FunctorDepthAverageDensity
+    {
+      public:
+        bool need_material_properties() const
+        {
+          return true;
+        }
+
+        void setup(const unsigned int q_points)
+        {}
+
+        void operator()(const typename MaterialModel::Interface<dim>::MaterialModelInputs &in,
+                        const typename MaterialModel::Interface<dim>::MaterialModelOutputs &out,
+                        FEValues<dim> &fe_values,
+                        const LinearAlgebra::BlockVector &solution, std::vector<double> &output)
+        {
+          output = out.densities;
+        }
+    };
+  }
+
+  template <int dim>
+  void Simulator<dim>::compute_depth_average_density(std::vector<double> &values) const
+  {
+    FunctorDepthAverageDensity<dim> f;
+    compute_depth_average(values, f);
+  }
+
 
   namespace
   {
@@ -1228,6 +1259,7 @@ namespace aspect
   template void Simulator<dim>::make_pressure_rhs_compatible(LinearAlgebra::BlockVector &vector); \
   template void Simulator<dim>::compute_depth_average_field(const AdvectionField &advection_field, std::vector<double> &values) const; \
   template void Simulator<dim>::compute_depth_average_viscosity(std::vector<double> &values) const; \
+  template void Simulator<dim>::compute_depth_average_density(std::vector<double> &values) const; \
   template void Simulator<dim>::compute_depth_average_velocity_magnitude(std::vector<double> &values) const; \
   template void Simulator<dim>::compute_depth_average_sinking_velocity(std::vector<double> &values) const; \
   template void Simulator<dim>::compute_depth_average_Vs(std::vector<double> &values) const; \

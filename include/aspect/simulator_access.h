@@ -361,6 +361,16 @@ namespace aspect
       get_depth_average_viscosity(std::vector<double> &values) const;
 
       /**
+       * Compute a depth average of the current density
+       *
+       * @param values The output vector of depth averaged values. The
+       * function takes the pre-existing size of this vector as the number of
+       * depth slices.
+       */
+      void
+      get_depth_average_density(std::vector<double> &values) const;
+
+      /**
        * Compute a depth average of the current velocity magnitude
        *
        * @param values The output vector of depth averaged values. The
