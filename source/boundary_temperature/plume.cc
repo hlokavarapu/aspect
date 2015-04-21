@@ -265,16 +265,16 @@ namespace aspect
               const double distance_head_to_boundary = fabs(V0 * (this->get_time() - model_time_to_start_plume_tail));
 
               // If the plume is not yet there, perturbation will not be set
-              if (distance_head_to_boundary < maximum_head_radius)
+              if (distance_head_to_boundary < head_radius)
                 {
-                  const double head_radius = sqrt(maximum_head_radius * maximum_head_radius
+                  const double current_head_radius = sqrt(head_radius * head_radius
                       - distance_head_to_boundary * distance_head_to_boundary);
 
-                  if (distance.norm() < head_radius)
+                  if (distance.norm() < current_head_radius)
                     {
                     //boundary_temperature += maximum_head_amplitude;
-                      const double head_amplitude = maximum_head_amplitude * std::exp(-std::pow(distance_head_to_boundary/maximum_head_radius,2));
-                      boundary_temperature += head_amplitude * std::exp(-std::pow(distance.norm()/head_radius,2));
+                      const double current_head_amplitude = head_amplitude * std::exp(-std::pow(distance_head_to_boundary/head_radius,2));
+                      boundary_temperature += current_head_amplitude * std::exp(-std::pow(distance.norm()/current_head_radius,2));
                     }
                 }
             }
@@ -368,10 +368,10 @@ namespace aspect
           prm.declare_entry ("Radius", "0",
                              Patterns::Double (),
                              "Radius of the plume tail temperature anomaly. Units: m.");
-          prm.declare_entry ("Maximum head amplitude", "0",
+          prm.declare_entry ("Head amplitude", "0",
                              Patterns::Double (),
                              "Amplitude of the plume head temperature anomaly. Units: K.");
-          prm.declare_entry ("Maximum head radius", "0",
+          prm.declare_entry ("Head radius", "0",
                              Patterns::Double (),
                              "Radius of the plume head temperature anomaly. Units: m.");
           prm.declare_entry ("Model time to start plume tail", "0",
@@ -470,8 +470,8 @@ namespace aspect
         anomaly_amplitude = prm.get_double ("Amplitude");
         anomaly_radius = prm.get_double ("Radius");
 
-        maximum_head_amplitude = prm.get_double("Maximum head amplitude");
-        maximum_head_radius = prm.get_double("Maximum head radius");
+        head_amplitude = prm.get_double("Head amplitude");
+        head_radius = prm.get_double("Head radius");
         model_time_to_start_plume_tail = prm.get_double ("Model time to start plume tail");
 
         if (prm.get ("Side boundary type") == "initial")
