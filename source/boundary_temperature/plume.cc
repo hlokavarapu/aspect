@@ -38,7 +38,7 @@ namespace aspect
      {
       template <int dim>
        PlumeLookup<dim>::PlumeLookup(const std::string &filename,
-                                const ConditionalOStream &pcout)
+                                     const ConditionalOStream &pcout)
        {
          pcout << std::endl << "   Loading Plume position file for boundary temperature: "
                << filename << "." << std::endl << std::endl;
@@ -61,20 +61,10 @@ namespace aspect
          AssertThrow (in,
                       ExcMessage (std::string("Couldn't open file <") + filename));
 
-         unsigned int i = 0;
-         double start_time = 0.0;
-         while (!in.eof())
+         double time,start_time,x,y;
+
+         while (in >> time >> x >> y)
            {
-             double time,x,y;
-             in >> time >> x >> y;
-
-             if (i == 0)
-               start_time = time;
-
-             getline(in, temp);
-             if (in.eof())
-               break;
-
              Point<dim> position;
              switch(dim)
              {
@@ -89,17 +79,12 @@ namespace aspect
                AssertThrow(false,ExcNotImplemented());
                break;
              }
-
-
              plume_positions.push_back(position*km_in_m);
 
-             // Correct times to years instead of Ma
-             times.push_back((start_time-time)*Myr_in_seconds);
-
-             i++;
+             if (times.size() == 0)
+               start_time = time * Myr_in_seconds;
+             times.push_back(start_time - time * Myr_in_seconds);
            }
-         Assert(i==plume_positions.size(), ExcMessage("Plume positions table size not consistent with number of lines in file."));
-         Assert(i==times.size(), ExcMessage("Times table size not consistent with number of lines in file."));
        }
 
       template <int dim>
@@ -163,7 +148,8 @@ namespace aspect
     Plume<dim>::
     update ()
     {
-      plume_position = lookup->plume_position(this->get_time());
+      plume_position = lookup->plume_position(this->get_time()
+                                              - model_time_to_start_plume_tail);
     }
 
     template <int dim>
@@ -260,15 +246,40 @@ namespace aspect
               ExcMessage ("The adiabatic conditions are not yet initialized,"
                   "but they are necessary for the plume boundary temperature plugin."));
 
-      double boundary_temperature = 0;
-      types::boundary_id boundary_id(boundary_indicator);
+      double boundary_temperature(0);
+      const types::boundary_id boundary_id(boundary_indicator);
 
       if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "bottom")
         {
-          // T=T_0*exp-(r/r_0)**2
           const Point<dim> distance = position - plume_position;
-          const double perturbation = anomaly_amplitude * std::exp(-std::pow(distance.norm()/anomaly_radius,2));
-          boundary_temperature = this->get_adiabatic_conditions().temperature(position) + perturbation;
+
+          //Normal plume tail
+          if (this->get_time() - model_time_to_start_plume_tail >= 0)
+            {
+              // T=T_0*exp-(r/r_0)**2
+              boundary_temperature += anomaly_amplitude * std::exp(-std::pow(distance.norm()/anomaly_radius,2));
+            }
+          // Plume head
+          else
+            {
+              const double distance_head_to_boundary = fabs(V0 * (this->get_time() - model_time_to_start_plume_tail));
+
+              // If the plume is not yet there, perturbation will not be set
+              if (distance_head_to_boundary < maximum_head_radius)
+                {
+                  const double head_radius = sqrt(maximum_head_radius * maximum_head_radius
+                      - distance_head_to_boundary * distance_head_to_boundary);
+
+                  if (distance.norm() < head_radius)
+                    {
+                    //boundary_temperature += maximum_head_amplitude;
+                      const double head_amplitude = maximum_head_amplitude * std::exp(-std::pow(distance_head_to_boundary/maximum_head_radius,2));
+                      boundary_temperature += head_amplitude * std::exp(-std::pow(distance.norm()/head_radius,2));
+                    }
+                }
+            }
+
+          boundary_temperature += this->get_adiabatic_conditions().temperature(position);
         }
       else if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "top")
         boundary_temperature = temperature_[boundary_indicator];
@@ -350,10 +361,24 @@ namespace aspect
                              "The file name of the plume position data.");
           prm.declare_entry ("Amplitude", "0",
                              Patterns::Double (),
-                             "Amplitude of the temperature anomaly. Units: K.");
+                             "Amplitude of the plume tail temperature anomaly. Units: K.");
+          prm.declare_entry ("Inflow velocity", "0",
+                             Patterns::Double (),
+                             "Magnitude of the velocity inflow. Units: K.");
           prm.declare_entry ("Radius", "0",
                              Patterns::Double (),
-                             "Radius of the temperature anomaly. Units: m.");
+                             "Radius of the plume tail temperature anomaly. Units: m.");
+          prm.declare_entry ("Maximum head amplitude", "0",
+                             Patterns::Double (),
+                             "Amplitude of the plume head temperature anomaly. Units: K.");
+          prm.declare_entry ("Maximum head radius", "0",
+                             Patterns::Double (),
+                             "Radius of the plume head temperature anomaly. Units: m.");
+          prm.declare_entry ("Model time to start plume tail", "0",
+                             Patterns::Double (),
+                             "Time before the start of the plume position data at which "
+                             "the head starts to flow into the model. Units: years or "
+                             "seconds.");
           /**
            * Choose the type of side boundary temperature applied. Current choices
            * are to apply temperatures from an adiabatic profile, the initial
@@ -441,8 +466,13 @@ namespace aspect
         }
 
         plume_file_name    = prm.get ("Plume position file name");
+        V0 = prm.get_double ("Inflow velocity");
         anomaly_amplitude = prm.get_double ("Amplitude");
         anomaly_radius = prm.get_double ("Radius");
+
+        maximum_head_amplitude = prm.get_double("Maximum head amplitude");
+        maximum_head_radius = prm.get_double("Maximum head radius");
+        model_time_to_start_plume_tail = prm.get_double ("Model time to start plume tail");
 
         if (prm.get ("Side boundary type") == "initial")
           side_boundary_type = initial;
@@ -458,8 +488,10 @@ namespace aspect
         // convert input ages to seconds
         if (this->convert_output_to_years())
           {
+            V0 /= year_in_seconds;
             age_top_boundary_layer *= year_in_seconds;
             age_bottom_boundary_layer *= year_in_seconds;
+            model_time_to_start_plume_tail *= year_in_seconds;
           }
 
         subadiabaticity = prm.get_double ("Subadiabaticity");

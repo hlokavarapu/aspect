@@ -50,9 +50,8 @@ namespace aspect
         public:
 
           /**
-           * Initialize all members and the two pointers referring to the
-           * actual velocities. Also calculates any necessary rotation
-           * parameters for a 2D model.
+           * Load the data into the two vectors referring to the
+           * actual plume positions and times.
            */
           PlumeLookup(const std::string &filename,
                       const ConditionalOStream &pcout);
@@ -71,6 +70,13 @@ namespace aspect
            * n and n+1
            */
           Point<dim> plume_position(const double time) const;
+
+          /**
+           * Returns the time since the beginning of the data series (positive)
+           * or the time to the beginning of the data series (negative) in
+           * seconds.
+           */
+          double get_time_relative_to_data_start(const double time) const;
 
         private:
 
@@ -221,6 +227,29 @@ namespace aspect
          * Radius of the temperature anomaly
          */
         double anomaly_radius;
+
+        /**
+         * Magnitude of the plume velocity anomaly
+         */
+        double V0;
+
+        /**
+         * Magnitude of the plume head temperature anomaly
+         */
+        double maximum_head_amplitude;
+
+        /**
+         * Radius of the plume head temperature anomaly
+         */
+        double maximum_head_radius;
+
+        /**
+         * Model time at which the plume tail will start to move according to
+         * the position data file. This is equivalent to the difference between
+         * model start time (in the past) and the first data time of the plume
+         * positions file.
+         */
+        double model_time_to_start_plume_tail;
 
         /**
          * Age of the upper thermal boundary layer at the surface of the

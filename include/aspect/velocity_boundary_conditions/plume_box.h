@@ -26,7 +26,6 @@
 
 // Additional lookup classes are within these
 #include <aspect/boundary_temperature/plume.h>
-#include <aspect/velocity_boundary_conditions/box_plates.h>
 
 #include <aspect/simulator_access.h>
 #include <aspect/utilities.h>
@@ -36,6 +35,114 @@ namespace aspect
   namespace VelocityBoundaryConditions
   {
     using namespace dealii;
+
+    namespace internal
+    {
+      /**
+       * AsciiDataLookup reads in files containing input data
+         in ascii format. Note the required format of the
+         input data: The first lines may contain any number of comments
+         if they begin with '#', but one of these lines needs to
+         contain the number of grid points in each dimension as
+         for example '# POINTS: 3 3'. The order of the columns
+         has to be 'coordinates data' with @p dim coordinate columns
+         and @p components data columns. Note that the data in the input
+         files need to be sorted in a specific order:
+         the first coordinate needs to ascend first,
+         followed by the second and so on in order to
+         assign the correct data to the prescribed coordinates.
+       */
+      template <int dim>
+      class BoxPlatesLookup
+      {
+        public:
+          BoxPlatesLookup(const std::string &filename,
+                          const unsigned int components,
+                          const double time_scale_factor,
+                          const double velocity_scale_factor,
+                          const bool interpolate_velocity);
+
+          /**
+           * Loads a data text file. Throws an exception if the file does not exist,
+           * if the data file format is incorrect or if the file grid changes over model runtime.
+           */
+          void
+          load_file(const std::string &filename,
+                    const double time);
+
+          /**
+           * Returns the computed velocity
+           * in cartesian coordinates.
+           *
+           * @param position The current position to compute the data (velocity, temperature, etc.)
+           * @param component Number of the component that is requested
+           */
+          double
+          get_data(const Point<dim> &position,
+                   const unsigned int component) const;
+
+        private:
+          /**
+           * The number of data components read in (=columns in the data file).
+           */
+          const unsigned int components;
+
+          /**
+           * Interpolation functions to access the data.
+           */
+          std::vector<Functions::InterpolatedUniformGridData<dim> *> data;
+
+          /**
+           * Model size
+           */
+          std_cxx11::array<std::pair<double,double>,dim> grid_extent;
+
+          /**
+           * Number of points in the data grid.
+           */
+          TableIndices<dim> table_points;
+
+          /**
+           * Scales the data times by a scalar factor. Can be
+           * used to transform the unit of the data.
+           */
+          const double time_scale_factor;
+
+          /**
+           * Scales the data boundary velocity by a scalar factor. Can be
+           * used to transform the unit of the data.
+           */
+          const double velocity_scale_factor;
+
+          /**
+           * Determines whether to interpolate between old and new plate
+           * velocities. If false, only the old one will be used.
+           */
+          const bool interpolate_velocity;
+
+          /**
+           * Any plate velocity consists of a velocity and the rotation
+           * of the associated plate in the used map projection
+           */
+          typedef std::pair<Tensor<1,dim+1>,double> plate_velocity;
+
+          typedef std::map<unsigned char,plate_velocity > velocity_map;
+
+          /**
+           * Table for the plate velocities of all times.
+           */
+          std::vector<std::pair<double, velocity_map> > velocity_values;
+
+          /**
+           * Computes the table indices of each entry in the input data file.
+           * The index depends on dim, grid_dim and the number of components.
+           */
+          TableIndices<dim>
+          compute_table_indices(const unsigned int line) const;
+      };
+    }
+
+
 
     /**
      * A class that implements prescribed velocity boundary conditions
@@ -292,6 +399,19 @@ namespace aspect
          * Radius of the plume velocity anomaly
          */
         double R0;
+
+        /**
+         * Radius of the plume head temperature anomaly
+         */
+        double maximum_head_radius;
+
+        /**
+         * Model time at which the plume tail will start to move according to
+         * the position data file. This is equivalent to the difference between
+         * model start time (in the past) and the first data time of the plume
+         * positions file.
+         */
+        double model_time_to_start_plume_tail;
 
         /**
          * Handles the update of the data in lookup.

@@ -30,6 +30,313 @@ namespace aspect
 {
   namespace VelocityBoundaryConditions
   {
+
+    namespace internal
+    {
+      template <int dim>
+      BoxPlatesLookup<dim>::BoxPlatesLookup(const std::string &filename,
+                                            const unsigned int components,
+                                            const double time_scale_factor,
+                                            const double velocity_scale_factor,
+                                            const bool interpolate_velocity)
+        :
+          components(components),
+          data(components),
+          time_scale_factor(time_scale_factor),
+          velocity_scale_factor(velocity_scale_factor),
+          interpolate_velocity(interpolate_velocity)
+      {
+        // Check whether file exists, we do not want to throw
+        // an exception in case it does not, because it could be by purpose
+        // (i.e. the end of the boundary condition is reached)
+        AssertThrow (Utilities::fexists(filename),
+                     ExcMessage (std::string("Plate velocity file <")
+                                 +
+                                 filename
+                                 +
+                                 "> not found!"));
+
+        std::string temp;
+        std::ifstream in(filename.c_str(), std::ios::in);
+        AssertThrow (in,
+                     ExcMessage (std::string("Couldn't open file <") + filename));
+        getline(in, temp); // eat first line
+
+
+        double old_time (std::numeric_limits<double>::quiet_NaN());
+        velocity_map velocity_slice;
+        double start_time,end_time,vx,vy,omega;
+        unsigned char plate_id;
+        while (in >> start_time >> end_time >> plate_id >> vx >> vy >> omega)
+          {
+            // scale all properties
+            vx *= velocity_scale_factor;
+            vy *= velocity_scale_factor;
+            // omega is in [velocity/km] scale it to [1/s]
+            omega *= velocity_scale_factor / 1000;
+            start_time *= time_scale_factor;
+            end_time *= time_scale_factor;
+
+            // If we have just read in the next time slice
+            // save the last one and start a new one
+            if (start_time > old_time + 1e-16)
+              {
+                velocity_values.push_back(std::make_pair(old_time,velocity_slice));
+                velocity_slice = velocity_map();
+              }
+
+            // each time will contain a map from plate character to velocity
+            plate_velocity velocity;
+            switch(dim)
+            {
+            case 1:
+              velocity.first[0] = vx;
+              break;
+            case 2:
+              velocity.first[0] = vx;
+              velocity.first[1] = vy;
+              break;
+            default:
+              AssertThrow(false,ExcNotImplemented());
+              break;
+            }
+
+            velocity.second = omega;
+
+            velocity_slice.insert(std::pair<unsigned char,plate_velocity >
+            (plate_id,velocity));
+
+            old_time = start_time;
+          }
+
+        //save the last slice
+        velocity_values.push_back(std::make_pair(start_time,velocity_slice));
+      }
+
+      template <int dim>
+      void
+      BoxPlatesLookup<dim>::load_file(const std::string &filename,
+                                      const double time)
+      {
+        const double time_until_end = velocity_values.back().first - time;
+        unsigned int old_index,next_index;
+        double velocity_time_weight;
+
+        if (time_until_end >= velocity_values.back().first)
+          {
+            old_index = velocity_values.size()-1;
+            next_index = velocity_values.size()-1;
+            velocity_time_weight = 0.0;
+          }
+        else if (time_until_end <= velocity_values[0].first)
+          {
+            old_index = 0;
+            next_index = 0;
+            velocity_time_weight = 1.0;
+          }
+        else
+          {
+            for (unsigned int i = velocity_values.size() - 2; i >= 0; i--)
+                if (time_until_end > velocity_values[i].first)
+                  {
+                    old_index = i + 1;
+                    next_index = i;
+                    velocity_time_weight = (velocity_values[old_index].first - time_until_end) / (velocity_values[old_index].first - velocity_values[next_index].first);
+                    break;
+                  }
+          }
+
+        const velocity_map old_map = velocity_values[old_index].second;
+        const velocity_map next_map = velocity_values[next_index].second;
+
+        Assert((0.0 <= velocity_time_weight) && (1.0 >= velocity_time_weight),
+               ExcMessage ("Velocity time weight is wrong"));
+
+        // Check whether file exists, we do not want to throw
+        // an exception in case it does not, because it could be by purpose
+        // (i.e. the end of the boundary condition is reached)
+        AssertThrow (Utilities::fexists(filename),
+                     ExcMessage (std::string("Ascii data file <")
+                                 +
+                                 filename
+                                 +
+                                 "> not found!"));
+
+        std::ifstream in(filename.c_str(), std::ios::in);
+        AssertThrow (in,
+                     ExcMessage (std::string("Couldn't open data file <"
+                                             +
+                                             filename
+                                             +
+                                             ">.")));
+
+        // Read header lines and if necessary reinit tables
+        while (in.peek() == '#')
+          {
+            std::string line;
+            getline(in,line);
+            std::stringstream linestream(line);
+            std::string word;
+            while (linestream >> word)
+              if (word == "POINTS:")
+                for (unsigned int i = 0; i < dim; i++)
+                  {
+                    unsigned int temp_index;
+                    linestream >> temp_index;
+
+                    if (table_points[i] == 0)
+                      table_points[i] = temp_index;
+                    else
+                      AssertThrow (table_points[i] == temp_index,
+                                   ExcMessage("The file grid must not change over model runtime. "
+                                              "Either you prescribed a conflicting number of points in "
+                                              "the input file, or the POINTS comment in your data files "
+                                              "is changing between following files."));
+                  }
+          }
+
+        for (unsigned int i = 0; i < dim; i++)
+          AssertThrow (table_points[i] != 0,
+                       ExcMessage("There was no POINTS: keyword in the data file, or it could not "
+                           "be parsed correctly. Ensure that at least the first data file contains "
+                           "an information about the grid size in the form '# POINTS: x y', where "
+                           "x y (only x in 2D) are the number of points in the coordinate directions"
+                           " of the boundary grid."));
+
+        /**
+         * Table for the new data. This peculiar reinit is necessary, because
+         * there is no constructor for Table, which takes TableIndices as
+         * argument.
+         */
+        Table<dim,double> data_table;
+        data_table.TableBase<dim,double>::reinit(table_points);
+        std::vector<Table<dim,double> > data_tables(components+dim,data_table);
+
+        // Read data lines
+        unsigned int line = 0;
+        double temp_data;
+
+        while (!in.eof())
+          {
+            Point<dim> position;
+             for (unsigned int i = 0; i < dim; i++)
+               {
+                 if (!(in >> position[i]))
+                   break;
+                 data_tables[i](compute_table_indices(line)) = position[i];
+               }
+
+             char plate_id;
+             if (!(in >> plate_id))
+               break;
+
+            Tensor<1,dim+1> old_velocity = old_map.find(plate_id)->second.first;
+            const double old_omega = old_map.find(plate_id)->second.second;
+
+            Tensor<1,dim+1> velocity;
+            double omega;
+
+            // It might happen that the current plate disappears in the next time step
+            // In case the plate is not longer there, use the old velocity
+            if (next_map.find(plate_id) != next_map.end())
+              {
+                velocity = next_map.find(plate_id)->second.first;
+                omega    = next_map.find(plate_id)->second.second;
+              }
+            else
+              {
+                velocity = old_velocity;
+                omega    = old_omega;
+              }
+
+
+             Tensor<1,dim+1> rotation_velocity;
+             Tensor<1,dim+1> old_rotation_velocity;
+
+             if (dim == 2)
+               {
+                 rotation_velocity[0] = -omega*position[1];
+                 rotation_velocity[1] = omega*position[0];
+                 old_rotation_velocity[0] = -old_omega*position[1];
+                 old_rotation_velocity[1] = old_omega*position[0];
+               }
+             else if (dim == 1)
+               {
+                 rotation_velocity[0] = -omega*position[0];
+                 old_rotation_velocity[0] = -old_omega*position[0];
+               }
+
+             velocity += rotation_velocity;
+             old_velocity += old_rotation_velocity;
+
+             Tensor<1,dim+1> surface_velocity;
+             if (interpolate_velocity)
+               {
+                 surface_velocity = velocity_time_weight * velocity
+                                   + (1-velocity_time_weight) * old_velocity;
+               }
+             else
+               surface_velocity = old_velocity;
+
+             for (unsigned int i = 0; i < dim+1; i++)
+               data_tables[dim+i](compute_table_indices(line)) = surface_velocity[i];
+
+            line++;
+
+            // TODO: add checks for coordinate ordering in data files
+          }
+
+        AssertThrow(line == data_table.n_elements(),
+                    ExcMessage (std::string("Number of read in points does not match number of expected points. File corrupted?")));
+
+        std_cxx11::array<unsigned int,dim> table_intervals;
+
+        for (unsigned int i = 0; i < dim; i++)
+          {
+            table_intervals[i] = table_points[i] - 1;
+
+            TableIndices<dim> idx;
+            grid_extent[i].first = data_tables[i](idx);
+            idx[i] = table_points[i] - 1;
+            grid_extent[i].second = data_tables[i](idx);
+          }
+
+        for (unsigned int i = 0; i < components; i++)
+          {
+            if (data[i])
+              delete data[i];
+            data[i] = new Functions::InterpolatedUniformGridData<dim> (grid_extent,
+                                                                       table_intervals,
+                                                                       data_tables[dim+i]);
+          }
+      }
+
+
+      template <int dim>
+      TableIndices<dim>
+      BoxPlatesLookup<dim>::compute_table_indices(const unsigned int line) const
+      {
+        TableIndices<dim> idx;
+        idx[0] = line % table_points[0];
+        if (dim >= 2)
+          idx[1] = (line / table_points[0]) % table_points[1];
+        if (dim == 3)
+          idx[2] = line / (table_points[0] * table_points[1]);
+
+        return idx;
+      }
+
+      template <int dim>
+      double
+      BoxPlatesLookup<dim>::get_data(const Point<dim> &position,
+                                     const unsigned int component) const
+      {
+        return data[component]->value(position);
+      }
+
+    }
+
+
     template <int dim>
     PlumeBox<dim>::PlumeBox ()
       :
@@ -226,7 +533,7 @@ namespace aspect
       Interface<dim>::update ();
 
       // First update the plume position
-      plume_position = plume_lookup->plume_position(this->get_time());
+      plume_position = plume_lookup->plume_position(this->get_time() - model_time_to_start_plume_tail);
 
       if (time_dependent && (this->get_time() - first_data_file_model_time >= 0.0))
         {
@@ -512,7 +819,30 @@ namespace aspect
           else if (this->get_geometry_model().translate_id_to_symbol_name(boundary_id) == "bottom")
             {
               velocity = get_velocity(position);
-              velocity[dim-1] += V0 * std::exp(-std::pow((position-plume_position).norm()/R0,2));
+
+              //Normal plume tail
+              if (this->get_time() - model_time_to_start_plume_tail >= 0)
+                {
+                  velocity[dim-1] += V0 * std::exp(-std::pow((position-plume_position).norm()/R0,2));
+                }
+              else
+                {
+                  const double distance_head_to_boundary = fabs(V0 * (this->get_time() - model_time_to_start_plume_tail));
+
+                  // If the plume is not yet there, perturbation will not be set
+                  if (distance_head_to_boundary < maximum_head_radius)
+                    {
+                      const double head_radius = sqrt(maximum_head_radius * maximum_head_radius
+                          - distance_head_to_boundary * distance_head_to_boundary);
+
+                      if ((position-plume_position).norm() < head_radius)
+                        {
+                          velocity[dim-1] += V0;
+                         // const double head_amplitude = maximum_head_amplitude * std::exp(-std::pow(distance_head_to_boundary/maximum_head_radius,2));
+                         // velocity[dim-1] += head_amplitude * std::exp(-std::pow(distance.norm()/head_radius,2));
+                        }
+                    }
+                }
             }
           // At the sides interpolate between side and top velocity
           else
@@ -670,6 +1000,14 @@ namespace aspect
           prm.declare_entry ("Radius", "0",
                              Patterns::Double (),
                              "Radius of the anomaly. Units: m.");
+          prm.declare_entry ("Maximum head radius", "0",
+                             Patterns::Double (),
+                             "Radius of the plume head temperature anomaly. Units: m.");
+          prm.declare_entry ("Model time to start plume tail", "0",
+                             Patterns::Double (),
+                             "Time before the start of the plume position data at which "
+                             "the head starts to flow into the model. Units: years or "
+                             "seconds.");
       }
       prm.leave_subsection ();
     }
@@ -769,9 +1107,13 @@ namespace aspect
          V0 = prm.get_double ("Inflow velocity");
          R0 = prm.get_double ("Radius");
 
+         maximum_head_radius = prm.get_double("Maximum head radius");
+         model_time_to_start_plume_tail = prm.get_double ("Model time to start plume tail");
+
          if (this->convert_output_to_years() == true)
            {
              V0 /= year_in_seconds;
+             model_time_to_start_plume_tail *= year_in_seconds;
            }
       }
       prm.leave_subsection ();
