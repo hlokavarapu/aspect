@@ -1428,6 +1428,8 @@ namespace aspect
     {
       for (unsigned int i=0; i<in.position.size(); ++i)
         {
+          //Use the adiabatic pressure instead of the real one, because of oscillations
+          const double pressure = this->get_adiabatic_conditions().pressure(in.position[i]);
     	  // convert the grain size from log to normal
     	  std::vector<double> composition (in.composition[i]);
     	  if(advect_log_gransize)
@@ -1453,7 +1455,7 @@ namespace aspect
 
                 // then calculate the deviation from the transition point (both in temperature
                 // and in pressure)
-                double pressure_deviation = in.pressure[i] - transition_pressure
+                double pressure_deviation = pressure - transition_pressure
                                             - transition_slopes[phase] * (in.temperature[i] - transition_temperatures[phase]);
 
                 if ((std::abs(pressure_deviation) < pressure_width)
@@ -1464,7 +1466,7 @@ namespace aspect
           else
             for (unsigned int j=0; j<in.position.size(); ++j)
               for (unsigned int k=0;k<transition_depths.size();++k)
-                if((phase_function(in.position[i], in.temperature[i], in.pressure[i], k)
+                if((phase_function(in.position[i], in.temperature[i], pressure, k)
                     != phase_function(in.position[j], in.temperature[j], in.pressure[j], k))
                     &&
                     ((in.velocity[i] * this->get_gravity_model().gravity_vector(in.position[i]))
@@ -1473,14 +1475,14 @@ namespace aspect
 
           if (in.strain_rate.size() > 0)
             out.viscosities[i] = std::min(std::max(min_eta,viscosity(in.temperature[i],
-                                                                       in.pressure[i],
+                                                                       pressure,
                                                                        composition,
                                                                        in.strain_rate[i],
                                                                        in.position[i])),max_eta);
 
-          out.densities[i] = density(in.temperature[i], in.pressure[i], in.composition[i], in.position[i]);
+          out.densities[i] = density(in.temperature[i], pressure, in.composition[i], in.position[i]);
           out.thermal_conductivities[i] = k_value;
-          out.compressibilities[i] = compressibility(in.temperature[i], in.pressure[i], composition, in.position[i]);
+          out.compressibilities[i] = compressibility(in.temperature[i], pressure, composition, in.position[i]);
 
           // TODO: make this more general for not just olivine grains
           if (in.strain_rate.size() > 0)
@@ -1488,7 +1490,7 @@ namespace aspect
               {
                 if (this->introspection().name_for_compositional_index(c) == "olivine_grain_size")
                 {
-                  out.reaction_terms[i][c] = grain_size_growth_rate(in.temperature[i], in.pressure[i], composition,
+                  out.reaction_terms[i][c] = grain_size_growth_rate(in.temperature[i], pressure, composition,
                       in.strain_rate[i], in.velocity[i], in.position[i], c, crossed_transition);
                   if(advect_log_gransize)
                 	out.reaction_terms[i][c] = - out.reaction_terms[i][c] / composition[c];
@@ -1519,6 +1521,9 @@ namespace aspect
 
       for (unsigned int i = 0; i < in.position.size(); ++i)
         {
+          //Use the adiabatic pressure instead of the real one, because of oscillations
+          const double pressure = this->get_adiabatic_conditions().pressure(in.position[i]);
+
           if (!use_table_properties)
             {
               out.thermal_expansion_coefficients[i] = thermal_alpha;
@@ -1538,8 +1543,8 @@ namespace aspect
                 {
                   if (material_lookup.size() == 1)
                     {
-                      out.thermal_expansion_coefficients[i] = (1 - out.densities[i] * material_lookup[0]->dHdp(in.temperature[i],in.pressure[i])) / in.temperature[i];
-                      out.specific_heat[i] = material_lookup[0]->dHdT(in.temperature[i],in.pressure[i]);
+                      out.thermal_expansion_coefficients[i] = (1 - out.densities[i] * material_lookup[0]->dHdp(in.temperature[i],pressure)) / in.temperature[i];
+                      out.specific_heat[i] = material_lookup[0]->dHdT(in.temperature[i],pressure);
                     }
                   else
                     {
@@ -1549,8 +1554,8 @@ namespace aspect
             }
           else
             {
-              out.thermal_expansion_coefficients[i] = thermal_expansion_coefficient(in.temperature[i], in.pressure[i], in.composition[i], in.position[i]);
-              out.specific_heat[i] = specific_heat(in.temperature[i], in.pressure[i], in.composition[i], in.position[i]);
+              out.thermal_expansion_coefficients[i] = thermal_expansion_coefficient(in.temperature[i], pressure, in.composition[i], in.position[i]);
+              out.specific_heat[i] = specific_heat(in.temperature[i], pressure, in.composition[i], in.position[i]);
             }
 
           out.thermal_expansion_coefficients[i] = std::max(std::min(out.thermal_expansion_coefficients[i],max_thermal_expansivity),min_thermal_expansivity);
