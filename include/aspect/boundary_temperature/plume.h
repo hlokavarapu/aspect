@@ -221,17 +221,17 @@ namespace aspect
         /**
          * Magnitude of the temperature anomaly
          */
-        double anomaly_amplitude;
+        double tail_amplitude;
 
         /**
          * Radius of the temperature anomaly
          */
-        double anomaly_radius;
+        double tail_radius;
 
         /**
          * Magnitude of the plume velocity anomaly
          */
-        double V0;
+        double tail_velocity;
 
         /**
          * Magnitude of the plume head temperature anomaly
@@ -242,6 +242,11 @@ namespace aspect
          * Radius of the plume head temperature anomaly
          */
         double head_radius;
+
+        /**
+         * Velocity of the plume head inflow
+         */
+        double head_velocity;
 
         /**
          * Model time at which the plume tail will start to move according to

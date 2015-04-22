@@ -69,6 +69,7 @@ subsection Plume
     set Amplitude = 200.0
     set Head amplitude = 300.0
     set Head radius = 300000
+    set Head velocity = 0.15
     set Model time to start plume tail = 5e6
     set Inflow velocity = 0.15
     set Age top boundary layer = 0

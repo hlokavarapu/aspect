@@ -253,29 +253,34 @@ namespace aspect
         {
           const Point<dim> distance = position - plume_position;
 
-          //Normal plume tail
-          if (this->get_time() - model_time_to_start_plume_tail >= 0)
+          double distance_head_to_boundary,current_head_radius(0);
+          if ((head_radius > 0) && (head_velocity > 0) && (head_amplitude > 0))
             {
-              // T=T_0*exp-(r/r_0)**2
-              boundary_temperature += anomaly_amplitude * std::exp(-std::pow(distance.norm()/anomaly_radius,2));
-            }
-          // Plume head
-          else
-            {
-              const double distance_head_to_boundary = fabs(V0 * (this->get_time() - model_time_to_start_plume_tail));
+              distance_head_to_boundary = fabs(head_velocity * (this->get_time() - model_time_to_start_plume_tail));
 
               // If the plume is not yet there, perturbation will not be set
               if (distance_head_to_boundary < head_radius)
                 {
-                  const double current_head_radius = sqrt(head_radius * head_radius
+                  current_head_radius = sqrt(head_radius * head_radius
                       - distance_head_to_boundary * distance_head_to_boundary);
+                }
+            }
 
-                  if (distance.norm() < current_head_radius)
-                    {
-                    //boundary_temperature += maximum_head_amplitude;
-                      const double current_head_amplitude = head_amplitude * std::exp(-std::pow(distance_head_to_boundary/head_radius,2));
-                      boundary_temperature += current_head_amplitude * std::exp(-std::pow(distance.norm()/current_head_radius,2));
-                    }
+          //Normal plume tail
+          if ((this->get_time() >= model_time_to_start_plume_tail)
+              && (current_head_radius < tail_radius))
+            {
+              // T=T_0*exp-(r/r_0)**2
+              boundary_temperature += tail_amplitude * std::exp(-std::pow(distance.norm()/tail_radius,2));
+            }
+          // Plume head
+          else
+            {
+              if (distance.norm() < current_head_radius)
+                {
+                  //boundary_temperature += maximum_head_amplitude;
+                  const double current_head_amplitude = head_amplitude * std::exp(-std::pow(distance_head_to_boundary/head_radius,2));
+                  boundary_temperature += current_head_amplitude * std::exp(-std::pow(distance.norm()/current_head_radius,2));
                 }
             }
 
@@ -374,6 +379,9 @@ namespace aspect
           prm.declare_entry ("Head radius", "0",
                              Patterns::Double (),
                              "Radius of the plume head temperature anomaly. Units: m.");
+          prm.declare_entry ("Head velocity", "0",
+                             Patterns::Double (),
+                             "Magnitude of the plume head velocity inflow. Units: m/s or m/yr.");
           prm.declare_entry ("Model time to start plume tail", "0",
                              Patterns::Double (),
                              "Time before the start of the plume position data at which "
@@ -466,12 +474,13 @@ namespace aspect
         }
 
         plume_file_name    = prm.get ("Plume position file name");
-        V0 = prm.get_double ("Inflow velocity");
-        anomaly_amplitude = prm.get_double ("Amplitude");
-        anomaly_radius = prm.get_double ("Radius");
+        tail_velocity = prm.get_double ("Inflow velocity");
+        tail_amplitude = prm.get_double ("Amplitude");
+        tail_radius = prm.get_double ("Radius");
 
         head_amplitude = prm.get_double("Head amplitude");
         head_radius = prm.get_double("Head radius");
+        head_velocity = prm.get_double("Head velocity");
         model_time_to_start_plume_tail = prm.get_double ("Model time to start plume tail");
 
         if (prm.get ("Side boundary type") == "initial")
@@ -488,7 +497,8 @@ namespace aspect
         // convert input ages to seconds
         if (this->convert_output_to_years())
           {
-            V0 /= year_in_seconds;
+            tail_velocity /= year_in_seconds;
+            head_velocity /= year_in_seconds;
             age_top_boundary_layer *= year_in_seconds;
             age_bottom_boundary_layer *= year_in_seconds;
             model_time_to_start_plume_tail *= year_in_seconds;
