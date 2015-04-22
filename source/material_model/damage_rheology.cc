@@ -1429,7 +1429,12 @@ namespace aspect
       for (unsigned int i=0; i<in.position.size(); ++i)
         {
           //Use the adiabatic pressure instead of the real one, because of oscillations
-          const double pressure = this->get_adiabatic_conditions().pressure(in.position[i]);
+          const double pressure = (this->get_adiabatic_conditions().is_initialized())
+              ?
+                  this->get_adiabatic_conditions().pressure(in.position[i])
+                  :
+                  in.pressure[i];
+
     	  // convert the grain size from log to normal
     	  std::vector<double> composition (in.composition[i]);
     	  if(advect_log_gransize)
@@ -1522,7 +1527,11 @@ namespace aspect
       for (unsigned int i = 0; i < in.position.size(); ++i)
         {
           //Use the adiabatic pressure instead of the real one, because of oscillations
-          const double pressure = this->get_adiabatic_conditions().pressure(in.position[i]);
+          const double pressure = (this->get_adiabatic_conditions().is_initialized())
+              ?
+                  this->get_adiabatic_conditions().pressure(in.position[i])
+                  :
+                  in.pressure[i];
 
           if (!use_table_properties)
             {
