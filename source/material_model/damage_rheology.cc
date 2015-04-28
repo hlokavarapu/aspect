@@ -1488,7 +1488,7 @@ namespace aspect
           out.thermal_conductivities[i] = k_value;
           out.compressibilities[i] = compressibility(in.temperature[i], pressure, composition, in.position[i]);
 
-          out.boundary_area_change_work_fraction[i] = boundary_area_change_work_fraction[get_phase_index(in.position[i],in.temperature[i],in.pressure[i])];
+          out.boundary_area_change_work_fraction[i] = boundary_area_change_work_fraction[get_phase_index(in.position[i],in.temperature[i],pressure)];
 
           // TODO: make this more general for not just olivine grains
           if (in.strain_rate.size() > 0)
