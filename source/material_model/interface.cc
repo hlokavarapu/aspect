@@ -260,9 +260,6 @@ namespace aspect
       composition.resize(n_points);
       for (unsigned int q=0; q<n_points; ++q)
         composition[q].resize(n_comp, aspect::Utilities::signaling_nan<double>());
-
-      strain_rate.resize(n_points, aspect::Utilities::signaling_nan<SymmetricTensor<2,dim> >());
-      cell = 0;
     }
 
 
@@ -282,6 +279,7 @@ namespace aspect
       reaction_terms.resize(n_points);
       for (unsigned int q=0; q<n_points; ++q)
         reaction_terms[q].resize(n_comp, aspect::Utilities::signaling_nan<double>());
+      boundary_area_change_work_fraction.resize(n_points,aspect::Utilities::signaling_nan<double>());
     }
 
 

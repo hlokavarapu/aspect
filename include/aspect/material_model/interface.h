@@ -299,6 +299,13 @@ namespace aspect
        * in order to compute the reaction increment.
        */
       std::vector<std::vector<double> > reaction_terms;
+
+      /**
+       * This contains the fraction of the deformation work that is
+       * converted to surface energy of grains instead of thermal energy.
+       * It is used to reduce the shear heating by this fraction.
+       */
+      std::vector<double> boundary_area_change_work_fraction;
     };
 
 

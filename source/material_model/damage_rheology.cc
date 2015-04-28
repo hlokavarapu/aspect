@@ -1098,7 +1098,6 @@ namespace aspect
       return reference_rho;
     }
 
-
     template <int dim>
     double
     DamageRheology<dim>::
@@ -1488,6 +1487,8 @@ namespace aspect
           out.densities[i] = density(in.temperature[i], pressure, in.composition[i], in.position[i]);
           out.thermal_conductivities[i] = k_value;
           out.compressibilities[i] = compressibility(in.temperature[i], pressure, composition, in.position[i]);
+
+          out.boundary_area_change_work_fraction[i] = boundary_area_change_work_fraction[get_phase_index(in.position[i],in.temperature[i],in.pressure[i])];
 
           // TODO: make this more general for not just olivine grains
           if (in.strain_rate.size() > 0)
