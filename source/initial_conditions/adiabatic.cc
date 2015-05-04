@@ -119,11 +119,14 @@ namespace aspect
 
               for (unsigned int i=0; i<n_perturbations; ++i)
                 {
-                  const double angle_fraction = (n_perturbations == 1)
+                  // Choose were to put the perturbations, in case there is only
+                  // one use the mid_angle. And if there are lateral boundaries
+                  // do not place a perturbation there.
+                  const double angle_fraction = ((n_perturbations == 1) || (shell_geometry_model->opening_angle() != 360))
                             ?
-                                0.5
+                                (static_cast<double> (i) + 0.5) / static_cast<double> (n_perturbations)
                                 :
-                                (static_cast<double> (i) + 0.5) / static_cast<double> (n_perturbations);
+                                (static_cast<double> (i)) / static_cast<double> (n_perturbations);
 
                   const double perturbation_angle = numbers::PI/180.0 * angle_fraction * shell_geometry_model->opening_angle();
                   if (dim==2)
