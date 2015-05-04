@@ -278,9 +278,9 @@ namespace aspect
             {
               if (distance.norm() < current_head_radius)
                 {
-                  //boundary_temperature += maximum_head_amplitude;
-                  const double current_head_amplitude = head_amplitude * std::exp(-std::pow(distance_head_to_boundary/head_radius,2));
-                  boundary_temperature += current_head_amplitude * std::exp(-std::pow(distance.norm()/current_head_radius,2));
+                  boundary_temperature += head_amplitude;
+                  //const double current_head_amplitude = head_amplitude * std::exp(-std::pow(distance_head_to_boundary/head_radius,2));
+                  //boundary_temperature += current_head_amplitude * std::exp(-std::pow(distance.norm()/current_head_radius,2));
                 }
             }
 
