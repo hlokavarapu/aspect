@@ -1323,7 +1323,7 @@ namespace aspect
       unsigned int T_points(0), p_points(0);
       double dHdT(0.0), dHdp(0.0);
 
-      if (in.cell != this->get_dof_handler().end())
+      if (*in.cell != this->get_dof_handler().end())
         {
           const QTrapez<dim> quadrature_formula;
           const unsigned int n_q_points = quadrature_formula.size();
@@ -1336,7 +1336,7 @@ namespace aspect
           std::vector<std::vector<double> > compositions (quadrature_formula.size(),std::vector<double> (this->n_compositional_fields()));
           std::vector<std::vector<double> > composition_values (this->n_compositional_fields(),std::vector<double> (quadrature_formula.size()));
 
-          fe_values.reinit (in.cell);
+          fe_values.reinit (*in.cell);
 
           // get the various components of the solution, then
           // evaluate the material properties there
@@ -1542,7 +1542,7 @@ namespace aspect
           else if (use_enthalpy)
             {
               if (this->get_adiabatic_conditions().is_initialized()
-                  && (in.cell != this->get_dof_handler().end())
+                  && (*in.cell != this->get_dof_handler().end())
                   && (dH[0].second > 0)
                   && (dH[1].second > 0))
                 {

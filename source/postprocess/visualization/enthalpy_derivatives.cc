@@ -121,7 +121,9 @@ namespace aspect
             average_position += in.position[q];
           }
         average_position /= n_quadrature_points;
-        in.cell = GridTools::find_active_cell_around_point(this->get_dof_handler(),average_position);
+        typename DoFHandler<dim>::active_cell_iterator cell = GridTools::find_active_cell_around_point(this->get_dof_handler(),average_position);
+
+        in.cell = &cell;
 
         const MaterialModel::DamageRheology<dim>* material_model =
             dynamic_cast<const MaterialModel::DamageRheology<dim> * > (&this->get_material_model());

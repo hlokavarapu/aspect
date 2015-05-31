@@ -130,7 +130,8 @@ namespace aspect
             for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
               in.composition[q][c] = uh[q][this->introspection().component_indices.compositional_fields[c]];
           }
-        in.cell = this->get_dof_handler().end(); // we do not know the cell index
+
+        typename DoFHandler<dim>::active_cell_iterator cell;
 
         if (use_cell_reference)
           {
@@ -141,7 +142,8 @@ namespace aspect
               }
             average_position /= n_quadrature_points;
 
-            in.cell = GridTools::find_active_cell_around_point(this->get_dof_handler(),average_position);
+            cell = GridTools::find_active_cell_around_point(this->get_dof_handler(),average_position);
+            in.cell =&cell;
           }
 
         this->get_material_model().evaluate(in, out);

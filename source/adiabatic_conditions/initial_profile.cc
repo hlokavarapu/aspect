@@ -88,7 +88,6 @@ namespace aspect
             in.composition[0][c] = this->get_compositional_initial_conditions().initial_composition(representative_point, c);
 
           in.strain_rate.resize(0); // we do not need the viscosity
-          in.cell = this->get_dof_handler().end(); // and do not know the cell index
 
           this->get_material_model().evaluate(in, out);
 

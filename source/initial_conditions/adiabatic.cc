@@ -84,7 +84,6 @@ namespace aspect
       for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
         in.composition[0][c] = function->value(Point<1>(depth),c);
       in.strain_rate.resize(0); // adiabat has strain=0.
-      in.cell = this->get_dof_handler().end(); // and do not know the cell index
 
       this->get_material_model().evaluate(in, out);
 
