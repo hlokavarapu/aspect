@@ -378,14 +378,14 @@ namespace aspect
                   for (unsigned int p=0; p<n_q_points; ++p)
                     {
                       double enthalpy_p,enthalpy_T;
-                      if (std::fabs(temperatures[q] - temperatures[p]) > temperatures[q] * std::numeric_limits<double>::epsilon())
+                      if (std::fabs(temperatures[q] - temperatures[p]) > 1e-12 * temperatures[q])
                         {
                           enthalpy_p = this->material_lookup[0]->enthalpy(temperatures[p],pressures[q]);
                           const double point_contribution = (own_enthalpy-enthalpy_p)/(temperatures[q]-temperatures[p]);
                           dHdT += point_contribution;
                           T_points++;
                         }
-                      if (std::fabs(pressures[q] - pressures[p]) > pressures[q] * std::numeric_limits<double>::epsilon())
+                      if (std::fabs(pressures[q] - pressures[p]) > 1)
                         {
                           enthalpy_T = this->material_lookup[0]->enthalpy(temperatures[q],pressures[p]);
                           dHdp += (own_enthalpy-enthalpy_T)/(pressures[q]-pressures[p]);

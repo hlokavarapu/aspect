@@ -30,6 +30,21 @@ subsection Gravity model
   end
 end
 
+subsection Compositional initial conditions
+  set Model name = function
+  
+  subsection Function
+    set Variable names      = x,z
+    set Function constants  = 
+    set Function expression = 8e-5
+  end
+end
+
+subsection Compositional fields
+  set Number of fields = 1
+  set Names of fields   = olivine_grain_size
+end
+
 
 subsection Model settings
   # The latent heat effect effects in this testcase are included in the
@@ -119,5 +134,5 @@ end
 
 
 subsection Postprocess
-  set List of postprocessors = temperature statistics
+  set List of postprocessors = temperature statistics, composition statistics
 end
