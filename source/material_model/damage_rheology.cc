@@ -1323,7 +1323,7 @@ namespace aspect
       unsigned int T_points(0), p_points(0);
       double dHdT(0.0), dHdp(0.0);
 
-      if (*in.cell != this->get_dof_handler().end())
+      if (in.cell)
         {
           const QTrapez<dim> quadrature_formula;
           const unsigned int n_q_points = quadrature_formula.size();
@@ -1542,7 +1542,7 @@ namespace aspect
           else if (use_enthalpy)
             {
               if (this->get_adiabatic_conditions().is_initialized()
-                  && (*in.cell != this->get_dof_handler().end())
+                  && (in.cell)
                   && (dH[0].second > 0)
                   && (dH[1].second > 0))
                 {

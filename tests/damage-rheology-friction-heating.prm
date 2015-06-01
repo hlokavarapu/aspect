@@ -4,7 +4,7 @@
 # the boundary area of grains.
 
 set Dimension                              = 2
-set End time                               = 0
+set End time                               = 10000
 set Use years in output instead of seconds = true
 
 set Surface pressure                       = 0
@@ -20,15 +20,16 @@ subsection Geometry model
   end
 end
 
+subsection Heating model
+  set List of model names = shear heating surface work
+end
+
 subsection Model settings
   set Fixed temperature boundary indicators   = top,bottom
   set Fixed composition boundary indicators   = 
   set Zero velocity boundary indicators       = 
   set Tangential velocity boundary indicators = 
   set Prescribed velocity boundary indicators = top:function,bottom:function
-
-  set Include shear heating = true
-  set Include adiabatic heating = false
 end
 
 subsection Boundary velocity model
@@ -130,5 +131,5 @@ subsection Mesh refinement
 end
 
 subsection Postprocess
-  set List of postprocessors = composition statistics,temperature statistics, velocity statistics, viscous dissipation statistics
+  set List of postprocessors = composition statistics,temperature statistics, velocity statistics, viscous dissipation statistics, heating statistics
 end

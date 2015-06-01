@@ -10,6 +10,7 @@ set Dimension = 2
 set Start time                             = 0
 set End time                               = 1e15
 set Use years in output instead of seconds = false
+set Adiabatic surface temperature          = 1000
 
 subsection Geometry model
   set Model name = box
@@ -73,7 +74,7 @@ end
 
 
 subsection Material model
-  set Model name = damage rheology
+  set Model name = damage rheology latent heat
   subsection Damage rheology model
     set Reference density                = 3400
     set Thermal conductivity             = 2.38
