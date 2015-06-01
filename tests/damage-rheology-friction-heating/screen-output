@@ -20,7 +20,7 @@ Number of degrees of freedom: 4,645 (2,178+289+1,089+1,089)
      Temperature min/avg/max:       1600 K, 1600 K, 1600 K
      RMS, max velocity:             0.577 m/year, 0.993 m/year
      Total viscous dissipation:     1.64e+10 J/yr
-     Heating rate (average/total):  1.532e-11 W/kg, 521 W
+     Heating rate (average/total):  1.701e-11 W/kg, 578.3 W
 
 *** Timestep 1:  t=3125 years
    Solving temperature system... 9 iterations.
@@ -33,33 +33,33 @@ Number of degrees of freedom: 4,645 (2,178+289+1,089+1,089)
      Temperature min/avg/max:       1600 K, 1600 K, 1600 K
      RMS, max velocity:             0.577 m/year, 0.993 m/year
      Total viscous dissipation:     1.64e+10 J/yr
-     Heating rate (average/total):  1.527e-11 W/kg, 519.2 W
+     Heating rate (average/total):  1.695e-11 W/kg, 576.3 W
 
 *** Timestep 2:  t=6250 years
    Solving temperature system... 6 iterations.
    Solving olivine_grain_size system ... 8 iterations.
    Rebuilding Stokes preconditioner...
-   Solving Stokes system... 0 iterations.
+   Solving Stokes system... 1 iterations.
 
    Postprocessing:
      Compositions min/max/mass:     0.0009977/0.0009977/9.977e+06
      Temperature min/avg/max:       1600 K, 1600 K, 1600 K
      RMS, max velocity:             0.577 m/year, 0.993 m/year
      Total viscous dissipation:     1.63e+10 J/yr
-     Heating rate (average/total):  1.522e-11 W/kg, 517.5 W
+     Heating rate (average/total):  1.689e-11 W/kg, 574.4 W
 
 *** Timestep 3:  t=9375 years
    Solving temperature system... 6 iterations.
    Solving olivine_grain_size system ... 8 iterations.
    Rebuilding Stokes preconditioner...
-   Solving Stokes system... 2 iterations.
+   Solving Stokes system... 1 iterations.
 
    Postprocessing:
      Compositions min/max/mass:     0.0009965/0.0009965/9.965e+06
      Temperature min/avg/max:       1600 K, 1600 K, 1600 K
      RMS, max velocity:             0.577 m/year, 0.993 m/year
      Total viscous dissipation:     1.63e+10 J/yr
-     Heating rate (average/total):  1.517e-11 W/kg, 515.8 W
+     Heating rate (average/total):  1.684e-11 W/kg, 572.5 W
 
 *** Timestep 4:  t=10000 years
    Solving temperature system... 3 iterations.
@@ -72,27 +72,27 @@ Number of degrees of freedom: 4,645 (2,178+289+1,089+1,089)
      Temperature min/avg/max:       1600 K, 1600 K, 1600 K
      RMS, max velocity:             0.577 m/year, 0.993 m/year
      Total viscous dissipation:     1.63e+10 J/yr
-     Heating rate (average/total):  1.516e-11 W/kg, 515.4 W
+     Heating rate (average/total):  1.683e-11 W/kg, 572.1 W
 
 Termination requested by criterion: end time
 
 
 +---------------------------------------------+------------+------------+
-| Total wallclock time elapsed since start    |      3.11s |            |
+| Total wallclock time elapsed since start    |      4.61s |            |
 |                                             |            |            |
 | Section                         | no. calls |  wall time | % of total |
 +---------------------------------+-----------+------------+------------+
-| Assemble Stokes system          |         5 |     0.548s |        18% |
-| Assemble composition system     |         5 |     0.504s |        16% |
-| Assemble temperature system     |         5 |     0.504s |        16% |
-| Build Stokes preconditioner     |         5 |     0.627s |        20% |
-| Build composition preconditioner|         5 |   0.00882s |      0.28% |
-| Build temperature preconditioner|         5 |    0.0091s |      0.29% |
-| Solve Stokes system             |         5 |    0.0384s |       1.2% |
-| Solve composition system        |         5 |   0.00831s |      0.27% |
-| Solve temperature system        |         5 |   0.00616s |       0.2% |
-| Initialization                  |         2 |     0.208s |       6.7% |
-| Postprocessing                  |         5 |     0.531s |        17% |
-| Setup dof systems               |         1 |    0.0322s |         1% |
+| Assemble Stokes system          |         5 |     0.826s |        18% |
+| Assemble composition system     |         5 |      0.77s |        17% |
+| Assemble temperature system     |         5 |     0.781s |        17% |
+| Build Stokes preconditioner     |         5 |     0.877s |        19% |
+| Build composition preconditioner|         5 |     0.013s |      0.28% |
+| Build temperature preconditioner|         5 |    0.0131s |      0.28% |
+| Solve Stokes system             |         5 |     0.043s |      0.93% |
+| Solve composition system        |         5 |    0.0118s |      0.26% |
+| Solve temperature system        |         5 |   0.00864s |      0.19% |
+| Initialization                  |         2 |     0.366s |       7.9% |
+| Postprocessing                  |         5 |     0.698s |        15% |
+| Setup dof systems               |         1 |    0.0589s |       1.3% |
 +---------------------------------+-----------+------------+------------+
 

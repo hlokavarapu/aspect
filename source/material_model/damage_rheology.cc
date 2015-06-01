@@ -1477,12 +1477,28 @@ namespace aspect
                     * ((in.position[i] - in.position[j]) * this->get_gravity_model().gravity_vector(in.position[i])) > 0))
                   crossed_transition = k;
 
+
           if (in.strain_rate.size() > 0)
-            out.viscosities[i] = std::min(std::max(min_eta,viscosity(in.temperature[i],
-                                                                       pressure,
-                                                                       composition,
-                                                                       in.strain_rate[i],
-                                                                       in.position[i])),max_eta);
+            {
+              double effective_viscosity;
+              double disl_viscosity = std::numeric_limits<double>::max();
+
+              const SymmetricTensor<2,dim> shear_strain_rate = in.strain_rate[i] - 1./dim * trace(in.strain_rate[i]) * unit_symmetric_tensor<dim>();
+              const double second_strain_rate_invariant = std::sqrt(std::abs(second_invariant(shear_strain_rate)));
+
+              const double diff_viscosity = diffusion_viscosity(in.temperature[i], pressure, composition, in.strain_rate[i], in.position[i]);
+
+              if(std::abs(second_strain_rate_invariant) > 1e-30)
+                {
+                  disl_viscosity = dislocation_viscosity(in.temperature[i], pressure, composition, in.strain_rate[i], in.position[i]);
+                  effective_viscosity = disl_viscosity * diff_viscosity / (disl_viscosity + diff_viscosity);
+                }
+              else
+                effective_viscosity = diff_viscosity;
+
+              out.viscosities[i] = std::min(std::max(min_eta,effective_viscosity),max_eta);
+              out.dislocation_viscosities[i] = disl_viscosity;
+            }
 
           out.densities[i] = density(in.temperature[i], pressure, in.composition[i], in.position[i]);
           out.thermal_conductivities[i] = k_value;

@@ -271,6 +271,7 @@ namespace aspect
                                                     const unsigned int n_comp)
     {
       viscosities.resize(n_points, aspect::Utilities::signaling_nan<double>());
+      dislocation_viscosities.resize(n_points, aspect::Utilities::signaling_nan<double>());
       densities.resize(n_points, aspect::Utilities::signaling_nan<double>());
       thermal_expansion_coefficients.resize(n_points, aspect::Utilities::signaling_nan<double>());
       specific_heat.resize(n_points, aspect::Utilities::signaling_nan<double>());

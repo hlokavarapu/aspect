@@ -222,6 +222,11 @@ namespace aspect
       std::vector<double> viscosities;
 
       /**
+       * Viscosity $\eta$ values at the given positions.
+       */
+      std::vector<double> dislocation_viscosities;
+
+      /**
        * Density values at the given positions.
        */
       std::vector<double> densities;

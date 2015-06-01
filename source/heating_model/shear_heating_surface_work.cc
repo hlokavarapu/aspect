@@ -48,9 +48,18 @@ namespace aspect
                :
                material_model_inputs.strain_rate[q]);
 
+          // This is the usual heating term
           heating_model_outputs.heating_source_terms[q] = 2.0 * material_model_outputs.viscosities[q] *
-                                                          (1.0 - material_model_outputs.boundary_area_change_work_fraction[q]) *
                                                           compressible_strain_rate * compressible_strain_rate;
+
+          // This is the part of the energy that is used to decrease the grain size
+          // Only the deformation that is accomodated by dislocation creep contributes
+          // to the grain size reduction.
+
+          heating_model_outputs.heating_source_terms[q] -= 2.0 * material_model_outputs.viscosities[q] *
+                                                           material_model_outputs.boundary_area_change_work_fraction[q] *
+                                                           material_model_outputs.viscosities[q] / material_model_outputs.dislocation_viscosities[q] *
+                                                           compressible_strain_rate * compressible_strain_rate;
 
           heating_model_outputs.lhs_latent_heat_terms[q] = 0.0;
         }
