@@ -830,7 +830,7 @@ namespace aspect
                                 ?
                                 composition[this->introspection().compositional_index_for_name(field_name)]
                                 :
-                                0.0;
+                                1.0;
 
       // Currently this will never be called without adiabatic_conditions initialized, but just in case
       const double adiabatic_pressure = this->get_adiabatic_conditions().is_initialized()
