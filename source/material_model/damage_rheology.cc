@@ -1497,7 +1497,7 @@ namespace aspect
                 effective_viscosity = diff_viscosity;
 
               out.viscosities[i] = std::min(std::max(min_eta,effective_viscosity),max_eta);
-              out.dislocation_viscosities[i] = disl_viscosity;
+              out.dislocation_viscosities[i] = std::min(std::max(min_eta,disl_viscosity),1e300);
             }
 
           out.densities[i] = density(in.temperature[i], pressure, in.composition[i], in.position[i]);
