@@ -113,8 +113,8 @@ namespace aspect
                      const double timestep = times[i+1]-times[i];
                      const double time_weight = (time - times[i]) / timestep;
 
-                     return Point<dim> (time_weight * plume_positions[i]
-                                     + (1 - time_weight) * plume_positions[i+1]);
+                     return Point<dim> ((1.0 - time_weight) * plume_positions[i]
+                                     + time_weight * plume_positions[i+1]);
                    }
                }
              AssertThrow(false,
