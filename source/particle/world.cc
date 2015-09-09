@@ -48,7 +48,32 @@ namespace aspect
     void
     World<dim>::init()
     {
-      this->get_triangulation().signals.post_refinement.connect(std_cxx11::bind(&World::mesh_changed, std_cxx1x::ref(*this)));
+      this->get_triangulation().signals.post_refinement.connect(std_cxx11::bind(&World<dim>::mesh_changed, std_cxx1x::ref(*this)));
+    }
+
+    template <int dim>
+    unsigned int
+    World<dim>::get_max_tracer_per_cell() const
+    {
+      return 1;
+    }
+
+    template <int dim>
+    void
+    World<dim>::store_tracers(const typename parallel::distributed::Triangulation<dim>::cell_iterator &cell,
+                              const typename parallel::distributed::Triangulation<dim>::CellStatus status,
+                              void *data)
+    {
+      std::cout << "Store Here" << std::endl;
+    }
+
+    template <int dim>
+    void
+    World<dim>::load_tracers(const typename parallel::distributed::Triangulation<dim>::cell_iterator &cell,
+                             const typename parallel::distributed::Triangulation<dim>::CellStatus status,
+                             const void *data)
+    {
+      std::cout << "Load Here" << std::endl;
     }
 
     template <int dim>

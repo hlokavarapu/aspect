@@ -191,6 +191,30 @@ namespace aspect
         template <class Archive>
         void serialize (Archive &ar, const unsigned int version);
 
+
+        unsigned int
+        get_max_tracer_per_cell() const;
+
+
+        /**
+         * Called by listener functions before a refinement step. All tracers
+         * have to be attached to their element to be sent around to the new
+         * processes.
+         */
+        void
+        store_tracers(const typename parallel::distributed::Triangulation<dim>::cell_iterator &cell,
+                      const typename parallel::distributed::Triangulation<dim>::CellStatus status,
+                      void * data);
+
+        /**
+         * Called by listener functions after a refinement step. The local map
+         * of particles has to be read from the triangulation user_pointer.
+         */
+        void
+        load_tracers(const typename parallel::distributed::Triangulation<dim>::cell_iterator &cell,
+                     const typename parallel::distributed::Triangulation<dim>::CellStatus status,
+                     const void * data);
+
       private:
         /**
          * Integration scheme for moving particles in this world
