@@ -55,7 +55,7 @@ namespace aspect
     unsigned int
     World<dim>::get_max_tracer_per_cell() const
     {
-      return 1;
+      return sizeof(unsigned int);
     }
 
     template <int dim>
@@ -64,7 +64,30 @@ namespace aspect
                               const typename parallel::distributed::Triangulation<dim>::CellStatus status,
                               void *data)
     {
-      std::cout << "Store Here" << std::endl;
+      unsigned int n_particles_in_cell = 0;
+      if (status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_PERSIST
+          || status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_REFINE)
+        {
+          const LevelInd found_cell = std::make_pair<int, int> (cell->level(),cell->index());
+          const std::pair<typename std::multimap<LevelInd, Particle<dim> >::iterator, typename std::multimap<LevelInd, Particle<dim> >::iterator> particles_in_cell
+          = particles.equal_range(found_cell);
+          n_particles_in_cell = std::distance(particles_in_cell.first,particles_in_cell.second);
+        }
+      else if (status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_COARSEN)
+        {
+          for (unsigned int child_index = 0; child_index < cell->number_of_children(); ++child_index)
+            {
+              const typename parallel::distributed::Triangulation<dim>::cell_iterator child = cell->child(child_index);
+              const LevelInd found_cell = std::make_pair<int, int> (child->level(),child->index());
+              const std::pair<typename std::multimap<LevelInd, Particle<dim> >::iterator, typename std::multimap<LevelInd, Particle<dim> >::iterator> particles_in_cell
+              = particles.equal_range(found_cell);
+              n_particles_in_cell += std::distance(particles_in_cell.first,particles_in_cell.second);
+            }
+        }
+
+      unsigned int* ndata = static_cast<unsigned int*> (data);
+      *ndata = n_particles_in_cell;
+      std::cout << "Store Cell index: " << cell->index() << ". Particles: " << n_particles_in_cell << std::endl;
     }
 
     template <int dim>
@@ -73,7 +96,8 @@ namespace aspect
                              const typename parallel::distributed::Triangulation<dim>::CellStatus status,
                              const void *data)
     {
-      std::cout << "Load Here" << std::endl;
+      const unsigned int* n_particles_in_cell = static_cast<const unsigned int*> (data);
+      std::cout << "Loading Cell index: " << cell->index() << ". Particles: " << *n_particles_in_cell <<  std::endl;
     }
 
     template <int dim>
