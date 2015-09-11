@@ -1459,10 +1459,11 @@ namespace aspect
       }
 
     unsigned int tracer_data_offset;
+    std::size_t max_tracers_per_cell = 0;
     Postprocess::PassiveTracers<dim> *tracer_postprocessor = postprocess_manager.template find_postprocessor<Postprocess::PassiveTracers<dim> >();
     if (tracer_postprocessor != NULL)
       {
-        std::size_t max_tracers_per_cell = tracer_postprocessor->get_particle_world().get_max_tracer_per_cell();
+        max_tracers_per_cell = tracer_postprocessor->get_particle_world().get_max_tracer_per_cell();
         const std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
                                        const typename parallel::distributed::Triangulation<dim>::CellStatus, void *) > callback_function
                                            = std_cxx11::bind(&aspect::Particle::World<dim>::store_tracers,
@@ -1470,7 +1471,8 @@ namespace aspect
                                                              std_cxx11::_1,
                                                              std_cxx11::_2,
                                                              std_cxx11::_3);
-        tracer_data_offset = triangulation.register_data_attach(max_tracers_per_cell,callback_function);
+        if (max_tracers_per_cell > 0)
+          tracer_data_offset = triangulation.register_data_attach(max_tracers_per_cell,callback_function);
       }
 
     triangulation.prepare_coarsening_and_refinement();
@@ -1558,7 +1560,8 @@ namespace aspect
                                                                std_cxx11::_1,
                                                                std_cxx11::_2,
                                                                std_cxx11::_3);
-          triangulation.notify_ready_to_unpack(tracer_data_offset,callback_function);
+          if (max_tracers_per_cell > 0)
+            triangulation.notify_ready_to_unpack(tracer_data_offset,callback_function);
         }
     }
     computing_timer.exit_section();

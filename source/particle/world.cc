@@ -55,7 +55,26 @@ namespace aspect
     unsigned int
     World<dim>::get_max_tracer_per_cell() const
     {
-      return sizeof(unsigned int);
+      unsigned int local_max_tracer_per_cell(0);
+
+      for (typename parallel::distributed::Triangulation<dim>::active_cell_iterator cell=this->get_triangulation().begin_active();
+           cell!=this->get_triangulation().end(); ++cell)
+        {
+          if (cell->is_locally_owned())
+            {
+              const LevelInd found_cell = std::make_pair<int, int> (cell->level(),cell->index());
+              const std::pair<typename std::multimap<LevelInd, Particle<dim> >::const_iterator, typename std::multimap<LevelInd, Particle<dim> >::const_iterator> particles_in_cell
+              = particles.equal_range(found_cell);
+              const unsigned int tracers_in_cell = std::distance(particles_in_cell.first,particles_in_cell.second);
+              local_max_tracer_per_cell = std::max(local_max_tracer_per_cell,
+                                             tracers_in_cell);
+            }
+        }
+      //std::cout << "Tracers per cell: " << local_max_tracer_per_cell << ". Size of particle: " << sizeof(particles.begin()->second) << std::endl;
+      const unsigned int global_max_tracer_per_cell = Utilities::MPI::max(local_max_tracer_per_cell,this->get_mpi_communicator());
+      const size_t size = std::pow(2,dim) * global_max_tracer_per_cell * sizeof(particles.begin()->second);
+      //std::cout << "Size per cell: " << size << std::endl;
+      return size;
     }
 
     template <int dim>
@@ -72,6 +91,20 @@ namespace aspect
           const std::pair<typename std::multimap<LevelInd, Particle<dim> >::iterator, typename std::multimap<LevelInd, Particle<dim> >::iterator> particles_in_cell
           = particles.equal_range(found_cell);
           n_particles_in_cell = std::distance(particles_in_cell.first,particles_in_cell.second);
+
+          unsigned int* ndata = static_cast<unsigned int*> (data);
+          *ndata++ = n_particles_in_cell;
+          data = static_cast<void*> (ndata);
+
+
+          Particle<dim> *pdata = static_cast<Particle<dim> *> (data);
+
+          for (typename std::multimap<LevelInd, Particle<dim> >::iterator particle = particles_in_cell.first;
+              particle != particles_in_cell.second;++particle)
+            {
+            *pdata++ = particle->second;
+            }
+          particles.erase(particles_in_cell.first,particles_in_cell.second);
         }
       else if (status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_COARSEN)
         {
@@ -83,11 +116,29 @@ namespace aspect
               = particles.equal_range(found_cell);
               n_particles_in_cell += std::distance(particles_in_cell.first,particles_in_cell.second);
             }
+
+          unsigned int* ndata = static_cast<unsigned int*> (data);
+          *ndata++ = n_particles_in_cell;
+          data = static_cast<void*> (ndata);
+          Particle<dim> *pdata = static_cast<Particle<dim> *> (data);
+
+          for (unsigned int child_index = 0; child_index < cell->number_of_children(); ++child_index)
+            {
+              const typename parallel::distributed::Triangulation<dim>::cell_iterator child = cell->child(child_index);
+              const LevelInd found_cell = std::make_pair<int, int> (child->level(),child->index());
+              const std::pair<typename std::multimap<LevelInd, Particle<dim> >::iterator, typename std::multimap<LevelInd, Particle<dim> >::iterator>
+              particles_in_cell = particles.equal_range(found_cell);
+
+              for (typename std::multimap<LevelInd, Particle<dim> >::iterator particle = particles_in_cell.first;
+                  particle != particles_in_cell.second;++particle)
+                {
+                *pdata++ =particle->second;
+                }
+              particles.erase(particles_in_cell.first,particles_in_cell.second);
+            }
         }
 
-      unsigned int* ndata = static_cast<unsigned int*> (data);
-      *ndata = n_particles_in_cell;
-      std::cout << "Store Cell index: " << cell->index() << ". Particles: " << n_particles_in_cell << std::endl;
+      //std::cout << "Store Cell index: " << cell->index() << ". Particles: " << n_particles_in_cell << std::endl;
     }
 
     template <int dim>
@@ -97,7 +148,39 @@ namespace aspect
                              const void *data)
     {
       const unsigned int* n_particles_in_cell = static_cast<const unsigned int*> (data);
-      std::cout << "Loading Cell index: " << cell->index() << ". Particles: " << *n_particles_in_cell <<  std::endl;
+      const unsigned int particles_in_cell = *n_particles_in_cell++;
+      //std::cout << "Loading Cell index: " << cell->index() << ". Particles: " << particles_in_cell <<  std::endl;
+
+      data = static_cast<const void*> (n_particles_in_cell);
+      const Particle<dim> *pdata = static_cast<const Particle<dim> *> (data);
+
+      for (unsigned int i = 0; i < particles_in_cell;++i)
+        {
+          Particle<dim> p = *pdata++;
+
+          if (status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_COARSEN
+              || status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_PERSIST)
+            particles.insert(std::make_pair(std::make_pair(cell->level(),cell->index()),p));
+
+          else if (status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_REFINE)
+            {
+              for (unsigned int child_index = 0; child_index < cell->number_of_children(); ++child_index)
+                {
+                  const typename parallel::distributed::Triangulation<dim>::cell_iterator child = cell->child(child_index);
+
+                  try
+                  {
+                      const Point<dim> p_unit = this->get_mapping().transform_real_to_unit_cell(child, p.get_location());
+                      if (GeometryInfo<dim>::is_inside_unit_cell(p_unit))
+                        {
+                          particles.insert(std::make_pair(std::make_pair(child->level(),child->index()),p));
+                        }
+                  }
+                  catch (...)
+                  {}
+                }
+            }
+        }
     }
 
     template <int dim>
@@ -370,7 +453,7 @@ namespace aspect
       if (triangulation_changed)
         {
           // Find the cells that the particles moved to
-          find_all_cells();
+          //find_all_cells();
           triangulation_changed = false;
         }
 
