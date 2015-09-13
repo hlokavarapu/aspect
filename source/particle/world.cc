@@ -57,12 +57,12 @@ namespace aspect
     {
       unsigned int local_max_tracer_per_cell(0);
       typename parallel::distributed::Triangulation<dim>::active_cell_iterator cell = this->get_triangulation().begin_active();
-      for (;cell!=this->get_triangulation().end(); ++cell)
+      for (; cell!=this->get_triangulation().end(); ++cell)
         if (cell->is_locally_owned())
           {
             const LevelInd found_cell = std::make_pair<int, int> (cell->level(),cell->index());
             const std::pair<typename std::multimap<LevelInd, Particle<dim> >::const_iterator, typename std::multimap<LevelInd, Particle<dim> >::const_iterator> particles_in_cell
-            = particles.equal_range(found_cell);
+              = particles.equal_range(found_cell);
             const unsigned int tracers_in_cell = std::distance(particles_in_cell.first,particles_in_cell.second);
             local_max_tracer_per_cell = std::max(local_max_tracer_per_cell,
                                                  tracers_in_cell);
@@ -86,15 +86,15 @@ namespace aspect
         {
           const LevelInd found_cell = std::make_pair<int, int> (cell->level(),cell->index());
           const std::pair<typename std::multimap<LevelInd, Particle<dim> >::iterator, typename std::multimap<LevelInd, Particle<dim> >::iterator> particles_in_cell
-          = particles.equal_range(found_cell);
+            = particles.equal_range(found_cell);
           n_particles_in_cell = std::distance(particles_in_cell.first,particles_in_cell.second);
 
-          unsigned int* ndata = static_cast<unsigned int*> (data);
+          unsigned int *ndata = static_cast<unsigned int *> (data);
           *ndata++ = n_particles_in_cell;
-          data = static_cast<void*> (ndata);
+          data = static_cast<void *> (ndata);
 
           for (typename std::multimap<LevelInd, Particle<dim> >::iterator particle = particles_in_cell.first;
-              particle != particles_in_cell.second;++particle)
+               particle != particles_in_cell.second; ++particle)
             {
               particle->second.write_data(data);
             }
@@ -107,14 +107,14 @@ namespace aspect
               const typename parallel::distributed::Triangulation<dim>::cell_iterator child = cell->child(child_index);
               const LevelInd found_cell = std::make_pair<int, int> (child->level(),child->index());
               const std::pair<typename std::multimap<LevelInd, Particle<dim> >::iterator, typename std::multimap<LevelInd, Particle<dim> >::iterator> particles_in_cell
-              = particles.equal_range(found_cell);
+                = particles.equal_range(found_cell);
               n_particles_in_cell += std::distance(particles_in_cell.first,particles_in_cell.second);
             }
 
-          unsigned int* ndata = static_cast<unsigned int*> (data);
+          unsigned int *ndata = static_cast<unsigned int *> (data);
           *ndata++ = n_particles_in_cell;
 
-          data = static_cast<void*> (ndata);
+          data = static_cast<void *> (ndata);
 
           for (unsigned int child_index = 0; child_index < cell->number_of_children(); ++child_index)
             {
@@ -124,7 +124,7 @@ namespace aspect
               particles_in_cell = particles.equal_range(found_cell);
 
               for (typename std::multimap<LevelInd, Particle<dim> >::iterator particle = particles_in_cell.first;
-                  particle != particles_in_cell.second;++particle)
+                   particle != particles_in_cell.second; ++particle)
                 {
                   particle->second.write_data(data);
                 }
@@ -139,11 +139,11 @@ namespace aspect
                              const typename parallel::distributed::Triangulation<dim>::CellStatus status,
                              const void *data)
     {
-      const unsigned int* n_particles_in_cell = static_cast<const unsigned int*> (data);
+      const unsigned int *n_particles_in_cell = static_cast<const unsigned int *> (data);
       const unsigned int particles_in_cell = *n_particles_in_cell++;
       void *pdata = (void *) n_particles_in_cell;
 
-      for (unsigned int i = 0; i < particles_in_cell;++i)
+      for (unsigned int i = 0; i < particles_in_cell; ++i)
         {
           Particle<dim> p(pdata,property_manager->get_data_len());
 
@@ -156,15 +156,15 @@ namespace aspect
                 {
                   const typename parallel::distributed::Triangulation<dim>::cell_iterator child = cell->child(child_index);
                   try
-                  {
+                    {
                       const Point<dim> p_unit = this->get_mapping().transform_real_to_unit_cell(child, p.get_location());
                       if (GeometryInfo<dim>::is_inside_unit_cell(p_unit))
                         {
                           particles.insert(std::make_pair(std::make_pair(child->level(),child->index()),p));
                         }
-                  }
+                    }
                   catch (...)
-                  {}
+                    {}
                 }
             }
         }
@@ -505,8 +505,8 @@ namespace aspect
         {
           send_offsets[rank] = total_send_data;
           std::pair< const typename std::multimap<types::subdomain_id,Particle <dim> >::const_iterator,
-                     const typename std::multimap<types::subdomain_id,Particle <dim> >::const_iterator>
-          send_particle_range = send_particles.equal_range(rank);
+              const typename std::multimap<types::subdomain_id,Particle <dim> >::const_iterator>
+              send_particle_range = send_particles.equal_range(rank);
           num_send_particles[rank] = std::distance(send_particle_range.first,send_particle_range.second);
           num_send_data[rank] = num_send_particles[rank] * particle_size;
           total_send_data += num_send_particles[rank] * particle_size;
@@ -516,7 +516,7 @@ namespace aspect
 
       // Allocate space for sending and receiving particle data
       std::vector<char> send_data(send_particles.size() * particle_size);
-      void* data = static_cast<void *> (&send_data.front());
+      void *data = static_cast<void *> (&send_data.front());
 
       // Copy the particle data into the send array
       for (typename std::multimap<types::subdomain_id,Particle<dim> >::const_iterator particle = send_particles.begin(); particle!=send_particles.end(); ++particle)
@@ -546,11 +546,11 @@ namespace aspect
 
       // Exchange the particle data between domains
       MPI_Alltoallv (&(send_data[0]), &(num_send_data[0]), &(send_offsets[0]), MPI_CHAR,
-                      &(recv_data[0]), &(num_recv_data[0]), &(recv_offset[0]), MPI_CHAR,
-                      this->get_mpi_communicator());
+                     &(recv_data[0]), &(num_recv_data[0]), &(recv_offset[0]), MPI_CHAR,
+                     this->get_mpi_communicator());
 
       // Put the received particles into the domain if they are in the triangulation
-      void *recv_data_it = static_cast<void*> (&recv_data.front());
+      void *recv_data_it = static_cast<void *> (&recv_data.front());
 
       for (int i=0; i<num_recv_particles[self_rank]; ++i)
         {
@@ -630,9 +630,9 @@ namespace aspect
 
           fe_value.reinit (cell);
           fe_value[this->introspection().extractors.velocities].get_function_values (this->get_solution(),
-                                                                                    result);
+                                                                                     result);
           fe_value[this->introspection().extractors.velocities].get_function_values (this->get_old_solution(),
-                                                                                    old_result);
+                                                                                     old_result);
 
           // Copy the resulting velocities to the appropriate vector#
           for (unsigned int id = 0; id < num_cell_particles; ++id)

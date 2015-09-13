@@ -202,7 +202,7 @@ namespace aspect
         void
         store_tracers(const typename parallel::distributed::Triangulation<dim>::cell_iterator &cell,
                       const typename parallel::distributed::Triangulation<dim>::CellStatus status,
-                      void * data);
+                      void *data);
 
         /**
          * Called by listener functions after a refinement step. The local map
@@ -211,7 +211,7 @@ namespace aspect
         void
         load_tracers(const typename parallel::distributed::Triangulation<dim>::cell_iterator &cell,
                      const typename parallel::distributed::Triangulation<dim>::CellStatus status,
-                     const void * data);
+                     const void *data);
 
       private:
         /**
