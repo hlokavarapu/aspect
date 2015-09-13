@@ -56,26 +56,21 @@ namespace aspect
     World<dim>::get_max_tracer_per_cell() const
     {
       unsigned int local_max_tracer_per_cell(0);
+      typename parallel::distributed::Triangulation<dim>::active_cell_iterator cell = this->get_triangulation().begin_active();
+      for (;cell!=this->get_triangulation().end(); ++cell)
+        if (cell->is_locally_owned())
+          {
+            const LevelInd found_cell = std::make_pair<int, int> (cell->level(),cell->index());
+            const std::pair<typename std::multimap<LevelInd, Particle<dim> >::const_iterator, typename std::multimap<LevelInd, Particle<dim> >::const_iterator> particles_in_cell
+            = particles.equal_range(found_cell);
+            const unsigned int tracers_in_cell = std::distance(particles_in_cell.first,particles_in_cell.second);
+            local_max_tracer_per_cell = std::max(local_max_tracer_per_cell,
+                                                 tracers_in_cell);
+          }
 
-      for (typename parallel::distributed::Triangulation<dim>::active_cell_iterator cell=this->get_triangulation().begin_active();
-           cell!=this->get_triangulation().end(); ++cell)
-        {
-          if (cell->is_locally_owned())
-            {
-              const LevelInd found_cell = std::make_pair<int, int> (cell->level(),cell->index());
-              const std::pair<typename std::multimap<LevelInd, Particle<dim> >::const_iterator, typename std::multimap<LevelInd, Particle<dim> >::const_iterator> particles_in_cell
-              = particles.equal_range(found_cell);
-              const unsigned int tracers_in_cell = std::distance(particles_in_cell.first,particles_in_cell.second);
-              local_max_tracer_per_cell = std::max(local_max_tracer_per_cell,
-                                                   tracers_in_cell);
-            }
-        }
-
-      //std::cout << "Tracers per cell: " << local_max_tracer_per_cell << std::endl;
       const unsigned int global_max_tracer_per_cell = Utilities::MPI::max(local_max_tracer_per_cell,this->get_mpi_communicator());
-      const size_t size = std::pow(2,dim) * global_max_tracer_per_cell;
-      //std::cout << "Size per cell: " << size << std::endl;
-      return size;
+      // We need to provide 2^dim times the space in case a cell is coarsened
+      return std::pow(2,dim) * global_max_tracer_per_cell;
     }
 
     template <int dim>
@@ -84,7 +79,7 @@ namespace aspect
                               const typename parallel::distributed::Triangulation<dim>::CellStatus status,
                               void *data)
     {
-      unsigned int n_particles_in_cell = 0;
+      unsigned int n_particles_in_cell(0);
 
       if (status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_PERSIST
           || status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_REFINE)
@@ -136,8 +131,6 @@ namespace aspect
               particles.erase(particles_in_cell.first,particles_in_cell.second);
             }
         }
-
-      //std::cout << "Store Cell index: " << cell->index() << ". Particles: " << n_particles_in_cell << std::endl;
     }
 
     template <int dim>
@@ -148,8 +141,6 @@ namespace aspect
     {
       const unsigned int* n_particles_in_cell = static_cast<const unsigned int*> (data);
       const unsigned int particles_in_cell = *n_particles_in_cell++;
-      //std::cout << "Loading Cell index: " << cell->index() << ". Particles: " << particles_in_cell <<  std::endl;
-
       void *pdata = (void *) n_particles_in_cell;
 
       for (unsigned int i = 0; i < particles_in_cell;++i)
@@ -164,7 +155,6 @@ namespace aspect
               for (unsigned int child_index = 0; child_index < cell->number_of_children(); ++child_index)
                 {
                   const typename parallel::distributed::Triangulation<dim>::cell_iterator child = cell->child(child_index);
-
                   try
                   {
                       const Point<dim> p_unit = this->get_mapping().transform_real_to_unit_cell(child, p.get_location());
