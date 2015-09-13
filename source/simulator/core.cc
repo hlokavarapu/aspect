@@ -1459,7 +1459,7 @@ namespace aspect
       }
 
     unsigned int tracer_data_offset;
-    std::size_t max_tracers_per_cell = 0;
+    unsigned int max_tracers_per_cell = 0;
     Postprocess::PassiveTracers<dim> *tracer_postprocessor = postprocess_manager.template find_postprocessor<Postprocess::PassiveTracers<dim> >();
     if (tracer_postprocessor != NULL)
       {
@@ -1472,7 +1472,10 @@ namespace aspect
                                                              std_cxx11::_2,
                                                              std_cxx11::_3);
         if (max_tracers_per_cell > 0)
-          tracer_data_offset = triangulation.register_data_attach(max_tracers_per_cell,callback_function);
+          {
+            const std::size_t particle_size = tracer_postprocessor->get_particle_world().get_manager().get_particle_size();
+            tracer_data_offset = triangulation.register_data_attach(max_tracers_per_cell * particle_size,callback_function);
+          }
       }
 
     triangulation.prepare_coarsening_and_refinement();

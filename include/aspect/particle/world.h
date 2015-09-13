@@ -158,7 +158,7 @@ namespace aspect
          * @param [in,out] send_particles All particles that should be send
          * are in this vector.
          */
-        void send_recv_particles(const std::vector<Particle <dim> > &send_particles);
+        void send_recv_particles(const std::multimap<types::subdomain_id,Particle <dim> > &send_particles);
 
         /**
          * Calculates the current and old velocities for each particle at its
