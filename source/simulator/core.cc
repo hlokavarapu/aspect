@@ -1458,7 +1458,7 @@ namespace aspect
                                  (free_surface->free_surface_dof_handler));
       }
 
-    unsigned int tracer_data_offset;
+    unsigned int tracer_data_offset = 0;
     unsigned int max_tracers_per_cell = 0;
     Postprocess::PassiveTracers<dim> *tracer_postprocessor = postprocess_manager.template find_postprocessor<Postprocess::PassiveTracers<dim> >();
     if (tracer_postprocessor != NULL)

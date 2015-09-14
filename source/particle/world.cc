@@ -81,8 +81,8 @@ namespace aspect
     {
       unsigned int n_particles_in_cell(0);
 
-      if (status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_PERSIST
-          || status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_REFINE)
+      if (status == parallel::distributed::Triangulation<dim>::CELL_PERSIST
+          || status == parallel::distributed::Triangulation<dim>::CELL_REFINE)
         {
           const LevelInd found_cell = std::make_pair<int, int> (cell->level(),cell->index());
           const std::pair<typename std::multimap<LevelInd, Particle<dim> >::iterator, typename std::multimap<LevelInd, Particle<dim> >::iterator> particles_in_cell
@@ -100,7 +100,7 @@ namespace aspect
             }
           particles.erase(particles_in_cell.first,particles_in_cell.second);
         }
-      else if (status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_COARSEN)
+      else if (status == parallel::distributed::Triangulation<dim>::CELL_COARSEN)
         {
           for (unsigned int child_index = 0; child_index < cell->number_of_children(); ++child_index)
             {
@@ -147,10 +147,10 @@ namespace aspect
         {
           Particle<dim> p(pdata,property_manager->get_data_len());
 
-          if (status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_COARSEN
-              || status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_PERSIST)
+          if (status == parallel::distributed::Triangulation<dim>::CELL_COARSEN
+              || status == parallel::distributed::Triangulation<dim>::CELL_PERSIST)
             particles.insert(std::make_pair(std::make_pair(cell->level(),cell->index()),p));
-          else if (status == parallel::distributed::Triangulation<dim>::CellStatus::CELL_REFINE)
+          else if (status == parallel::distributed::Triangulation<dim>::CELL_REFINE)
             {
               for (unsigned int child_index = 0; child_index < cell->number_of_children(); ++child_index)
                 {
