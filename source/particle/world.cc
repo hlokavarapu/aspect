@@ -90,9 +90,7 @@ namespace aspect
                                                  tracers_in_cell);
           }
 
-      const unsigned int global_max_tracer_per_cell = Utilities::MPI::max(local_max_tracer_per_cell,this->get_mpi_communicator());
-      // We need to provide 2^dim times the space in case a cell is coarsened
-      return std::pow(2,dim) * global_max_tracer_per_cell;
+      return Utilities::MPI::max(local_max_tracer_per_cell,this->get_mpi_communicator());
     }
 
     template <int dim>
@@ -101,19 +99,29 @@ namespace aspect
         const typename parallel::distributed::Triangulation<dim>::CellStatus,
         void *) > > > &callback_functions)
     {
-      const unsigned int max_tracers_per_cell = get_global_max_tracer_per_cell();
-      const std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-          const typename parallel::distributed::Triangulation<dim>::CellStatus, void *) > callback_function
-              = std_cxx11::bind(&aspect::Particle::World<dim>::store_tracers,
-                                *this,
-                                std_cxx11::_1,
-                                std_cxx11::_2,
-                                std_cxx11::_3);
+      // Only save and load tracers if there are any, we might get here for
+      // example before the tracer generation in timestep 0, or if somebody
+      // selected the tracer postprocessor but generated 0 tracers
+      max_tracers_per_cell = get_global_max_tracer_per_cell();
 
       if (max_tracers_per_cell > 0)
         {
-          const std::size_t particle_size = property_manager->get_particle_size();
-          callback_functions.push_back(std::make_pair(max_tracers_per_cell*particle_size,callback_function));
+          const std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
+              const typename parallel::distributed::Triangulation<dim>::CellStatus, void *) > callback_function
+                  = std_cxx11::bind(&aspect::Particle::World<dim>::store_tracers,
+                                    std_cxx11::ref(*this),
+                                    std_cxx11::_1,
+                                    std_cxx11::_2,
+                                    std_cxx11::_3);
+
+          // We need to transfer the number of tracers for this cell and
+          // the tracer data itself and we need to provide 2^dim times the
+          // space for the data in case a cell is coarsened
+          const std::size_t transfer_size_per_cell = sizeof (unsigned int) +
+              (property_manager->get_particle_size() * max_tracers_per_cell)
+                  *  std::pow(2,dim);
+
+          callback_functions.push_back(std::make_pair(transfer_size_per_cell,callback_function));
         }
     }
 
@@ -123,15 +131,24 @@ namespace aspect
         const typename parallel::distributed::Triangulation<dim>::CellStatus,
         const void *) > > &callback_functions)
     {
-      const std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-          const typename parallel::distributed::Triangulation<dim>::CellStatus,
-          const void *) > callback_function
-              = std_cxx11::bind(&aspect::Particle::World<dim>::load_tracers,
-                                *this,
-                                std_cxx11::_1,
-                                std_cxx11::_2,
-                                std_cxx11::_3);
-      callback_functions.push_back(callback_function);
+      Assert(particles.size() == 0,
+          ExcMessage("We are in the process of mesh refinement. All tracers "
+              "should have been serialized and stored, but there are still some "
+              "around. Is there a bug in the storage function?"));
+
+      // Check if something was stored
+      if (max_tracers_per_cell > 0)
+        {
+          const std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
+              const typename parallel::distributed::Triangulation<dim>::CellStatus,
+              const void *) > callback_function
+                  = std_cxx11::bind(&aspect::Particle::World<dim>::load_tracers,
+                                    std_cxx11::ref(*this),
+                                    std_cxx11::_1,
+                                    std_cxx11::_2,
+                                    std_cxx11::_3);
+          callback_functions.push_back(callback_function);
+        }
     }
 
     template <int dim>

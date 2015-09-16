@@ -256,6 +256,15 @@ namespace aspect
          * subdomain has changed.
          */
         void mesh_changed();
+
+        /**
+         * This variable is used during mesh refinement to indicate how many
+         * particles populate the cell with the largest number of particles.
+         * It is set by the register_store_callback_function() function and
+         * used by the register_load_callback_function() function to check if
+         * any data was saved.
+         */
+        unsigned int max_tracers_per_cell;
     };
 
     /* -------------------------- inline and template functions ---------------------- */

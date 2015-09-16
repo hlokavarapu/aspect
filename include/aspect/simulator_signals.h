@@ -99,7 +99,7 @@ namespace aspect
     boost::signals2::signal<void (std::list<std::pair<std::size_t, std_cxx11::function<
         void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
              const typename parallel::distributed::Triangulation<dim>::CellStatus,
-             void *)> > >)>  pre_refinement_store_user_data;
+             void *)> > > &)>  pre_refinement_store_user_data;
 
     /**
     * A signal that is called after every mesh_refinement.
@@ -116,7 +116,7 @@ namespace aspect
     boost::signals2::signal<void (std::list<std_cxx11::function<
         void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
              const typename parallel::distributed::Triangulation<dim>::CellStatus,
-             const void *)> >)>  post_refinement_load_user_data;
+             const void *)> > &)>  post_refinement_load_user_data;
 
     /**
      * A signal that is called at the beginning of the program. It
