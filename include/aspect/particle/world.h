@@ -196,13 +196,13 @@ namespace aspect
 
         void
         register_store_callback_function(std::list<std::pair<std::size_t,std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-            const typename parallel::distributed::Triangulation<dim>::CellStatus,
-            void *) > > > &callback_functions);
+                                         const typename parallel::distributed::Triangulation<dim>::CellStatus,
+                                         void *) > > > &callback_functions);
 
         void
         register_load_callback_function(std::list<std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-            const typename parallel::distributed::Triangulation<dim>::CellStatus,
-            const void *) > > &callback_functions);
+                                                                           const typename parallel::distributed::Triangulation<dim>::CellStatus,
+                                                                           const void *) > > &callback_functions);
 
         /**
          * Called by listener functions before a refinement step. All tracers

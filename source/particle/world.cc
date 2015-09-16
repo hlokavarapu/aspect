@@ -96,8 +96,8 @@ namespace aspect
     template <int dim>
     void
     World<dim>::register_store_callback_function(std::list<std::pair<std::size_t,std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-        const typename parallel::distributed::Triangulation<dim>::CellStatus,
-        void *) > > > &callback_functions)
+                                                 const typename parallel::distributed::Triangulation<dim>::CellStatus,
+                                                 void *) > > > &callback_functions)
     {
       // Only save and load tracers if there are any, we might get here for
       // example before the tracer generation in timestep 0, or if somebody
@@ -107,19 +107,19 @@ namespace aspect
       if (max_tracers_per_cell > 0)
         {
           const std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-              const typename parallel::distributed::Triangulation<dim>::CellStatus, void *) > callback_function
-                  = std_cxx11::bind(&aspect::Particle::World<dim>::store_tracers,
-                                    std_cxx11::ref(*this),
-                                    std_cxx11::_1,
-                                    std_cxx11::_2,
-                                    std_cxx11::_3);
+                                         const typename parallel::distributed::Triangulation<dim>::CellStatus, void *) > callback_function
+            = std_cxx11::bind(&aspect::Particle::World<dim>::store_tracers,
+                              std_cxx11::ref(*this),
+                              std_cxx11::_1,
+                              std_cxx11::_2,
+                              std_cxx11::_3);
 
           // We need to transfer the number of tracers for this cell and
           // the tracer data itself and we need to provide 2^dim times the
           // space for the data in case a cell is coarsened
           const std::size_t transfer_size_per_cell = sizeof (unsigned int) +
-              (property_manager->get_particle_size() * max_tracers_per_cell)
-                  *  std::pow(2,dim);
+                                                     (property_manager->get_particle_size() * max_tracers_per_cell)
+                                                     *  std::pow(2,dim);
 
           callback_functions.push_back(std::make_pair(transfer_size_per_cell,callback_function));
         }
@@ -128,25 +128,25 @@ namespace aspect
     template <int dim>
     void
     World<dim>::register_load_callback_function(std::list<std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-        const typename parallel::distributed::Triangulation<dim>::CellStatus,
-        const void *) > > &callback_functions)
+                                                                                   const typename parallel::distributed::Triangulation<dim>::CellStatus,
+                                                                                   const void *) > > &callback_functions)
     {
       Assert(particles.size() == 0,
-          ExcMessage("We are in the process of mesh refinement. All tracers "
-              "should have been serialized and stored, but there are still some "
-              "around. Is there a bug in the storage function?"));
+             ExcMessage("We are in the process of mesh refinement. All tracers "
+                        "should have been serialized and stored, but there are still some "
+                        "around. Is there a bug in the storage function?"));
 
       // Check if something was stored
       if (max_tracers_per_cell > 0)
         {
           const std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-              const typename parallel::distributed::Triangulation<dim>::CellStatus,
-              const void *) > callback_function
-                  = std_cxx11::bind(&aspect::Particle::World<dim>::load_tracers,
-                                    std_cxx11::ref(*this),
-                                    std_cxx11::_1,
-                                    std_cxx11::_2,
-                                    std_cxx11::_3);
+                                         const typename parallel::distributed::Triangulation<dim>::CellStatus,
+                                         const void *) > callback_function
+            = std_cxx11::bind(&aspect::Particle::World<dim>::load_tracers,
+                              std_cxx11::ref(*this),
+                              std_cxx11::_1,
+                              std_cxx11::_2,
+                              std_cxx11::_3);
           callback_functions.push_back(callback_function);
         }
     }
@@ -573,7 +573,7 @@ namespace aspect
             {
               bool neighbor_already_marked = false;
 
-              for (unsigned int i = 0; i < neighbors.size();++i)
+              for (unsigned int i = 0; i < neighbors.size(); ++i)
                 if (neighbors[i] == cell->subdomain_id())
                   {
                     neighbor_already_marked = true;
@@ -613,8 +613,8 @@ namespace aspect
         {
           send_offsets[neighbor_id] = total_send_data;
           std::pair< const typename std::multimap<types::subdomain_id,Particle <dim> >::const_iterator,
-                     const typename std::multimap<types::subdomain_id,Particle <dim> >::const_iterator>
-            send_particle_range = send_particles.equal_range(neighbors[neighbor_id]);
+              const typename std::multimap<types::subdomain_id,Particle <dim> >::const_iterator>
+              send_particle_range = send_particles.equal_range(neighbors[neighbor_id]);
           int num_send_particles[neighbor_id] = std::distance(send_particle_range.first,send_particle_range.second);
           num_send_data[neighbor_id] = num_send_particles[neighbor_id] * particle_size;
           total_send_data += num_send_particles[neighbor_id] * particle_size;
