@@ -553,7 +553,6 @@ namespace aspect
 
       // Determine the total number of particles we will send to other processors
       std::vector<int> num_send_particles(world_size);
-      std::vector<int> num_recv_particles(world_size);
 
       std::vector<int> num_send_data(world_size);
       std::vector<int> num_recv_data(world_size);
@@ -572,8 +571,6 @@ namespace aspect
           num_send_data[rank] = num_send_particles[rank] * particle_size;
           total_send_data += num_send_particles[rank] * particle_size;
         }
-
-      Utilities::MPI::sum (num_send_particles, this->get_mpi_communicator(), num_recv_particles);
 
       // Allocate space for sending and receiving particle data
       std::vector<char> send_data(send_particles.size() * particle_size);
@@ -602,6 +599,8 @@ namespace aspect
           total_recv_data += num_recv_data[rank];
         }
 
+      const int num_recv_particles = total_recv_data / particle_size;
+
       // Set up the space for the received particle data
       std::vector<char> recv_data(total_recv_data);
 
@@ -613,7 +612,7 @@ namespace aspect
       // Put the received particles into the domain if they are in the triangulation
       void *recv_data_it = static_cast<void *> (&recv_data.front());
 
-      for (int i=0; i<num_recv_particles[self_rank]; ++i)
+      for (int i=0; i<num_recv_particles; ++i)
         {
           Particle<dim> recv_particle(recv_data_it,property_manager->get_data_len());
           integrator->read_data(recv_data_it, recv_particle.get_id());
@@ -630,7 +629,6 @@ namespace aspect
               // tracer in this case.
               continue;
             }
-
 
           if (cell->is_locally_owned())
             {
