@@ -258,6 +258,12 @@ namespace aspect
         void mesh_changed();
 
         /**
+         * Find the neighbor processes.
+         */
+        std::vector<types::subdomain_id>
+        find_neighbors() const;
+
+        /**
          * This variable is used during mesh refinement to indicate how many
          * particles populate the cell with the largest number of particles.
          * It is set by the register_store_callback_function() function and
