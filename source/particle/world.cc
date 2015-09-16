@@ -615,9 +615,9 @@ namespace aspect
           std::pair< const typename std::multimap<types::subdomain_id,Particle <dim> >::const_iterator,
               const typename std::multimap<types::subdomain_id,Particle <dim> >::const_iterator>
               send_particle_range = send_particles.equal_range(neighbors[neighbor_id]);
-          int num_send_particles[neighbor_id] = std::distance(send_particle_range.first,send_particle_range.second);
-          num_send_data[neighbor_id] = num_send_particles[neighbor_id] * particle_size;
-          total_send_data += num_send_particles[neighbor_id] * particle_size;
+          int num_send_particles = std::distance(send_particle_range.first,send_particle_range.second);
+          num_send_data[neighbor_id] = num_send_particles * particle_size;
+          total_send_data += num_send_particles * particle_size;
 
           // Copy the particle data into the send array
           typename std::multimap<types::subdomain_id,Particle<dim> >::const_iterator particle = send_particle_range.first;
