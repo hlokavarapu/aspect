@@ -33,11 +33,21 @@ namespace aspect
 {
   namespace Particle
   {
-    template <int dim>
-    World<dim>::World()
+
+    template <>
+    World<2>::World()
     {
       triangulation_changed = true;
       integrator = NULL;
+      aspect::internals::SimulatorSignals::register_connector_function_2d (std_cxx11::bind(&World<2>::connector_function,std_cxx11::ref(*this),std_cxx11::_1));
+    }
+
+    template <>
+    World<3>::World()
+    {
+      triangulation_changed = true;
+      integrator = NULL;
+      aspect::internals::SimulatorSignals::register_connector_function_3d (std_cxx11::bind(&World<3>::connector_function,std_cxx11::ref(*this),std_cxx11::_1));
     }
 
     template <int dim>
@@ -52,8 +62,20 @@ namespace aspect
     }
 
     template <int dim>
+    void
+    World<dim>::connector_function(aspect::SimulatorSignals<dim> &signals)
+    {
+      signals.pre_refinement_store_user_data.connect(std_cxx11::bind(&World<dim>::register_store_callback_function,
+                                                                     std_cxx11::ref(*this),
+                                                                     std_cxx11::_1));
+      signals.post_refinement_load_user_data.connect(std_cxx11::bind(&World<dim>::register_load_callback_function,
+                                                                     std_cxx11::ref(*this),
+                                                                     std_cxx11::_1));
+    }
+
+    template <int dim>
     unsigned int
-    World<dim>::get_max_tracer_per_cell() const
+    World<dim>::get_global_max_tracer_per_cell() const
     {
       unsigned int local_max_tracer_per_cell(0);
       typename parallel::distributed::Triangulation<dim>::active_cell_iterator cell = this->get_triangulation().begin_active();
@@ -71,6 +93,45 @@ namespace aspect
       const unsigned int global_max_tracer_per_cell = Utilities::MPI::max(local_max_tracer_per_cell,this->get_mpi_communicator());
       // We need to provide 2^dim times the space in case a cell is coarsened
       return std::pow(2,dim) * global_max_tracer_per_cell;
+    }
+
+    template <int dim>
+    void
+    World<dim>::register_store_callback_function(std::list<std::pair<std::size_t,std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
+        const typename parallel::distributed::Triangulation<dim>::CellStatus,
+        void *) > > > &callback_functions)
+    {
+      const unsigned int max_tracers_per_cell = get_global_max_tracer_per_cell();
+      const std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
+          const typename parallel::distributed::Triangulation<dim>::CellStatus, void *) > callback_function
+              = std_cxx11::bind(&aspect::Particle::World<dim>::store_tracers,
+                                *this,
+                                std_cxx11::_1,
+                                std_cxx11::_2,
+                                std_cxx11::_3);
+
+      if (max_tracers_per_cell > 0)
+        {
+          const std::size_t particle_size = property_manager->get_particle_size();
+          callback_functions.push_back(std::make_pair(max_tracers_per_cell*particle_size,callback_function));
+        }
+    }
+
+    template <int dim>
+    void
+    World<dim>::register_load_callback_function(std::list<std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
+        const typename parallel::distributed::Triangulation<dim>::CellStatus,
+        const void *) > > &callback_functions)
+    {
+      const std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
+          const typename parallel::distributed::Triangulation<dim>::CellStatus,
+          const void *) > callback_function
+              = std_cxx11::bind(&aspect::Particle::World<dim>::load_tracers,
+                                *this,
+                                std_cxx11::_1,
+                                std_cxx11::_2,
+                                std_cxx11::_3);
+      callback_functions.push_back(callback_function);
     }
 
     template <int dim>
@@ -652,7 +713,6 @@ namespace aspect
     }
   }
 }
-
 
 
 // explicit instantiation of the functions we implement in this file
