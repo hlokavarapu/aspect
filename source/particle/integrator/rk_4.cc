@@ -49,7 +49,7 @@ namespace aspect
 
         for (; it!=particles.end(), vel!=velocities.end(), old_vel!=old_velocities.end(); ++it,++vel,++old_vel)
           {
-            const double id_num = it->second.get_id();
+            const unsigned int id_num = it->second.get_id();
             if (step == 0)
               {
                 loc0[id_num] = it->second.get_location();
@@ -130,12 +130,12 @@ namespace aspect
         double *integrator_data = static_cast<double *> (data);
 
         // Write location data
-        typename std::map<double, Point<dim> >::const_iterator it = loc0.find(id_num);
+        typename std::map<unsigned int, Point<dim> >::const_iterator it = loc0.find(id_num);
         for (unsigned int i=0; i<dim; ++i,++integrator_data)
           *integrator_data = it->second(i);
 
         // Write k1, k2 and k3
-        typename std::map<double, Tensor<1,dim> >::const_iterator it_k = k1.find(id_num);
+        typename std::map<unsigned int, Tensor<1,dim> >::const_iterator it_k = k1.find(id_num);
         for (unsigned int i=0; i<dim; ++i,++integrator_data)
           *integrator_data = it_k->second[i];
 

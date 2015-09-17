@@ -52,8 +52,7 @@ namespace aspect
         ~World();
 
         /**
-         * Initialize the particle world by connecting to be informed when
-         * the triangulation changes.
+         * Initialize the particle world.
          */
         void init();
 
@@ -250,12 +249,6 @@ namespace aspect
          * the level/index of the cell they are in
          */
         std::multimap<LevelInd, Particle<dim> >      particles;
-
-        /**
-         * Called by listener functions to indicate that the mesh of this
-         * subdomain has changed.
-         */
-        void mesh_changed();
 
         /**
          * Find the neighbor processes.

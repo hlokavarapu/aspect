@@ -57,9 +57,7 @@ namespace aspect
     template <int dim>
     void
     World<dim>::init()
-    {
-      this->get_triangulation().signals.post_refinement.connect(std_cxx11::bind(&World<dim>::mesh_changed, std_cxx1x::ref(*this)));
-    }
+    {}
 
     template <int dim>
     void
@@ -250,13 +248,6 @@ namespace aspect
 
     template <int dim>
     void
-    World<dim>::mesh_changed()
-    {
-      triangulation_changed = true;
-    }
-
-    template <int dim>
-    void
     World<dim>::set_integrator(Integrator::Interface<dim> *new_integrator)
     {
       integrator = new_integrator;
@@ -441,7 +432,7 @@ namespace aspect
     void
     World<dim>::find_all_cells()
     {
-      std::multimap<types::subdomain_id,Particle<dim> > lost_particles;
+      std::multimap<types::subdomain_id, Particle<dim> > lost_particles;
       std::multimap<LevelInd, Particle<dim> > moved_particles;
 
       // Find the cells that the particles moved to.
@@ -452,7 +443,7 @@ namespace aspect
       typename std::multimap<LevelInd, Particle<dim> >::iterator   it;
       for (it=particles.begin(); it!=particles.end();)
         {
-          if ((it->first != std::make_pair(-1,-1)) && !triangulation_changed)
+          if (it->first != std::make_pair(-1,-1))
             {
               const typename parallel::distributed::Triangulation<dim>::active_cell_iterator
               old_cell (&(this->get_triangulation()), it->first.first, it->first.second);
@@ -499,30 +490,22 @@ namespace aspect
         }
       particles.insert(moved_particles.begin(),moved_particles.end());
 
-
       // If particles fell out of the mesh, put them back in at the closest point in the mesh
       move_particles_back_in_mesh();
 
-      // Swap lost particles between processors if any process lost some
+      // Swap lost particles between processors
       const unsigned int global_lost_particles = Utilities::MPI::sum(lost_particles.size(),
                                                                      this->get_mpi_communicator());
       if (global_lost_particles > 0)
         send_recv_particles(lost_particles);
+
     }
 
     template <int dim>
     void
     World<dim>::advance_timestep()
     {
-      bool        continue_integrator = true;
-
-      // If the triangulation changed, we may need to move particles between processors
-      if (triangulation_changed)
-        {
-          // Find the cells that the particles moved to
-          //find_all_cells();
-          triangulation_changed = false;
-        }
+      bool continue_integrator = true;
 
       // If particles fell out of the mesh, put them back in at the closest point in the mesh
       move_particles_back_in_mesh();
@@ -597,7 +580,7 @@ namespace aspect
       const unsigned int self_rank  = Utilities::MPI::this_mpi_process(this->get_mpi_communicator());
       const unsigned int particle_size = property_manager->get_particle_size() + integrator->data_length() * sizeof(double);
 
-      // Determine the number of particles we will send to other processors
+      // Determine the amount of data we will send to other processors
       std::vector<int> num_send_data(num_neighbors);
       std::vector<int> num_recv_data(num_neighbors);
 
@@ -612,9 +595,11 @@ namespace aspect
       for (types::subdomain_id neighbor_id = 0; neighbor_id < num_neighbors; ++neighbor_id)
         {
           send_offsets[neighbor_id] = total_send_data;
+
           std::pair< const typename std::multimap<types::subdomain_id,Particle <dim> >::const_iterator,
               const typename std::multimap<types::subdomain_id,Particle <dim> >::const_iterator>
               send_particle_range = send_particles.equal_range(neighbors[neighbor_id]);
+
           int num_send_particles = std::distance(send_particle_range.first,send_particle_range.second);
           num_send_data[neighbor_id] = num_send_particles * particle_size;
           total_send_data += num_send_particles * particle_size;
@@ -635,9 +620,9 @@ namespace aspect
       // Notify other processors how many particles we will send
       MPI_Request *num_requests = new MPI_Request[2*num_neighbors];
       for (unsigned int i=0; i<num_neighbors; ++i)
-        MPI_Irecv(&(num_recv_data[i]), 1, MPI_INT, neighbors[i],self_rank,this->get_mpi_communicator(),&(num_requests[2*i]));
+        MPI_Irecv(&(num_recv_data[i]), 1, MPI_INT, neighbors[i], self_rank, this->get_mpi_communicator(), &(num_requests[2*i]));
       for (unsigned int i=0; i<num_neighbors; ++i)
-        MPI_Isend(&(num_send_data[i]), 1, MPI_INT, neighbors[i],neighbors[i],this->get_mpi_communicator(),&(num_requests[2*i+1]));
+        MPI_Isend(&(num_send_data[i]), 1, MPI_INT, neighbors[i], neighbors[i], this->get_mpi_communicator(), &(num_requests[2*i+1]));
       MPI_Waitall(2*num_neighbors,num_requests,MPI_STATUSES_IGNORE);
       delete num_requests;
 
@@ -657,16 +642,18 @@ namespace aspect
       MPI_Request *requests = new MPI_Request[2*num_neighbors];
       unsigned int send_ops = 0;
       unsigned int recv_ops = 0;
+
       for (unsigned int i=0; i<num_neighbors; ++i)
         if (num_recv_data[i] > 0)
           {
-            MPI_Irecv(&(recv_data[recv_offsets[i]]), num_recv_data[i], MPI_CHAR, neighbors[i],self_rank, this->get_mpi_communicator(),&(requests[send_ops]));
+            MPI_Irecv(&(recv_data[recv_offsets[i]]), num_recv_data[i], MPI_CHAR, neighbors[i], self_rank, this->get_mpi_communicator(),&(requests[send_ops]));
             send_ops++;
           }
+
       for (unsigned int i=0; i<num_neighbors; ++i)
         if (num_send_data[i] > 0)
           {
-            MPI_Isend(&(send_data[send_offsets[i]]), num_send_data[i], MPI_CHAR, neighbors[i],neighbors[i], this->get_mpi_communicator(),&(requests[send_ops+recv_ops]));
+            MPI_Isend(&(send_data[send_offsets[i]]), num_send_data[i], MPI_CHAR, neighbors[i], neighbors[i], this->get_mpi_communicator(),&(requests[send_ops+recv_ops]));
             recv_ops++;
           }
       MPI_Waitall(send_ops+recv_ops,requests,MPI_STATUSES_IGNORE);
