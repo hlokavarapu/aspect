@@ -56,12 +56,11 @@ namespace aspect
         for (; it!=particles.end(), vel!=velocities.end(), old_vel!=old_velocities.end(); ++it,++vel,++old_vel)
           {
             const double id_num = it->second.get_id();
-            const Point<dim> loc = it->second.get_location();
             if (step == 0)
               {
-                loc0[id_num] = loc;
+                loc0[id_num] = it->second.get_location();
                 k1[id_num] = dt*(*vel);
-                it->second.set_location(loc + 0.5*k1[id_num]);
+                it->second.set_location(it->second.get_location() + 0.5*k1[id_num]);
               }
             else if (step == 1)
               {
@@ -80,7 +79,8 @@ namespace aspect
               }
             else
               {
-                // Error!
+                Assert(false,
+                       ExcMessage("The RK4 integrator should never continue after four integration steps."));
               }
           }
 
@@ -150,17 +150,17 @@ namespace aspect
         typename std::map<double, Tensor<1,dim> >::const_iterator it_k = k1.find(id_num);
         for (unsigned int i=0; i<dim; ++i,++integrator_data)
           {
-            *integrator_data = it->second(i);
+            *integrator_data = it_k->second[i];
           }
         it_k = k2.find(id_num);
         for (unsigned int i=0; i<dim; ++i,++integrator_data)
           {
-            *integrator_data = it->second(i);
+            *integrator_data = it_k->second[i];
           }
         it_k = k3.find(id_num);
         for (unsigned int i=0; i<dim; ++i,++integrator_data)
           {
-            *integrator_data = it->second(i);
+            *integrator_data = it_k->second[i];
           }
 
         data = static_cast<void *> (integrator_data);
