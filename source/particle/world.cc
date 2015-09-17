@@ -219,7 +219,7 @@ namespace aspect
     {
       const unsigned int *n_particles_in_cell = static_cast<const unsigned int *> (data);
       const unsigned int particles_in_cell = *n_particles_in_cell++;
-      void *pdata = (void *) n_particles_in_cell;
+      const void *pdata = reinterpret_cast<const void *> (n_particles_in_cell);
 
       for (unsigned int i = 0; i < particles_in_cell; ++i)
         {
@@ -673,7 +673,7 @@ namespace aspect
       delete requests;
 
       // Put the received particles into the domain if they are in the triangulation
-      void *recv_data_it = static_cast<void *> (&recv_data.front());
+      const void *recv_data_it = static_cast<const void *> (&recv_data.front());
 
       for (int i=0; i<num_recv_particles; ++i)
         {

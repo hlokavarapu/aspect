@@ -70,7 +70,7 @@ namespace aspect
          * @param[in] data_len Number of components of the begin_data vector
          * that will be read in by this particle.
          */
-        Particle (void *&begin_data,
+        Particle (const void *&begin_data,
                   const unsigned int data_len);
 
         /**

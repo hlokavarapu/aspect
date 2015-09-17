@@ -48,14 +48,14 @@ namespace aspect
 
     template <int dim>
     inline
-    Particle<dim>::Particle (void *&data,
+    Particle<dim>::Particle (const void *&data,
                              const unsigned int data_len)
       :
       val(data_len-dim-1)
     {
-      unsigned int *id_data = static_cast<unsigned int *> (data);
+      const unsigned int *id_data = static_cast<const unsigned int *> (data);
       id = *id_data++;
-      double *pdata = reinterpret_cast<double *> (id_data);
+      const double *pdata = reinterpret_cast<const double *> (id_data);
 
       for (unsigned int i = 0; i < dim; ++i)
         location(i) = *pdata++;
@@ -63,7 +63,7 @@ namespace aspect
       for (unsigned int i = 0; i < val.size(); ++i)
         val [i] = *pdata++;
 
-      data = static_cast<void *> (pdata);
+      data = static_cast<const void *> (pdata);
     }
 
 
