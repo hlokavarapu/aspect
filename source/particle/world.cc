@@ -494,11 +494,7 @@ namespace aspect
       move_particles_back_in_mesh();
 
       // Swap lost particles between processors
-      const unsigned int global_lost_particles = Utilities::MPI::sum(lost_particles.size(),
-                                                                     this->get_mpi_communicator());
-      if (global_lost_particles > 0)
-        send_recv_particles(lost_particles);
-
+      send_recv_particles(lost_particles);
     }
 
     template <int dim>
@@ -620,9 +616,9 @@ namespace aspect
       // Notify other processors how many particles we will send
       MPI_Request *num_requests = new MPI_Request[2*num_neighbors];
       for (unsigned int i=0; i<num_neighbors; ++i)
-        MPI_Irecv(&(num_recv_data[i]), 1, MPI_INT, neighbors[i], self_rank, this->get_mpi_communicator(), &(num_requests[2*i]));
+        MPI_Irecv(&(num_recv_data[i]), 1, MPI_INT, neighbors[i], 0, this->get_mpi_communicator(), &(num_requests[2*i]));
       for (unsigned int i=0; i<num_neighbors; ++i)
-        MPI_Isend(&(num_send_data[i]), 1, MPI_INT, neighbors[i], neighbors[i], this->get_mpi_communicator(), &(num_requests[2*i+1]));
+        MPI_Isend(&(num_send_data[i]), 1, MPI_INT, neighbors[i], 0, this->get_mpi_communicator(), &(num_requests[2*i+1]));
       MPI_Waitall(2*num_neighbors,num_requests,MPI_STATUSES_IGNORE);
       delete num_requests;
 
@@ -646,14 +642,14 @@ namespace aspect
       for (unsigned int i=0; i<num_neighbors; ++i)
         if (num_recv_data[i] > 0)
           {
-            MPI_Irecv(&(recv_data[recv_offsets[i]]), num_recv_data[i], MPI_CHAR, neighbors[i], self_rank, this->get_mpi_communicator(),&(requests[send_ops]));
+            MPI_Irecv(&(recv_data[recv_offsets[i]]), num_recv_data[i], MPI_CHAR, neighbors[i], 1, this->get_mpi_communicator(),&(requests[send_ops]));
             send_ops++;
           }
 
       for (unsigned int i=0; i<num_neighbors; ++i)
         if (num_send_data[i] > 0)
           {
-            MPI_Isend(&(send_data[send_offsets[i]]), num_send_data[i], MPI_CHAR, neighbors[i], neighbors[i], this->get_mpi_communicator(),&(requests[send_ops+recv_ops]));
+            MPI_Isend(&(send_data[send_offsets[i]]), num_send_data[i], MPI_CHAR, neighbors[i], 1, this->get_mpi_communicator(),&(requests[send_ops+recv_ops]));
             recv_ops++;
           }
       MPI_Waitall(send_ops+recv_ops,requests,MPI_STATUSES_IGNORE);
