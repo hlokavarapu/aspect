@@ -407,8 +407,9 @@ namespace aspect
       // If particles fell out of the mesh, put them back in at the closest point in the mesh
       move_particles_back_in_mesh();
 
-      // Swap lost particles between processors
-      send_recv_particles(lost_particles);
+      // Swap lost particles between processors if we have more than one process
+      if (dealii::Utilities::MPI::n_mpi_processes(this->get_mpi_communicator()) > 1)
+        send_recv_particles(lost_particles);
     }
 
     template <int dim>

@@ -112,7 +112,7 @@ namespace aspect
       template <int dim>
       void
       RK4Integrator<dim>::read_data(const void *&data,
-                                    const unsigned int &id_num)
+                                    const unsigned int id_num)
       {
         const double *integrator_data = static_cast<const double *> (data);
 
@@ -136,7 +136,7 @@ namespace aspect
       template <int dim>
       void
       RK4Integrator<dim>::write_data(void *&data,
-                                     const unsigned int &id_num) const
+                                     const unsigned int id_num) const
       {
         double *integrator_data = static_cast<double *> (data);
 

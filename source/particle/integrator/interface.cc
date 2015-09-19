@@ -60,14 +60,14 @@ namespace aspect
 
       template <int dim>
       void
-      Interface<dim>::read_data(const void *&data,
-                                const unsigned int &id_num)
+      Interface<dim>::read_data(const void *&,
+                                const unsigned int )
       {}
 
       template <int dim>
       void
-      Interface<dim>::write_data(void *&data,
-                                 const unsigned int &id_num) const
+      Interface<dim>::write_data(void *&,
+                                 const unsigned int ) const
       {}
 
 
