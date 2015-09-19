@@ -39,6 +39,37 @@ namespace aspect
       Interface<dim>::parse_parameters (ParameterHandler &)
       {}
 
+      template <int dim>
+      void
+      Interface<dim>::advance_step()
+      {}
+
+      template <int dim>
+      bool
+      Interface<dim>::continue_integration() const
+      {
+        return false;
+      }
+
+      template <int dim>
+      unsigned int
+      Interface<dim>::data_length() const
+      {
+        return 0;
+      }
+
+      template <int dim>
+      void
+      Interface<dim>::read_data(const void *&data,
+                                const unsigned int &id_num)
+      {}
+
+      template <int dim>
+      void
+      Interface<dim>::write_data(void *&data,
+                                 const unsigned int &id_num) const
+      {}
+
 
 
 // -------------------------------- Deal with registering models and automating
