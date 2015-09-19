@@ -153,18 +153,14 @@ namespace aspect
          * refinement. Allows registering store_tracers() in the triangulation.
          */
         void
-        register_store_callback_function(std::list<std::pair<std::size_t,std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-                                         const typename parallel::distributed::Triangulation<dim>::CellStatus,
-                                         void *) > > > &callback_functions);
+        register_store_callback_function(typename parallel::distributed::Triangulation<dim> &triangulation);
 
         /**
          * Callback function that is called from Simulator after every
          * refinement. Allows registering load_tracers() in the triangulation.
          */
         void
-        register_load_callback_function(std::list<std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-                                                                           const typename parallel::distributed::Triangulation<dim>::CellStatus,
-                                                                           const void *) > > &callback_functions);
+        register_load_callback_function(typename parallel::distributed::Triangulation<dim> &triangulation);
 
         /**
          * Called by listener functions from Triangulation for every cell
@@ -219,9 +215,9 @@ namespace aspect
         /**
          * This variable is set by the register_store_callback_function()
          * function and used by the register_load_callback_function() function
-         * to check if any data was saved.
+         * to check where the tracer data was stored.
          */
-        bool stored_tracers;
+        unsigned int data_offset;
 
         /**
          * Limit for how many particles are allowed per cell. This limit is

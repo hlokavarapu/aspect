@@ -20,6 +20,7 @@
 
 #include <aspect/particle/world.h>
 #include <aspect/global.h>
+#include <aspect/utilities.h>
 
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/fe/fe_values.h>
@@ -35,6 +36,7 @@ namespace aspect
     template <>
     World<2>::World()
     {
+      data_offset = aspect::Utilities::signaling_nan<unsigned int>();
       integrator = NULL;
       aspect::internals::SimulatorSignals::register_connector_function_2d (std_cxx11::bind(&World<2>::connector_function,std_cxx11::ref(*this),std_cxx11::_1));
     }
@@ -42,6 +44,7 @@ namespace aspect
     template <>
     World<3>::World()
     {
+      data_offset = aspect::Utilities::signaling_nan<unsigned int>();
       integrator = NULL;
       aspect::internals::SimulatorSignals::register_connector_function_3d (std_cxx11::bind(&World<3>::connector_function,std_cxx11::ref(*this),std_cxx11::_1));
     }
@@ -112,7 +115,7 @@ namespace aspect
     unsigned int
     World<dim>::get_global_particle_count() const
     {
-      return Utilities::MPI::sum (particles.size(), this->get_mpi_communicator());
+      return dealii::Utilities::MPI::sum (particles.size(), this->get_mpi_communicator());
     }
 
     template <int dim>
@@ -132,7 +135,7 @@ namespace aspect
                                                  tracers_in_cell);
           }
 
-      return Utilities::MPI::max(local_max_tracer_per_cell,this->get_mpi_communicator());
+      return dealii::Utilities::MPI::max(local_max_tracer_per_cell,this->get_mpi_communicator());
     }
 
     template <int dim>
@@ -149,9 +152,7 @@ namespace aspect
 
     template <int dim>
     void
-    World<dim>::register_store_callback_function(std::list<std::pair<std::size_t,std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-                                                 const typename parallel::distributed::Triangulation<dim>::CellStatus,
-                                                 void *) > > > &callback_functions)
+    World<dim>::register_store_callback_function(typename parallel::distributed::Triangulation<dim> &triangulation)
     {
       // Only save and load tracers if there are any, we might get here for
       // example before the tracer generation in timestep 0, or if somebody
@@ -174,18 +175,13 @@ namespace aspect
           const std::size_t transfer_size_per_cell = sizeof (unsigned int) +
                                                      (property_manager->get_particle_size() * max_tracers_per_cell)
                                                      *  std::pow(2,dim);
-
-          callback_functions.push_back(std::make_pair(transfer_size_per_cell,callback_function));
-
-          stored_tracers = true;
+          data_offset = triangulation.register_data_attach(transfer_size_per_cell,callback_function);
         }
     }
 
     template <int dim>
     void
-    World<dim>::register_load_callback_function(std::list<std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-                                                                                   const typename parallel::distributed::Triangulation<dim>::CellStatus,
-                                                                                   const void *) > > &callback_functions)
+    World<dim>::register_load_callback_function(typename parallel::distributed::Triangulation<dim> &triangulation)
     {
       Assert(particles.size() == 0,
              ExcMessage("We are in the process of mesh refinement. All tracers "
@@ -193,7 +189,7 @@ namespace aspect
                         "around. Is there a bug in the storage function?"));
 
       // Check if something was stored
-      if (stored_tracers)
+      if (data_offset != aspect::Utilities::signaling_nan<unsigned int>())
         {
           const std_cxx11::function<void(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
                                          const typename parallel::distributed::Triangulation<dim>::CellStatus,
@@ -203,7 +199,9 @@ namespace aspect
                               std_cxx11::_1,
                               std_cxx11::_2,
                               std_cxx11::_3);
-          callback_functions.push_back(callback_function);
+
+          triangulation.notify_ready_to_unpack(data_offset,callback_function);
+          data_offset = aspect::Utilities::signaling_nan<unsigned int>();
         }
     }
 
@@ -427,7 +425,7 @@ namespace aspect
       // Determine the communication pattern
       const std::vector<types::subdomain_id> neighbors = find_neighbors();
       const unsigned int num_neighbors = neighbors.size();
-      const unsigned int self_rank  = Utilities::MPI::this_mpi_process(this->get_mpi_communicator());
+      const unsigned int self_rank  = dealii::Utilities::MPI::this_mpi_process(this->get_mpi_communicator());
       const unsigned int particle_size = property_manager->get_particle_size() + integrator->data_length() * sizeof(double);
 
       // Determine the amount of data we will send to other processors
