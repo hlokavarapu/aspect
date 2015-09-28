@@ -64,15 +64,15 @@ namespace aspect
         Utilities::AsciiDataBase<dim>::declare_parameters(prm,
                                                           "$ASPECT_SOURCE_DIR/data/initial-conditions/ascii-data/test/",
                                                           "box_2d.txt");
-        prm.enter_subsection("plate_age");
+        prm.enter_subsection("Plate age");
         {
-          prm.declare_entry ("Mantle Temperature", "1673.15",
+          prm.declare_entry ("Mantle temperature", "1673.15",
                              Patterns::Double (0),
                              "Temperature under the plate. Units: K.");
-          prm.declare_entry ("Thermal Diffusivity", "1e-6",
+          prm.declare_entry ("Thermal diffusivity", "1e-6",
                              Patterns::Double (0),
                              "Temperature under the plate. Units: m^2/s.");
-          prm.declare_entry ("Surface Temperature", "275.15",
+          prm.declare_entry ("Surface temperature", "275.15",
                              Patterns::Double (0),
                              "Surface temperature. Units: K.");
         }
@@ -89,12 +89,13 @@ namespace aspect
       prm.enter_subsection("Initial conditions");
       {
         Utilities::AsciiDataBase<dim>::parse_parameters(prm);
-        prm.enter_subsection("plate_age");
+        prm.enter_subsection("Plate age");
         {
-          T0 = prm.get_double ("Surface Temperature");
-          T1 = prm.get_double ("Mantle Temperature");
-          K0 = prm.get_double ("Thermal Diffusivity");
+          T0 = prm.get_double ("Surface temperature");
+          T1 = prm.get_double ("Mantle temperature");
+          K0 = prm.get_double ("Thermal diffusivity");
         }
+        prm.leave_subsection();
       }
       prm.leave_subsection();
     }
