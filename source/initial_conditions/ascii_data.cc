@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2015 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2014 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -39,12 +39,19 @@ namespace aspect
     }
 
 
-    template <int dim>
+    template <int dim> //this is edited for plate age
     double
     AsciiData<dim>::
     initial_temperature (const Point<dim> &position) const
     {
-      return Utilities::AsciiDataInitial<dim>::get_data_component(position,0);
+      double temperature;
+      const double depth = this->get_geometry_model().depth(position);
+      const double age = Utilities::AsciiDataInitial<dim>::get_data_component(position,0);
+      temperature = T0 + (T1-T0) * erf(depth /(2e0 *sqrt(K0 * age)+1e-40));
+
+
+
+      return temperature;
     }
 
 
@@ -57,6 +64,19 @@ namespace aspect
         Utilities::AsciiDataBase<dim>::declare_parameters(prm,
                                                           "$ASPECT_SOURCE_DIR/data/initial-conditions/ascii-data/test/",
                                                           "box_2d.txt");
+        prm.enter_subsection("plate_age");
+        {
+          prm.declare_entry ("Mantle Temperature", "1673.15",
+                             Patterns::Double (0),
+                             "Temperature under the plate. Units: K.");
+          prm.declare_entry ("Thermal Diffusivity", "1e-6",
+                             Patterns::Double (0),
+                             "Temperature under the plate. Units: m^2/s.");
+          prm.declare_entry ("Surface Temperature", "275.15",
+                             Patterns::Double (0),
+                             "Surface temperature. Units: K.");
+        }
+        prm.leave_subsection();
       }
       prm.leave_subsection();
     }
@@ -69,6 +89,12 @@ namespace aspect
       prm.enter_subsection("Initial conditions");
       {
         Utilities::AsciiDataBase<dim>::parse_parameters(prm);
+        prm.enter_subsection("plate_age");
+        {
+          T0 = prm.get_double ("Surface Temperature");
+          T1 = prm.get_double ("Mantle Temperature");
+          K0 = prm.get_double ("Thermal Diffusivity");
+        }
       }
       prm.leave_subsection();
     }
