@@ -55,21 +55,26 @@ namespace aspect
 
     template <int dim>
     void
-    World<dim>::initialize()
-    {}
-
-    template <int dim>
-    void
-    World<dim>::set_integrator(Integrator::Interface<dim> *new_integrator)
+    World<dim>::initialize(Integrator::Interface<dim> *new_integrator,
+        Property::Manager<dim> *new_manager,
+        const ParticleLoadBalancing &load_balancing,
+        const unsigned int max_part_per_cell,
+        const unsigned int weight)
     {
       integrator = new_integrator;
-    }
-
-    template <int dim>
-    void
-    World<dim>::set_manager(Property::Manager<dim> *new_manager)
-    {
       property_manager = new_manager;
+      particle_load_balancing = load_balancing;
+      max_particles_per_cell = max_part_per_cell;
+      tracer_weight = weight;
+
+#if DEAL_II_VERSION_GTE(8,4,0)
+#else
+      AssertThrow(load_balacing != repartition,
+                  ExcMessage("You tried to select the load balancing strategy 'repartition', "
+                      "which is only available for deal.II 8.4 and newer but the installed version "
+                      "seems to be older. Please update your deal.II or choose a different strategy."));
+#endif
+
     }
 
     template <int dim>
@@ -77,13 +82,6 @@ namespace aspect
     World<dim>::get_manager() const
     {
       return *property_manager;
-    }
-
-    template <int dim>
-    void
-    World<dim>::set_max_particles_per_cell(const unsigned int max_part_per_cell)
-    {
-      max_particles_per_cell = max_part_per_cell;
     }
 
     template <int dim>
@@ -231,8 +229,6 @@ namespace aspect
     World<dim>::cell_weight(const typename parallel::distributed::Triangulation<dim>::cell_iterator &cell,
                             const typename parallel::distributed::Triangulation<dim>::CellStatus status)
     {
-      const unsigned int tracer_weight = 10;
-
       if (cell->active() && !cell->is_locally_owned())
         return 0;
 
