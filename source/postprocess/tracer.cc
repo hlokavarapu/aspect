@@ -272,12 +272,29 @@ namespace aspect
                              "'Use years in output instead of seconds' parameter is set; "
                              "seconds otherwise.");
 
+          prm.declare_entry ("Load balancing strategy", "none",
+                             Patterns::Selection ("none|remove particles| "
+                                 "remove and add particles| repartition"),
+                             "Strategy that is used to balance the computational"
+                             "load across processors for adaptive meshes.");
+          prm.declare_entry ("Minimum tracers per cell", "100",
+                             Patterns::Integer (0),
+                             "Limit for how many particles are allowed per cell. This limit is "
+                             "useful to prevent coarse cells in adaptive meshes from slowing down "
+                             "the whole model. It will only be checked and enforced during "
+                             "mesh refinement and MPI transfer of tracers.");
           prm.declare_entry ("Maximum tracers per cell", "100",
                              Patterns::Integer (0),
                              "Limit for how many particles are allowed per cell. This limit is "
                              "useful to prevent coarse cells in adaptive meshes from slowing down "
                              "the whole model. It will only be checked and enforced during "
                              "mesh refinement and MPI transfer of tracers.");
+          prm.declare_entry ("Dynamic tracer weight", "2",
+                             Patterns::Integer (0),
+                             "Weight that is associated with the computational load of "
+                             "a single particle. The sum of tracer weights will be added "
+                             "to the sum of cell weights to determine the partitioning of "
+                             "the mesh. Every cell is associated with a weight of 100.");
         }
         prm.leave_subsection ();
       }
@@ -299,8 +316,19 @@ namespace aspect
         prm.enter_subsection("Tracers");
         {
           data_output_interval = prm.get_double ("Time between data output");
-          unsigned int max_particles_per_cell = prm.get_integer("Maximum tracers per cell");
-          world.set_max_particles_per_cell(max_particles_per_cell);
+
+          world.set_max_particles_per_cell(prm.get_integer("Maximum tracers per cell"));
+
+          if (prm.get ("Load balancing strategy") == "none")
+            world.particle_load_balancing = Particle::World<dim>::no_balancing;
+          else if (prm.get ("Load balancing strategy") == "remove particles")
+            world.particle_load_balancing = Particle::World<dim>::remove_particles;
+          else if (prm.get ("Load balancing strategy") == "remove and add particles")
+            world.particle_load_balancing = Particle::World<dim>::remove_and_add_particles;
+          else if (prm.get ("Load balancing strategy") == "repartition")
+            world.particle_load_balancing = Particle::World<dim>::repartition;
+          else
+            AssertThrow (false, ExcNotImplemented());
         }
         prm.leave_subsection ();
       }

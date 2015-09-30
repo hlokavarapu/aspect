@@ -150,6 +150,13 @@ namespace aspect
 
         /**
          * Callback function that is called from Simulator before every
+         * refinement. Allows registering cell_weight() in the triangulation.
+         */
+        void
+        register_cell_weight_callback_function(typename parallel::distributed::Triangulation<dim> &triangulation);
+
+        /**
+         * Callback function that is called from Simulator before every
          * refinement. Allows registering store_tracers() in the triangulation.
          */
         void
@@ -161,6 +168,15 @@ namespace aspect
          */
         void
         register_load_callback_function(typename parallel::distributed::Triangulation<dim> &triangulation);
+
+        /**
+         * Called by listener functions from Triangulation for every cell
+         * before a refinement step. A weight is attached to every cell
+         * depending on the number of contained tracers.
+         */
+        unsigned int
+        cell_weight(const typename parallel::distributed::Triangulation<dim>::cell_iterator &cell,
+                                const typename parallel::distributed::Triangulation<dim>::CellStatus status);
 
         /**
          * Called by listener functions from Triangulation for every cell
@@ -186,6 +202,14 @@ namespace aspect
          */
         template <class Archive>
         void serialize (Archive &ar, const unsigned int version);
+
+        enum ParticleLoadBalancing
+        {
+          no_balancing,
+          remove_particles,
+          remove_and_add_particles,
+          repartition
+        } particle_load_balancing;
 
       private:
         /**
