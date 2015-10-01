@@ -147,13 +147,6 @@ namespace aspect
 
         /**
          * Callback function that is called from Simulator before every
-         * refinement. Allows registering cell_weight() in the triangulation.
-         */
-        void
-        register_cell_weight_callback_function(typename parallel::distributed::Triangulation<dim> &triangulation);
-
-        /**
-         * Callback function that is called from Simulator before every
          * refinement. Allows registering store_tracers() in the triangulation.
          */
         void

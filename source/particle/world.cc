@@ -38,7 +38,9 @@ namespace aspect
     {
       data_offset = aspect::Utilities::signaling_nan<unsigned int>();
       integrator = NULL;
-      aspect::internals::SimulatorSignals::register_connector_function_2d (std_cxx11::bind(&World<2>::connector_function,std_cxx11::ref(*this),std_cxx11::_1));
+      aspect::internals::SimulatorSignals::register_connector_function_2d (std_cxx11::bind(&World<2>::connector_function,
+                                                                                           std_cxx11::ref(*this),
+                                                                                           std_cxx11::_1));
     }
 
     template <>
@@ -46,7 +48,9 @@ namespace aspect
     {
       data_offset = aspect::Utilities::signaling_nan<unsigned int>();
       integrator = NULL;
-      aspect::internals::SimulatorSignals::register_connector_function_3d (std_cxx11::bind(&World<3>::connector_function,std_cxx11::ref(*this),std_cxx11::_1));
+      aspect::internals::SimulatorSignals::register_connector_function_3d (std_cxx11::bind(&World<3>::connector_function,
+                                                                                           std_cxx11::ref(*this),
+                                                                                           std_cxx11::_1));
     }
 
     template <int dim>
@@ -75,6 +79,11 @@ namespace aspect
                       "seems to be older. Please update your deal.II or choose a different strategy."));
 #endif
 
+      if (particle_load_balancing == repartition)
+        this->get_triangulation().signals.cell_weight.connect(std_cxx11::bind(&aspect::Particle::World<dim>::cell_weight,
+                                                            std_cxx11::ref(*this),
+                                                            std_cxx11::_1,
+                                                            std_cxx11::_2));
     }
 
     template <int dim>
@@ -140,33 +149,12 @@ namespace aspect
     void
     World<dim>::connector_function(aspect::SimulatorSignals<dim> &signals)
     {
-      if (particle_load_balancing == repartition)
-        signals.pre_refinement_store_user_data.connect(std_cxx11::bind(&World<dim>::register_cell_weight_callback_function,
-                                                                       std_cxx11::ref(*this),
-                                                                       std_cxx11::_1));
       signals.pre_refinement_store_user_data.connect(std_cxx11::bind(&World<dim>::register_store_callback_function,
                                                                      std_cxx11::ref(*this),
                                                                      std_cxx11::_1));
       signals.post_refinement_load_user_data.connect(std_cxx11::bind(&World<dim>::register_load_callback_function,
                                                                      std_cxx11::ref(*this),
                                                                      std_cxx11::_1));
-    }
-
-    template <int dim>
-    void
-    World<dim>::register_cell_weight_callback_function(typename parallel::distributed::Triangulation<dim> &triangulation)
-    {
-      if (this->get_timestep_number() == 0)
-        {
-          const std_cxx11::function<unsigned int(const typename parallel::distributed::Triangulation<dim>::cell_iterator &,
-                                                 const typename parallel::distributed::Triangulation<dim>::CellStatus) > callback_function
-                                                     = std_cxx11::bind(&aspect::Particle::World<dim>::cell_weight,
-                                                                       std_cxx11::ref(*this),
-                                                                       std_cxx11::_1,
-                                                                       std_cxx11::_2);
-
-          triangulation.register_cell_weights(callback_function);
-        }
     }
 
     template <int dim>
