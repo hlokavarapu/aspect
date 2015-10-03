@@ -74,18 +74,17 @@ namespace aspect
       tracer_weight = weight;
 
 #if DEAL_II_VERSION_GTE(8,4,0)
-#else
-      AssertThrow(load_balacing != repartition,
-                  ExcMessage("You tried to select the load balancing strategy 'repartition', "
-                             "which is only available for deal.II 8.4 and newer but the installed version "
-                             "seems to be older. Please update your deal.II or choose a different strategy."));
-#endif
-
       if (particle_load_balancing == repartition)
         this->get_triangulation().signals.cell_weight.connect(std_cxx11::bind(&aspect::Particle::World<dim>::cell_weight,
                                                                               std_cxx11::ref(*this),
                                                                               std_cxx11::_1,
                                                                               std_cxx11::_2));
+#else
+      AssertThrow(particle_load_balancing != repartition,
+                  ExcMessage("You tried to select the load balancing strategy 'repartition', "
+                             "which is only available for deal.II 8.4 and newer but the installed version "
+                             "seems to be older. Please update your deal.II or choose a different strategy."));
+#endif
     }
 
     template <int dim>
