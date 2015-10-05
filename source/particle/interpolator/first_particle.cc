@@ -35,8 +35,8 @@ namespace aspect
       template <int dim>
       std::vector<std::vector<double> >
       FirstParticle<dim>::properties_at_points(const std::multimap<LevelInd, Particle<dim> > &particles,
-                                       const std::vector<Point<dim> > &positions,
-                                       const typename parallel::distributed::Triangulation<dim>::cell_iterator &cell) const
+                                               const std::vector<Point<dim> > &positions,
+                                               const typename parallel::distributed::Triangulation<dim>::cell_iterator &cell) const
       {
         std::vector<std::vector<double> > properties(positions.size());
 
