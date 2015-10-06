@@ -264,8 +264,10 @@ namespace aspect
 
         /**
          * TODO: Implement this for arbitrary meshes.
-         * This needs to be implemented in case some particles fall out of the
-         * domain. In particular for periodic boundary conditions.
+         * This function checks if the @p lost_particles moved across a
+         * periodic boundary and tries to reinsert them into
+         * @p moved_particles_cell or @p moved_particles_domain. All particles
+         * that can not be found are discarded.
          */
         void
         move_particles_back_in_mesh(std::multimap<LevelInd, Particle<dim> >            &lost_particles,
@@ -274,17 +276,15 @@ namespace aspect
 
         /**
          * Transfer particles that have crossed subdomain boundaries to other
-         * processors. Because subdomains can change drastically during mesh
-         * refinement, particle transfer occurs as follows: - Each subdomain
-         * finds the particles it owns which have fallen outside it - For each
-         * particle outside the subdomain, send the particle to all subdomains
-         * and let them determine which one owns it. This assumes there is no
-         * overlap between subdomains. - Each process determines which of the
-         * received particles is in its subdomain, keeps these and deletes the
-         * others
+         * processors. The transfer occurs in two steps. As a first step all
+         * processes notify their neighbor processes how many particles will
+         * be send to them. Because neighbor processes are defined as the owner
+         * of ghost cells of the current process, this should also handle
+         * periodic boundaries correctly. Afterwards the transfer is done in the
+         * same way as local communication between neighbor processes.
          *
-         * @param [in,out] send_particles All particles that should be send
-         * are in this vector.
+         * @param [in] send_particles All particles that should be send and
+         * their new subdomain_ids are in this map.
          */
         void
         send_recv_particles(const std::multimap<types::subdomain_id,Particle <dim> > &send_particles);

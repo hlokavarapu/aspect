@@ -449,18 +449,18 @@ namespace aspect
     {
       // TODO: fix this to work with arbitrary meshes. Currently periodic boundaries only work for boxes.
       const GeometryModel::Box<dim> *geometry
-      = dynamic_cast<const GeometryModel::Box<dim>*> (&this->get_geometry_model());
+        = dynamic_cast<const GeometryModel::Box<dim>*> (&this->get_geometry_model());
 
       if (geometry != 0)
         {
           const Point<dim> origin = geometry->get_origin();
           const Point<dim> extent = geometry->get_extents();
           const std::set< std::pair< std::pair<types::boundary_id, types::boundary_id>, unsigned int> > periodic_boundaries =
-              geometry->get_periodic_boundary_pairs();
+            geometry->get_periodic_boundary_pairs();
 
           std::vector<bool> periodic(dim,false);
           std::set< std::pair< std::pair<types::boundary_id, types::boundary_id>, unsigned int> >::const_iterator boundary =
-              periodic_boundaries.begin();
+            periodic_boundaries.begin();
           for (; boundary != periodic_boundaries.end(); ++boundary)
             periodic[boundary->second] = true;
 
@@ -473,10 +473,10 @@ namespace aspect
                 {
                   if (periodic[i])
                     {
-                    if (particle_position[i] < origin[i])
-                      particle_position[i] += extent[i];
-                    else if (particle_position[i] > origin[i] + extent[i])
-                      particle_position[i] -= extent[i];
+                      if (particle_position[i] < origin[i])
+                        particle_position[i] += extent[i];
+                      else if (particle_position[i] > origin[i] + extent[i])
+                        particle_position[i] -= extent[i];
                     }
                 }
               lost_particle->second.set_location(particle_position);
