@@ -22,6 +22,7 @@
 #include <aspect/global.h>
 #include <aspect/utilities.h>
 #include <aspect/compat.h>
+#include <aspect/geometry_model/box.h>
 
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/fe/fe_values.h>
@@ -357,7 +358,7 @@ namespace aspect
 
       if (particle_load_balancing == remove_and_add_particles)
         {
-          // Add particles
+          // TODO: Add particles
         }
     }
 
@@ -365,8 +366,12 @@ namespace aspect
     void
     World<dim>::find_all_cells()
     {
-      std::multimap<types::subdomain_id, Particle<dim> > lost_particles;
-      std::multimap<LevelInd, Particle<dim> > moved_particles;
+      // There are three reasons why a particle is not in its old cell:
+      // It moved to another cell, to another domain or it left the mesh.
+      // Sort the particles accordingly and deal with them
+      std::multimap<LevelInd, Particle<dim> >            moved_particles_cell;
+      std::multimap<types::subdomain_id, Particle<dim> > moved_particles_domain;
+      std::multimap<LevelInd, Particle<dim> >            lost_particles;
 
       // Find the cells that the particles moved to.
       // Note that the iterator in the following loop is increased in a
@@ -375,6 +380,7 @@ namespace aspect
       typename std::multimap<LevelInd, Particle<dim> >::iterator   it;
       for (it=particles.begin(); it!=particles.end();)
         {
+          // If we know the particles old cell, check if it is still inside
           if (it->first != std::make_pair(-1,-1))
             {
               const typename parallel::distributed::Triangulation<dim>::active_cell_iterator
@@ -393,6 +399,7 @@ namespace aspect
                 {}
             }
 
+          // The particle is not in its old cell. Look for the new cell.
           typename parallel::distributed::Triangulation<dim>::active_cell_iterator cell;
           try
             {
@@ -401,8 +408,8 @@ namespace aspect
           catch (GridTools::ExcPointNotFound<dim> &)
             {
               // If we can find no cell for this particle it has left the domain due
-              // to an integration error or an open boundary. Simply remove the
-              // tracer in this case.
+              // to an integration error or an open boundary.
+              lost_particles.insert(*it);
               particles.erase(it++);
               continue;
             }
@@ -413,28 +420,91 @@ namespace aspect
           if (cell->is_locally_owned())
             {
               const LevelInd found_cell = std::make_pair(cell->level(),cell->index());
-              moved_particles.insert(std::make_pair(found_cell, it->second));
+              moved_particles_cell.insert(std::make_pair(found_cell, it->second));
             }
           else
-            lost_particles.insert(std::make_pair(cell->subdomain_id(),it->second));
+            moved_particles_domain.insert(std::make_pair(cell->subdomain_id(),it->second));
 
           particles.erase(it++);
         }
-      particles.insert(moved_particles.begin(),moved_particles.end());
 
-      // If particles fell out of the mesh, put them back in at the closest point in the mesh
-      move_particles_back_in_mesh();
+      // If particles fell out of the mesh, put them back in
+      move_particles_back_in_mesh(lost_particles,
+                                  moved_particles_cell,
+                                  moved_particles_domain);
+
+      // Reinsert all local particles with their cells
+      particles.insert(moved_particles_cell.begin(),moved_particles_cell.end());
 
       // Swap lost particles between processors if we have more than one process
       if (dealii::Utilities::MPI::n_mpi_processes(this->get_mpi_communicator()) > 1)
-        send_recv_particles(lost_particles);
+        send_recv_particles(moved_particles_domain);
     }
 
     template <int dim>
     void
-    World<dim>::move_particles_back_in_mesh()
+    World<dim>::move_particles_back_in_mesh(std::multimap<LevelInd, Particle<dim> >            &lost_particles,
+                                            std::multimap<LevelInd, Particle<dim> >            &moved_particles_cell,
+                                            std::multimap<types::subdomain_id, Particle<dim> > &moved_particles_domain)
     {
-      // TODO: fix this to work with arbitrary meshes
+      // TODO: fix this to work with arbitrary meshes. Currently periodic boundaries only work for boxes.
+      const GeometryModel::Box<dim> *geometry
+      = dynamic_cast<const GeometryModel::Box<dim>*> (&this->get_geometry_model());
+
+      if (geometry != 0)
+        {
+          const Point<dim> origin = geometry->get_origin();
+          const Point<dim> extent = geometry->get_extents();
+          const std::set< std::pair< std::pair<types::boundary_id, types::boundary_id>, unsigned int> > periodic_boundaries =
+              geometry->get_periodic_boundary_pairs();
+
+          std::vector<bool> periodic(dim,false);
+          std::set< std::pair< std::pair<types::boundary_id, types::boundary_id>, unsigned int> >::const_iterator boundary =
+              periodic_boundaries.begin();
+          for (; boundary != periodic_boundaries.end(); ++boundary)
+            periodic[boundary->second] = true;
+
+          typename std::multimap<LevelInd, Particle<dim> >::iterator lost_particle = lost_particles.begin();
+          for (; lost_particle != lost_particles.end(); ++lost_particle)
+            {
+              // modify the particle position if it crossed a periodic boundary
+              Point<dim> particle_position = lost_particle->second.get_location();
+              for (unsigned int i = 0; i < dim; ++i)
+                {
+                  if (periodic[i])
+                    {
+                    if (particle_position[i] < origin[i])
+                      particle_position[i] += extent[i];
+                    else if (particle_position[i] > origin[i] + extent[i])
+                      particle_position[i] -= extent[i];
+                    }
+                }
+              lost_particle->second.set_location(particle_position);
+
+              // Try again looking for the new cell with the updated position
+              typename parallel::distributed::Triangulation<dim>::active_cell_iterator cell;
+              try
+                {
+                  cell = (GridTools::find_active_cell_around_point<> (this->get_mapping(), this->get_triangulation(), lost_particle->second.get_location())).first;
+                }
+              catch (GridTools::ExcPointNotFound<dim> &)
+                {
+                  // If we can find no cell for this particle there is no hope left
+                  // to find its cell. Simply delete the particle.
+                  continue;
+                }
+
+              // Reinsert the particle into our domain if we found its cell
+              // Mark it for MPI transfer otherwise
+              if (cell->is_locally_owned())
+                {
+                  const LevelInd found_cell = std::make_pair(cell->level(),cell->index());
+                  moved_particles_cell.insert(std::make_pair(found_cell, lost_particle->second));
+                }
+              else
+                moved_particles_domain.insert(std::make_pair(cell->subdomain_id(),lost_particle->second));
+            }
+        }
     }
 
     template <int dim>

@@ -259,13 +259,18 @@ namespace aspect
          * every particle is either on its current process and in its current
          * cell, or deleted (if it could not find its new process or cell).
          */
-        void find_all_cells();
+        void
+        find_all_cells();
 
         /**
-         * TODO: This needs to be implemented in case some particles fall out of the
+         * TODO: Implement this for arbitrary meshes.
+         * This needs to be implemented in case some particles fall out of the
          * domain. In particular for periodic boundary conditions.
          */
-        void move_particles_back_in_mesh();
+        void
+        move_particles_back_in_mesh(std::multimap<LevelInd, Particle<dim> >            &lost_particles,
+                                    std::multimap<LevelInd, Particle<dim> >            &moved_particles_cell,
+                                    std::multimap<types::subdomain_id, Particle<dim> > &moved_particles_domain);
 
         /**
          * Transfer particles that have crossed subdomain boundaries to other
@@ -281,7 +286,8 @@ namespace aspect
          * @param [in,out] send_particles All particles that should be send
          * are in this vector.
          */
-        void send_recv_particles(const std::multimap<types::subdomain_id,Particle <dim> > &send_particles);
+        void
+        send_recv_particles(const std::multimap<types::subdomain_id,Particle <dim> > &send_particles);
 
         /**
          * Initialize the particle properties of one cell.
