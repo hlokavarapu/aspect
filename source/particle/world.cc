@@ -567,7 +567,7 @@ namespace aspect
       for (unsigned int i=0; i<num_neighbors; ++i)
         MPI_Isend(&(num_send_data[i]), 1, MPI_INT, neighbors[i], 0, this->get_mpi_communicator(), &(num_requests[2*i+1]));
       MPI_Waitall(2*num_neighbors,num_requests,MPI_STATUSES_IGNORE);
-      delete num_requests;
+      delete[] num_requests;
 
       // Determine how many particles and data we will receive
       int total_recv_data = 0;
@@ -600,7 +600,7 @@ namespace aspect
             recv_ops++;
           }
       MPI_Waitall(send_ops+recv_ops,requests,MPI_STATUSES_IGNORE);
-      delete requests;
+      delete[] requests;
 
       // Put the received particles into the domain if they are in the triangulation
       const void *recv_data_it = static_cast<const void *> (&recv_data.front());
