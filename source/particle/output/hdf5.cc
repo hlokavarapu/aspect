@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2015 by the authors of the ASPECT code.
+  Copyright (C) 2015 by the authors of the ASPECT code.
 
  This file is part of ASPECT.
 
@@ -40,10 +40,9 @@ namespace aspect
 
       template <int dim>
       std::string
-      HDF5Output<dim>::output_particle_data(const std::multimap<LevelInd, Particle<dim> > &particles,
-                                            const std::vector<std::string>  &/*data_names*/,
-                                            const std::vector<unsigned int> &/*data_components*/,
-                                            const double &current_time)
+      HDF5Output<dim>::output_particle_data(const std::multimap<types::LevelInd, Particle<dim> > &particles,
+                                            const std::vector<std::pair<std::string, unsigned int> > &/*property_component_list*/,
+                                            const double current_time)
       {
         // avoid warnings about unused variables
         (void)current_time;
@@ -143,7 +142,7 @@ namespace aspect
         vel_data = new double[3*particles.size()];
         id_data = new double[particles.size()];
 
-        typename std::multimap<LevelInd, Particle<dim> >::const_iterator it;
+        typename std::multimap<types::LevelInd, Particle<dim> >::const_iterator it;
         for (i=0,it=particles.begin(); it!=particles.end(); ++i,++it)
           {
             for (d=0; d<dim; ++d)
