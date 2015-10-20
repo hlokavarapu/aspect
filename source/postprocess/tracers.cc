@@ -352,13 +352,14 @@ namespace aspect
 
       if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(integrator.get()))
         sim->initialize (this->get_simulator());
-
+      integrator->parse_parameters(prm);
 
       // Create an interpolator object depending on the specified parameter
       std_cxx11::shared_ptr<Particle::Interpolator::Interface<dim> > interpolator
       (Particle::Interpolator::create_particle_interpolator<dim> (prm));
       if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(interpolator.get()))
         sim->initialize (this->get_simulator());
+      interpolator->parse_parameters(prm);
 
 
       // Creaty an property_manager object and initialize its properties
@@ -370,6 +371,8 @@ namespace aspect
 
 
       // Initialize the particle world with the appropriate settings
+      // Ownership of generator, integrator, interpolator and property_manager
+      // is transferred to world here
       if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(&world))
         sim->initialize (this->get_simulator());
       world.initialize(generator,
