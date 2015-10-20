@@ -328,7 +328,7 @@ namespace aspect
       (Particle::Generator::create_particle_generator<dim> (prm));
 
       if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(generator.get()))
-        sim->initialize (this->get_simulator());
+        sim->initialize_simulator (this->get_simulator());
       generator->parse_parameters(prm);
 
 
@@ -341,7 +341,7 @@ namespace aspect
       if (output != NULL)
         {
           if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(output.get()))
-            sim->initialize (this->get_simulator());
+            sim->initialize_simulator (this->get_simulator());
           output->initialize();
         }
 
@@ -351,21 +351,21 @@ namespace aspect
           (Particle::Integrator::create_particle_integrator<dim> (prm));
 
       if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(integrator.get()))
-        sim->initialize (this->get_simulator());
+        sim->initialize_simulator (this->get_simulator());
       integrator->parse_parameters(prm);
 
       // Create an interpolator object depending on the specified parameter
       std_cxx11::shared_ptr<Particle::Interpolator::Interface<dim> > interpolator
       (Particle::Interpolator::create_particle_interpolator<dim> (prm));
       if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(interpolator.get()))
-        sim->initialize (this->get_simulator());
+        sim->initialize_simulator (this->get_simulator());
       interpolator->parse_parameters(prm);
 
 
       // Creaty an property_manager object and initialize its properties
       std_cxx11::shared_ptr<Particle::Property::Manager<dim> > property_manager (new Particle::Property::Manager<dim> ());
       SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(property_manager.get());
-      sim->initialize (this->get_simulator());
+      sim->initialize_simulator (this->get_simulator());
       property_manager->parse_parameters(prm);
       property_manager->initialize();
 
@@ -374,7 +374,7 @@ namespace aspect
       // Ownership of generator, integrator, interpolator and property_manager
       // is transferred to world here
       if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(&world))
-        sim->initialize (this->get_simulator());
+        sim->initialize_simulator (this->get_simulator());
       world.initialize(generator,
                        integrator,
                        interpolator,

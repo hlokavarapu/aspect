@@ -858,7 +858,6 @@ namespace aspect
     void
     World<dim>::advance_timestep()
     {
-      // Keep calling the integrator until it indicates it is finished
       do
         {
           advect_particles();
@@ -866,7 +865,7 @@ namespace aspect
           // Find the cells that the particles moved to
           sort_particles_in_subdomains_and_cells();
         }
-      // continue integration until integrator update returns false
+      // Keep calling the integrator until it indicates it is finished
       while (integrator->new_integration_step());
 
       // Update particle properties

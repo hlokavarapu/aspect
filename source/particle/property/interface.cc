@@ -279,7 +279,7 @@ namespace aspect
                                      (particle_property));
 
             if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(&*property_list.back()))
-              sim->initialize (this->get_simulator());
+              sim->initialize_simulator (this->get_simulator());
 
             property_list.back()->parse_parameters (prm);
           }
