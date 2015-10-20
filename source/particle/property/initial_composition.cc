@@ -29,9 +29,9 @@ namespace aspect
       template <int dim>
       void
       InitialComposition<dim>::initialize_one_particle_property(const Point<dim> &,
-                                                   const Vector<double> &solution,
-                                                   const std::vector<Tensor<1,dim> > &,
-                                                   std::vector<double> &data) const
+                                                                const Vector<double> &solution,
+                                                                const std::vector<Tensor<1,dim> > &,
+                                                                std::vector<double> &data) const
       {
         for (unsigned int i = 0; i < this->n_compositional_fields(); i++)
           data.push_back(solution[this->introspection().component_indices.compositional_fields[i]]);

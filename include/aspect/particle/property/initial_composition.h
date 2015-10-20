@@ -61,9 +61,9 @@ namespace aspect
           virtual
           void
           initialize_one_particle_property (const Point<dim> &position,
-                               const Vector<double> &solution,
-                               const std::vector<Tensor<1,dim> > &gradients,
-                               std::vector<double> &particle_properties) const;
+                                            const Vector<double> &solution,
+                                            const std::vector<Tensor<1,dim> > &gradients,
+                                            std::vector<double> &particle_properties) const;
 
           /**
            * Set up the information about the names and number of components

@@ -29,9 +29,9 @@ namespace aspect
       template <int dim>
       void
       PTPath<dim>::initialize_one_particle_property(const Point<dim> &,
-                                       const Vector<double> &solution,
-                                       const std::vector<Tensor<1,dim> > &,
-                                       std::vector<double> &data) const
+                                                    const Vector<double> &solution,
+                                                    const std::vector<Tensor<1,dim> > &,
+                                                    std::vector<double> &data) const
       {
         data.push_back(solution[this->introspection().component_indices.pressure]);
         data.push_back(solution[this->introspection().component_indices.temperature]);
@@ -40,10 +40,10 @@ namespace aspect
       template <int dim>
       void
       PTPath<dim>::update_one_particle_property(const unsigned int data_position,
-                                   const Point<dim> &,
-                                   const Vector<double> &solution,
-                                   const std::vector<Tensor<1,dim> > &,
-                                   std::vector<double> &data) const
+                                                const Point<dim> &,
+                                                const Vector<double> &solution,
+                                                const std::vector<Tensor<1,dim> > &,
+                                                std::vector<double> &data) const
       {
         data[data_position] = solution[this->introspection().component_indices.pressure];
         data[data_position+1] = solution[this->introspection().component_indices.temperature];

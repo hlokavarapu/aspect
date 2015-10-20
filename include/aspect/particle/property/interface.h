@@ -100,9 +100,9 @@ namespace aspect
           virtual
           void
           initialize_one_particle_property (const Point<dim> &position,
-                               const Vector<double> &solution,
-                               const std::vector<Tensor<1,dim> > &gradients,
-                               std::vector<double> &particle_properties) const;
+                                            const Vector<double> &solution,
+                                            const std::vector<Tensor<1,dim> > &gradients,
+                                            std::vector<double> &particle_properties) const;
 
           /**
            * Update function. This function is called every time an update is
@@ -133,10 +133,10 @@ namespace aspect
           virtual
           void
           update_one_particle_property (const unsigned int data_position,
-                           const Point<dim> &position,
-                           const Vector<double> &solution,
-                           const std::vector<Tensor<1,dim> > &gradients,
-                           std::vector<double> &particle_properties) const;
+                                        const Point<dim> &position,
+                                        const Vector<double> &solution,
+                                        const std::vector<Tensor<1,dim> > &gradients,
+                                        std::vector<double> &particle_properties) const;
 
           /**
            * Returns an enum, which determines at what times particle properties
@@ -235,8 +235,8 @@ namespace aspect
            */
           void
           initialize_one_particle (Particle<dim> &particle,
-                               const Vector<double> &solution,
-                               const std::vector<Tensor<1,dim> > &gradients) const;
+                                   const Vector<double> &solution,
+                                   const std::vector<Tensor<1,dim> > &gradients) const;
 
           /**
            * Update function for particle properties. This function is
@@ -244,8 +244,8 @@ namespace aspect
            */
           void
           update_one_particle (Particle<dim> &particle,
-                           const Vector<double> &solution,
-                           const std::vector<Tensor<1,dim> > &gradients) const;
+                               const Vector<double> &solution,
+                               const std::vector<Tensor<1,dim> > &gradients) const;
 
           /**
            * Returns an enum, which denotes at what time this class needs to

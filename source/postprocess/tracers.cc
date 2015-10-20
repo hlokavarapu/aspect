@@ -141,7 +141,7 @@ namespace aspect
     void Tracers<dim>::serialize (Archive &ar, const unsigned int)
     {
       ar &next_data_output_time
-         &initialized
+      &initialized
       ;
     }
 
@@ -348,7 +348,7 @@ namespace aspect
 
       // Create an integrator object depending on the specified parameter
       std_cxx11::shared_ptr<Particle::Integrator::Interface<dim> >   integrator
-          (Particle::Integrator::create_particle_integrator<dim> (prm));
+      (Particle::Integrator::create_particle_integrator<dim> (prm));
 
       if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(integrator.get()))
         sim->initialize_simulator (this->get_simulator());

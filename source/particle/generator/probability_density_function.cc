@@ -66,7 +66,7 @@ namespace aspect
         // Build the map between integrated probability density and cell
         std::map<double, types::LevelInd> cell_weights;
         typename DoFHandler<dim>::active_cell_iterator cell = this->get_dof_handler().begin_active(),
-            endc = this->get_dof_handler().end();
+                                                       endc = this->get_dof_handler().end();
         for (unsigned int i = 0; cell!=endc; ++cell)
           if (cell->is_locally_owned())
             {

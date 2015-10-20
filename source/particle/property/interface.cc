@@ -35,18 +35,18 @@ namespace aspect
       template <int dim>
       void
       Interface<dim>::initialize_one_particle_property (const Point<dim> &,
-                                           const Vector<double> &,
-                                           const std::vector<Tensor<1,dim> > &,
-                                           std::vector<double> &) const
+                                                        const Vector<double> &,
+                                                        const std::vector<Tensor<1,dim> > &,
+                                                        std::vector<double> &) const
       {}
 
       template <int dim>
       void
       Interface<dim>::update_one_particle_property (const unsigned int,
-                                       const Point<dim> &,
-                                       const Vector<double> &,
-                                       const std::vector<Tensor<1,dim> > &,
-                                       std::vector<double> &) const
+                                                    const Point<dim> &,
+                                                    const Vector<double> &,
+                                                    const std::vector<Tensor<1,dim> > &,
+                                                    std::vector<double> &) const
       {}
 
       template <int dim>
@@ -108,8 +108,8 @@ namespace aspect
       template <int dim>
       void
       Manager<dim>::initialize_one_particle (Particle<dim> &particle,
-                                         const Vector<double> &solution,
-                                         const std::vector<Tensor<1,dim> > &gradients) const
+                                             const Vector<double> &solution,
+                                             const std::vector<Tensor<1,dim> > &gradients) const
       {
         std::vector<double> particle_properties (0);
         particle.set_n_property_components(n_property_components);
@@ -117,9 +117,9 @@ namespace aspect
              p = property_list.begin(); p!=property_list.end(); ++p)
           {
             (*p)->initialize_one_particle_property(particle.get_location(),
-                                      solution,
-                                      gradients,
-                                      particle_properties);
+                                                   solution,
+                                                   gradients,
+                                                   particle_properties);
           }
         particle.set_properties(particle_properties);
       }
@@ -127,18 +127,18 @@ namespace aspect
       template <int dim>
       void
       Manager<dim>::update_one_particle (Particle<dim> &particle,
-                                     const Vector<double> &solution,
-                                     const std::vector<Tensor<1,dim> > &gradients) const
+                                         const Vector<double> &solution,
+                                         const std::vector<Tensor<1,dim> > &gradients) const
       {
         unsigned int property = 0;
         for (typename std::list<std_cxx11::shared_ptr<Interface<dim> > >::const_iterator
              p = property_list.begin(); p!=property_list.end(); ++p,++property)
           {
             (*p)->update_one_particle_property(positions[property],
-                                  particle.get_location(),
-                                  solution,
-                                  gradients,
-                                  particle.get_properties());
+                                               particle.get_location(),
+                                               solution,
+                                               gradients,
+                                               particle.get_properties());
           }
       }
 

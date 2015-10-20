@@ -684,8 +684,8 @@ namespace aspect
       for (unsigned int i = 0; it!=end_particle; ++it,++i)
         {
           property_manager->initialize_one_particle(it->second,
-                                                values[i],
-                                                gradients[i]);
+                                                    values[i],
+                                                    gradients[i]);
         }
     }
 
@@ -731,8 +731,8 @@ namespace aspect
       for (unsigned int i = 0; it!=end_particle; ++it,++i)
         {
           property_manager->update_one_particle(it->second,
-                                            values[i],
-                                            gradients[i]);
+                                                values[i],
+                                                gradients[i]);
         }
     }
 

@@ -121,10 +121,10 @@ namespace aspect
            */
           std::multimap<types::LevelInd, Particle<dim> >
           generate_particles_in_subdomain (const std::map<double,types::LevelInd> &cells,
-                                                const double global_weight,
-                                                const double start_weight,
-                                                const types::particle_index num_particles,
-                                                const types::particle_index start_id);
+                                           const double global_weight,
+                                           const double start_weight,
+                                           const types::particle_index num_particles,
+                                           const types::particle_index start_id);
 
           /**
            * This function loops over all active cells in the local subdomain
