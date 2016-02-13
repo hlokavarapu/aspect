@@ -34,8 +34,8 @@ namespace aspect
         virtual
         void stokes_solution (const Point<dim> &p, Vector<double> &value) const
         {
-          value(0) = -p(1);
-          value(1) = p(0);
+          value(0) = -p(1)*2*dealii::numbers::PI;
+          value(1) = p(0)*2*dealii::numbers::PI;
           if (dim == 3)
             value(2) = 0;
           value(dim) = 0;
