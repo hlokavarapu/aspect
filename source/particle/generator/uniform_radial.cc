@@ -67,7 +67,7 @@ namespace aspect
 
         // Generate particles
 
-        types::particle_index particle_index = 0;
+        types::particle_index particle_index = Utilities::MPI::this_mpi_process ( this->get_mpi_communicator()) * (n_tracers + 25);
         std_cxx11::array<double,dim> spherical_coordinates;
         for (unsigned int i = 0; i < radial_layers; ++i)
           {
