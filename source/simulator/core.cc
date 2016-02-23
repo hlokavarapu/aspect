@@ -2072,6 +2072,8 @@ namespace aspect
 
         computing_timer.exit_section();
       }
+    else
+        initialize_tracers ();
 
     // start the principal loop over time steps:
     do
