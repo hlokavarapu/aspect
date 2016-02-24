@@ -50,7 +50,7 @@ namespace aspect
             spacing[i] = P_diff[i] / fmax(n_particles_per_direction[i] - 1,1);
           }
 
-        types::particle_index particle_index = 0;
+        types::particle_index particle_index = Utilities::MPI::this_mpi_process ( this->get_mpi_communicator()) * (n_tracers + 25);
 
         for (unsigned int i = 0; i < n_particles_per_direction[0]; ++i)
           {
