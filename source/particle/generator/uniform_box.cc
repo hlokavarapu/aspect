@@ -56,6 +56,9 @@ namespace aspect
           {
             for (unsigned int j = 0; j < n_particles_per_direction[1]; ++j)
               {
+                // Assign unique global ids to a particle
+                particle_index++;
+
                 if (dim == 2)
                   {
                     const Point<dim> particle_position = Point<dim> (P_min[0]+i*spacing[0],P_min[1]+j*spacing[1]);
@@ -65,7 +68,6 @@ namespace aspect
                     try
                       {
                         particles.insert(this->generate_particle(particle_position,particle_index));
-                        particle_index++;
                       }
                     catch (ExcParticlePointNotInDomain &)
                       {}
@@ -80,7 +82,6 @@ namespace aspect
                       try
                         {
                           particles.insert(this->generate_particle(particle_position,particle_index));
-                          particle_index++;
                         }
                       catch (ExcParticlePointNotInDomain &)
                         {}
