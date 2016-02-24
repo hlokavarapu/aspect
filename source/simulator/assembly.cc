@@ -400,7 +400,7 @@ namespace aspect
                                  GeometryInfo<dim>::max_children_per_face * GeometryInfo<dim>::faces_per_cell
                                  :
                                  0),
-                                std::vector<types::global_dof_index>(finite_element.dofs_per_cell,Utilities::signaling_nan<double>()))
+                                std::vector<types::global_dof_index>(finite_element.dofs_per_cell))
         {}
 
 
@@ -3037,6 +3037,11 @@ namespace aspect
                                                           const AdvectionField &advection_field) const; \
   template void Simulator<dim>::build_advection_preconditioner (const AdvectionField &, \
                                                                 std_cxx11::shared_ptr<aspect::LinearAlgebra::PreconditionILU> &preconditioner); \
+  template void Simulator<dim>::local_assemble_advection_face_terms ( \
+                                                                      const AdvectionField                        &advection_field, \
+                                                                      const DoFHandler<dim>::active_cell_iterator &cell, \
+                                                                      internal::Assembly::Scratch::AdvectionSystem<dim>  &scratch, \
+                                                                      internal::Assembly::CopyData::AdvectionSystem<dim> &data); \
   template void Simulator<dim>::local_assemble_advection_system ( \
                                                                   const AdvectionField          &advection_field, \
                                                                   const Vector<double>           &viscosity_per_cell, \
