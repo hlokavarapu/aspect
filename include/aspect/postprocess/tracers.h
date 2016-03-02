@@ -167,6 +167,24 @@ namespace aspect
          * last_output_time variable.
          */
         void set_last_output_time (const double current_time);
+
+        /**
+         * Interval between injection of tracers (in years if appropriate simulation
+         * parameter is set, otherwise seconds)
+         */
+        double                          inject_interval;
+
+        /**
+         * Records time for next injection to occur
+         */
+        double                          last_inject_time;
+
+        /**
+         * Save the last time injection occurred assuming that
+         * injection occurred at current_time, and set the result in the
+         * last_inject_time variable.
+         */
+        void set_last_inject_time (const double current_time);
     };
   }
 }

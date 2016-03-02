@@ -41,7 +41,8 @@ namespace aspect
     Tracers<dim>::Tracers ()
       :
 
-      last_output_time(std::numeric_limits<double>::quiet_NaN())
+      last_output_time(std::numeric_limits<double>::quiet_NaN()),
+      last_inject_time(std::numeric_limits<double>::quiet_NaN())
     {}
 
     template <int dim>
@@ -86,12 +87,26 @@ namespace aspect
         {
           last_output_time = this->get_time() - output_interval;
         }
+   
+      if (std::isnan(last_inject_time))
+        {
+          last_inject_time = this->get_time();
+        }
+      else if ((this->get_time() < last_inject_time + inject_interval)) 
+        { 
+          ;
+        }
+      else
+        {
+          world.inject_particles();
+          set_last_inject_time (this->get_time());
+        } 
 
       // Advance the particles in the world to the current time
       world.advance_timestep();
 
       statistics.add_value("Number of advected particles",world.n_global_particles());
-
+ 
       // If it's not time to generate an output file or we do not write output
       // return early with the number of particles that were advected
       if ((this->get_time() < last_output_time + output_interval) || !output)
@@ -138,7 +153,17 @@ namespace aspect
         }
     }
 
-
+    template <int dim>
+    void
+    Tracers<dim>::set_last_inject_time (const double current_time)
+    {
+      if (inject_interval > 0)
+        {
+          const double magic = 1.0+2.0*std::numeric_limits<double>::epsilon();
+          last_inject_time = last_inject_time + std::floor((current_time-last_inject_time)/inject_interval*magic) * inject_interval/magic;
+        }
+    }
+          
     template <int dim>
     template <class Archive>
     void Tracers<dim>::serialize (Archive &ar, const unsigned int)
@@ -257,6 +282,12 @@ namespace aspect
                              "Units: years if the "
                              "'Use years in output instead of seconds' parameter is set; "
                              "seconds otherwise.");
+          prm.declare_entry ("Time between injection of tracers", "100",
+                             Patterns::Double (0),
+                             "The time interval between each injection of particles"
+                             "at the specified injection domain"
+                             "'Use years in output instead of seconds' parameter is set; "
+                             "seconds otherwise.");
           prm.declare_entry ("Load balancing strategy", "none",
                              Patterns::Selection ("none|remove particles|"
                                                   "remove and add particles|repartition"),
@@ -287,6 +318,7 @@ namespace aspect
       prm.leave_subsection ();
 
       Particle::Generator::declare_parameters<dim>(prm);
+      Particle::Injector::declare_parameters<dim>(prm);
       Particle::Output::declare_parameters<dim>(prm);
       Particle::Integrator::declare_parameters<dim>(prm);
       Particle::Interpolator::declare_parameters<dim>(prm);
@@ -325,6 +357,10 @@ namespace aspect
           if (this->convert_output_to_years())
             output_interval *= year_in_seconds;
 
+          inject_interval = prm.get_double ("Time between injection of tracers");
+          if (this->convert_output_to_years())
+            inject_interval *= year_in_seconds;
+
           max_tracers_per_cell = prm.get_integer("Maximum tracers per cell");
           tracer_weight = prm.get_integer("Tracer weight");
 
@@ -351,6 +387,17 @@ namespace aspect
         sim->initialize_simulator (this->get_simulator());
       generator->parse_parameters(prm);
 
+      // Create a injector object based on the pararmeter file
+      Particle::Injector::Interface<dim> *injector 
+        = Particle::Injector::create_particle_injector<dim> (prm);
+      
+      // Allow no injector plugin to be specified, in which case no particles should be injected.
+      if (injector) 
+        {
+          if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(injector))
+            sim->initialize_simulator (this->get_simulator());
+          injector->parse_parameters(prm);
+        }
 
       // Create an output object depending on what the parameters specify
       output.reset(Particle::Output::create_particle_output<dim>
@@ -398,6 +445,7 @@ namespace aspect
       // Ownership of generator, integrator, interpolator and property_manager
       // is transferred to world here
       world.initialize(generator,
+                       injector,
                        integrator,
                        interpolator,
                        property_manager,

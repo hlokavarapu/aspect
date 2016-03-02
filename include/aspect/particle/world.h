@@ -25,6 +25,7 @@
 #include <aspect/particle/particle.h>
 
 #include <aspect/particle/generator/interface.h>
+#include <aspect/particle/injector/interface.h>
 #include <aspect/particle/integrator/interface.h>
 #include <aspect/particle/interpolator/interface.h>
 #include <aspect/particle/property/interface.h>
@@ -96,6 +97,7 @@ namespace aspect
          *
          */
         void initialize(Generator::Interface<dim> *generator,
+                        Injector::Interface<dim> *injector,
                         Integrator::Interface<dim> *integrator,
                         Interpolator::Interface<dim> *interpolator,
                         Property::Manager<dim> *manager,
@@ -112,9 +114,15 @@ namespace aspect
         get_property_manager() const;
 
         /**
-         * Initialize the particle properties.
+         * Generate particles.
          */
         void generate_particles();
+      
+        /**
+         * Inject particles periodically.
+         */
+        void inject_particles();
+
         /**
          * Initialize the particle properties.
          */
@@ -225,6 +233,11 @@ namespace aspect
          * Generation scheme for creating particles in this world
          */
         std_cxx11::unique_ptr<Generator::Interface<dim> > generator;
+
+        /**
+         * Injection scheme for injecting particles in this world
+         */
+        std_cxx11::unique_ptr<Injector::Interface<dim> > injector;
 
         /**
          * Integration scheme for moving particles in this world

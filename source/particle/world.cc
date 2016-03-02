@@ -65,6 +65,7 @@ namespace aspect
     template <int dim>
     void
     World<dim>::initialize(Generator::Interface<dim> *particle_generator,
+                           Injector::Interface<dim> *particle_injector,
                            Integrator::Interface<dim> *particle_integrator,
                            Interpolator::Interface<dim> *property_interpolator,
                            Property::Manager<dim> *manager,
@@ -73,6 +74,7 @@ namespace aspect
                            const unsigned int weight)
     {
       generator.reset(particle_generator);
+      injector.reset(particle_injector);
       integrator.reset(particle_integrator);
       interpolator.reset(property_interpolator);
       property_manager.reset(manager);
@@ -800,6 +802,14 @@ namespace aspect
     World<dim>::generate_particles()
     {
       generator->generate_particles(particles);
+      update_n_global_particles();
+    }
+
+    template <int dim>
+    void
+    World<dim>::inject_particles()
+    {
+      injector->inject_particles(particles, this->n_global_particles());
       update_n_global_particles();
     }
 
