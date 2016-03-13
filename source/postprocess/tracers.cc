@@ -87,9 +87,12 @@ namespace aspect
         {
           last_output_time = this->get_time() - output_interval;
         }
-   
+  
+      // if this is the first time we get here, we inject a set of particles
+      // immediately. 
       if (std::isnan(last_inject_time))
         {
+          world.inject_particles();
           last_inject_time = this->get_time();
         }
       else if ((this->get_time() < last_inject_time + inject_interval)) 
@@ -227,8 +230,10 @@ namespace aspect
     void
     Tracers<dim>::load (const std::map<std::string, std::string> &status_strings)
     {
+      // Wipe all tracer data from restart point
+
       // see if something was saved
-      if (status_strings.find("Tracers") != status_strings.end())
+/*      if (status_strings.find("Tracers") != status_strings.end())
         {
           std::istringstream is (status_strings.find("Tracers")->second);
           aspect::iarchive ia (is);
@@ -263,6 +268,7 @@ namespace aspect
           if (output)
             output->load(is);
         }
+*/
     }
 
 
