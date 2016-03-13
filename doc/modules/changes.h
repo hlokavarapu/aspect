@@ -5,6 +5,16 @@
  * 1.3. All entries are signed with the names of the author. </p>
  *
  * <ol>
+ * <li> Fixed: The uniform radial and uniform box particle generators now 
+ * produce globally unique particle IDs.
+ * <br>
+ * (Harsha Lokavarapu, Gerry Puckett, 2016/03/04)
+ *
+ * <li> Fixed: The 'Simpler' material model produced floating point exceptions
+ * in models with compositional fields. This is fixed now.
+ * <br>
+ * (Lev Karatun, Rene Gassmoeller, 2016/02/26)
+ *
  * <li> New: The advection systems (for temperature and compositions) can now 
  * be discretized using the symmetric interior penalty discontinuous Galerkin 
  * method. This can be useful to explore solution without adding artificial 

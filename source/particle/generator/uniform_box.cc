@@ -71,6 +71,7 @@ namespace aspect
                       }
                     catch (ExcParticlePointNotInDomain &)
                       {}
+                    particle_index++;
                   }
                 else if (dim == 3)
                   for (unsigned int k = 0; k < n_particles_per_direction[2]; ++k)
@@ -85,6 +86,7 @@ namespace aspect
                         }
                       catch (ExcParticlePointNotInDomain &)
                         {}
+                      particle_index++;
                     }
                 else
                   ExcNotImplemented();
