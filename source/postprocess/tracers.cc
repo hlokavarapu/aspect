@@ -387,18 +387,6 @@ namespace aspect
         sim->initialize_simulator (this->get_simulator());
       generator->parse_parameters(prm);
 
-      // Create a injector object based on the pararmeter file
-      Particle::Injector::Interface<dim> *injector 
-        = Particle::Injector::create_particle_injector<dim> (prm);
-      
-      // Allow no injector plugin to be specified, in which case no particles should be injected.
-      if (injector) 
-        {
-          if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(injector))
-            sim->initialize_simulator (this->get_simulator());
-          injector->parse_parameters(prm);
-        }
-
       // Create an output object depending on what the parameters specify
       output.reset(Particle::Output::create_particle_output<dim>
                    (prm));
@@ -437,6 +425,17 @@ namespace aspect
       property_manager->parse_parameters(prm);
       property_manager->initialize();
 
+      // Create an injector object based on the pararmeter file
+      Particle::Injector::Interface<dim> *injector 
+        = Particle::Injector::create_particle_injector<dim> (prm);
+      
+      // Allow no injector plugin to be specified, in which case no particles should be injected.
+      if (injector) 
+        {
+          if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(injector))
+            sim->initialize_simulator (this->get_simulator());
+          injector->parse_parameters(prm);
+        }
 
       if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(&world))
         sim->initialize_simulator (this->get_simulator());

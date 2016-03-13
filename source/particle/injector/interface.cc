@@ -20,6 +20,8 @@
 
 #include <aspect/particle/injector/interface.h>
 
+#include <deal.II/base/quadrature_lib.h>
+#include <deal.II/fe/fe_values.h>
 #include <deal.II/base/std_cxx1x/tuple.h>
 #include <deal.II/grid/grid_tools.h>
 
@@ -33,7 +35,13 @@ namespace aspect
       template <int dim>
       Interface<dim>::~Interface ()
       {}
-
+ 
+      template <int dim>
+      void Interface<dim>::initialize (Property::Manager<dim> *manager)
+      {
+        property_manager.reset(manager);
+      }
+   
       template <int dim>
       std::pair<types::LevelInd,Particle<dim> >
       Interface<dim>::inject_particle(const Point<dim> &position,
@@ -51,9 +59,41 @@ namespace aspect
             AssertThrow(it->is_locally_owned(),
                         ExcParticlePointNotInDomain());
 
-            const Particle<dim> particle(position, id);
+            Particle<dim> particle(position, id);
             const types::LevelInd cell(it->level(), it->index());
-            return std::make_pair(cell,particle);
+       
+            // Initialize the particle properties
+            if (property_manager->get_n_property_components() > 0)
+              {
+                const unsigned int particles_in_cell = 1;
+                const unsigned int solution_components = this->introspection().n_components;
+
+                Vector<double> value(solution_components);
+                std::vector<Tensor<1,dim> > gradient (solution_components,Tensor<1,dim>());
+
+                std::vector<Vector<double> >  values (particles_in_cell,value);
+                std::vector<std::vector<Tensor<1,dim> > > gradients(particles_in_cell,gradient);
+
+                std::vector<Point<dim> >     particle_points(particles_in_cell);
+                particle_points[0] = this->get_mapping().transform_real_to_unit_cell(it, position);
+                const Quadrature<dim> quadrature_formula(particle_points);
+                      FEValues<dim> fe_value (this->get_mapping(),
+                              this->get_fe(),
+                              quadrature_formula,
+                              update_values |
+                              update_gradients);
+
+                fe_value.reinit (it);
+                fe_value.get_function_values (this->get_solution(),
+                                               values);
+                fe_value.get_function_gradients (this->get_solution(),
+                                                  gradients);
+                property_manager->initialize_one_particle(particle,
+                                                           values[0],
+                                                            gradients[0]);
+             }
+
+             return std::make_pair(cell,particle);
           }
         catch (GridTools::ExcPointNotFound<dim> &)
           {

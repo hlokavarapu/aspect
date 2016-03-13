@@ -22,6 +22,9 @@
 #define __aspect__particle_injector_interface_h
 
 #include <aspect/particle/particle.h>
+
+#include <aspect/particle/property/interface.h>
+
 #include <aspect/plugins.h>
 #include <aspect/simulator_access.h>
 
@@ -56,7 +59,7 @@ namespace aspect
 #endif
 
       /**
-       * Abstract base class used for classes that generate particles.
+       * Abstract base class used for classes that inject particles.
        *
        * @ingroup ParticleGenerators
        */
@@ -69,6 +72,8 @@ namespace aspect
            * and destroyed through pointers to the base class.
            */
           virtual ~Interface ();
+
+          void initialize (Property::Manager<dim> *manager);
 
           /**
            * Generate particles. Every derived class
@@ -122,6 +127,13 @@ namespace aspect
           std::pair<types::LevelInd,Particle<dim> >
           inject_particle(const Point<dim> &position,
                             const types::particle_index id) const;
+        private:
+         /**
+         * The property manager stores information about the additional
+         * particle properties and handles the initialization and update of
+         * these properties.
+         */
+         std_cxx11::unique_ptr<Property::Manager<dim> > property_manager;
       };
 
       /**

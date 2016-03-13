@@ -74,6 +74,7 @@ namespace aspect
                            const unsigned int weight)
     {
       generator.reset(particle_generator);
+      particle_injector->initialize(manager);
       injector.reset(particle_injector);
       integrator.reset(particle_integrator);
       interpolator.reset(property_interpolator);
@@ -841,6 +842,35 @@ namespace aspect
               }
         }
     }
+
+    /*template <int dim>
+    void
+    World<dim>::initialize_particles(const types::particle_index minId, const types::particle_index maxId)
+    {
+      // TODO: Change this loop over all cells to use the WorkStream interface
+
+      if (property_manager->get_n_property_components() > 0)
+        {
+          // Loop over all cells and initialize the particles cell-wise
+          typename DoFHandler<dim>::active_cell_iterator
+          cell = this->get_dof_handler().begin_active(),
+          endc = this->get_dof_handler().end();
+
+          for (; cell!=endc; ++cell)
+            if (cell->is_locally_owned())
+              {
+                std::pair< const typename std::multimap<types::LevelInd,Particle <dim> >::iterator,
+                    const typename std::multimap<types::LevelInd,Particle <dim> >::iterator>
+                    particle_range_in_cell = particles.equal_range(std::make_pair(cell->level(),cell->index()));
+
+                // Only initialize particles, if there are any in this cell
+                if (particle_range_in_cell.first != particle_range_in_cell.second)
+                  local_initialize_particles(cell,
+                                             particle_range_in_cell.first,
+                                             particle_range_in_cell.second);
+              }
+        }
+    }*/
 
     template <int dim>
     void

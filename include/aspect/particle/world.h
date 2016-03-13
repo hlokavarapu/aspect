@@ -127,6 +127,7 @@ namespace aspect
          * Initialize the particle properties.
          */
         void initialize_particles();
+        //void initialize_particles(const types::particle_index minId, const types::particle_index maxId);
 
         /**
          * Access to particles in this world.
