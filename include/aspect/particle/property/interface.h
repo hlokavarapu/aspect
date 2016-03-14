@@ -113,7 +113,7 @@ namespace aspect
            * Update function. This function is called every time an update is
            * request by need_update() for every particle for every property.
            * It is obvious that
-           * this function is called a lot, so its code should be efficient.
+           * this function is called a lot, so its code should be efficient.cd
            * The interface provides a default implementation that does nothing,
            * therefore derived plugins that do not require an update do not
            * need to implement this function.

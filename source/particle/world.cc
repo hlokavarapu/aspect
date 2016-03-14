@@ -810,6 +810,7 @@ namespace aspect
     void
     World<dim>::inject_particles()
     {
+        if (injector == NULL) return;
       injector->inject_particles(particles, this->n_global_particles());
       update_n_global_particles();
     }

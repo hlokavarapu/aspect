@@ -34,12 +34,15 @@ namespace aspect
     {
       template <int dim>
       Interface<dim>::~Interface ()
-      {}
+      {
+        property_manager.release();
+      }
  
       template <int dim>
       void Interface<dim>::initialize (Property::Manager<dim> *manager)
       {
-        property_manager.reset(manager);
+        if ( this != NULL )
+          property_manager.reset(manager);
       }
    
       template <int dim>
@@ -181,7 +184,7 @@ namespace aspect
               = std_cxx1x::get<dim>(registered_plugins).get_pattern_of_names ();
 
             prm.declare_entry ("Particle injector name", "uniform box",
-                               Patterns::Selection (pattern_of_names),
+                               Patterns::Selection (pattern_of_names + "|none"),
                                "Select one of the following models:\n\n"
                                +
                                std_cxx1x::get<dim>(registered_plugins).get_description_string());
