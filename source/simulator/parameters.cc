@@ -150,7 +150,7 @@ namespace aspect
                        "heat conduction in determining the length of each time step.");
 
     prm.declare_entry ("Nonlinear solver scheme", "IMPES",
-                       Patterns::Selection ("IMPES|iterated IMPES|iterated Stokes|Stokes only|Advection only"),
+                       Patterns::Selection ("IMPES|iterated IMPES|iterated Stokes|Stokes only|Advection only|None"),
                        "The kind of scheme used to resolve the nonlinearity in the system. "
                        "'IMPES' is the classical IMplicit Pressure Explicit Saturation scheme "
                        "in which ones solves the temperatures and Stokes equations exactly "
@@ -164,7 +164,8 @@ namespace aspect
                        "the temperature; mostly useful for Stokes benchmarks). The 'Advection only'"
                        "scheme only solves the temperature and other advection systems and instead "
                        "of solving for the Stokes system, a prescribed velocity and pressure is "
-                       "used");
+                       "used. The 'None' scheme solves no systems. Generally used in combination"
+                       "with prescribed stokes.");
 
     prm.declare_entry ("Nonlinear solver tolerance", "1e-5",
                        Patterns::Double(0,1),
@@ -753,6 +754,8 @@ namespace aspect
       nonlinear_solver = NonlinearSolver::Stokes_only;
     else if (prm.get ("Nonlinear solver scheme") == "Advection only")
       nonlinear_solver = NonlinearSolver::Advection_only;
+    else if (prm.get ("Nonlinear solver scheme") == "None")
+      nonlinear_solver = NonlinearSolver::None;
     else
       AssertThrow (false, ExcNotImplemented());
 
