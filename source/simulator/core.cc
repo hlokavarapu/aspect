@@ -343,7 +343,7 @@ namespace aspect
 
       const std::set<types::boundary_id> all_boundary_indicators
         = geometry_model->get_used_boundary_indicators();
-      if (parameters.nonlinear_solver!=NonlinearSolver::Advection_only)
+      if (parameters.nonlinear_solver!=NonlinearSolver::Advection_only || parameters.nonlinear_solver!=NonlinearSolver::None)
         {
           // next make sure that all listed indicators are actually used by
           // this geometry
@@ -361,7 +361,7 @@ namespace aspect
           // next make sure that there are no listed indicators
           for (unsigned  int i = 0; i<sizeof(boundary_indicator_lists)/sizeof(boundary_indicator_lists[0]); ++i)
             AssertThrow (boundary_indicator_lists[i].empty(),
-                         ExcMessage ("With solver type Advection only, one cannot set boundary conditions for velocity."));
+                         ExcMessage ("With solver type Advection only or None, one cannot set boundary conditions for velocity."));
         }
 
 
@@ -458,16 +458,16 @@ namespace aspect
       }
 
     // Make sure we only have a prescribed Stokes plugin if needed
-    if (parameters.nonlinear_solver==NonlinearSolver::Advection_only)
+    if (parameters.nonlinear_solver==NonlinearSolver::Advection_only || parameters.nonlinear_solver==NonlinearSolver::None)
       {
         AssertThrow(prescribed_stokes_solution.get()!=NULL,
-                    ExcMessage("For 'Advection only' solver you need to provide a Stokes plugin")
+                    ExcMessage("For 'Advection only' or 'None' solver you need to provide a Stokes plugin")
                    );
       }
     else
       {
         AssertThrow(prescribed_stokes_solution.get()==NULL,
-                    ExcMessage("The prescribed stokes plugin you selected only works with solver type 'Advection only' ")
+                    ExcMessage("The prescribed stokes plugin you selected only works with solver type 'Advection only' or 'None' ")
                    );
       }
 
@@ -1972,6 +1972,37 @@ namespace aspect
               current_linearization_point.block(introspection.block_indices.compositional_fields[c])
                 = solution.block(introspection.block_indices.compositional_fields[c]);
             }
+
+          break;
+        }
+
+        case NonlinearSolver::None:
+        {
+          // Identical to IMPES except does not solve Stokes equation or temperature system
+          if (parameters.free_surface_enabled)
+            free_surface->execute ();
+
+          LinearAlgebra::BlockVector distributed_stokes_solution (introspection.index_sets.system_partitioning, mpi_communicator);
+
+          VectorFunctionFromVectorFunctionObject<dim> func(std_cxx1x::bind (&PrescribedStokesSolution::Interface<dim>::stokes_solution,
+                                                                            std_cxx1x::cref(*prescribed_stokes_solution),
+                                                                            std_cxx1x::_1,
+                                                                            std_cxx1x::_2),
+                                                           0,
+                                                           dim+1, //velocity and pressure
+                                                           introspection.n_components);
+
+          VectorTools::interpolate (mapping, dof_handler, func, distributed_stokes_solution);
+
+          const unsigned int block_vel = introspection.block_indices.velocities;
+          const unsigned int block_p = introspection.block_indices.pressure;
+
+          // distribute hanging node and
+          // other constraints
+          current_constraints.distribute (distributed_stokes_solution);
+
+          solution.block(block_vel) = distributed_stokes_solution.block(block_vel);
+          solution.block(block_p) = distributed_stokes_solution.block(block_p);
 
           break;
         }
