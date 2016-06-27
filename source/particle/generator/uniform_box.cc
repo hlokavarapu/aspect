@@ -25,6 +25,7 @@ DEAL_II_DISABLE_EXTRA_DIAGNOSTICS
 DEAL_II_ENABLE_EXTRA_DIAGNOSTICS
 
 #include <deal.II/base/std_cxx11/array.h>
+#include <aspect/geometry_model/box.h>
 
 
 namespace aspect
@@ -56,10 +57,15 @@ namespace aspect
         typename DoFHandler<dim>::active_cell_iterator cell = this->get_dof_handler().begin_active(),
                 endc = this->get_dof_handler().end();
 
+        const GeometryModel::Box<dim> *domain = dynamic_cast<const GeometryModel::Box<dim>*> (&this->get_geometry_model());
+        Point<dim> extent = domain->get_extents();
+
         for (; cell!=endc; ++cell)
           if (cell->is_locally_owned())
           {
             if(dim == 2) {
+              // Find the dimensions of the current active cell owned by the current processor.
+
               double local_x_min, local_y_min;
               double local_x_max, local_y_max;
 
@@ -77,33 +83,21 @@ namespace aspect
                   local_y_max = cell->vertex(i)[1];
               }
 
-              /*                y_max
-               *             -----------
-               *            |           |
-               *            |           |
-               *  x_min     |           |   x_max
-               *            |           |
-               *            |           |
-               *             ___________
-               *
-               *                y_min
+              /**
+               * If the current active cell is not within the dimensions of the uniform box, then
+               * we continue to the next active cell in the local domain.
                */
 
-              // Are any of the particles that need to be generated within the cell domain?
               if ((local_x_max <= P_min[0]) || (local_x_min >= P_max[0]) ||
                   (local_y_max <= P_min[1]) || (local_y_min >= P_max[1]))
                 continue;
 
-              std::vector<int> x_indices;
+              /**
+               * For each dimension, compute the min and max indicies that bound all possible particles that can be
+               * generated within the current cell's domain. These indices are collected in vectors of integers.
+               */
 
-//            for ( int i = 0; i < n_particles_per_direction[0]; i++)
-//            {
-//              double p_x = P_min[0] + spacing[0]*i;
-//              if ( local_x_min < p_x && p_x < local_x_max )
-//              {
-//                x_indices.push_back(i);
-//              }
-//            }
+              std::vector<int> x_indices;
 
               int max_index = (int) std::ceil((local_x_max - P_min[0]) / spacing[0]);
               if ((max_index > n_particles_per_direction[0]) ||
@@ -118,14 +112,6 @@ namespace aspect
               }
 
               std::vector<int> y_indices;
-//            for ( int i = 0; i < n_particles_per_direction[1]; i++)
-//            {
-//              double p_y = P_min[1] + spacing[1]*i;
-//              if ( local_y_min <= p_y && p_y <= local_y_max )
-//              {
-//                y_indices.push_back(i);
-//              }
-//            }
 
               max_index = (int) std::ceil((local_y_max - P_min[1]) / spacing[1]);
               if ((max_index > n_particles_per_direction[1]) ||
@@ -139,83 +125,180 @@ namespace aspect
                 }
               }
 
+              /**
+               * If the current active cell contains no particles that need to be generated, then
+               * we continue to the next active cell in the local domain.
+               */
+
               if (x_indices.size() == 0 || y_indices.size() == 0)
                 continue;
 
-              //May need a special case for cells at the boundary
-
-              //Special case where local_x_min > P_min[0]
-//            for (int i = std::abs(local_x_min - P_min[0])/spacing[0]; i < std::abs(P_max[0] - local_x_max)/spacing[0]; i++)
-//            {
-//              for (int j = std::abs(local_y_min - P_min[1])/spacing[1]; j < std::abs(P_max[1] - local_y_max)/spacing[1]; j++)
-//              {
+              /**
+               * Finally, we generate the particles contained within the current cell.
+               * We also hard code the edge cases where particles must be generated on the boundaries of the local cell.
+               */
 
               for (int i = 0; i < x_indices.size(); i++) {
                 for (int j = 0; j < y_indices.size(); j++) {
                   Point<dim> position(P_min[0] + x_indices[i] * spacing[0], P_min[1] + y_indices[j] * spacing[1]);
-                  if (position[0] == local_x_min) {
-                    const Particle<dim> particle(position,
-                                                 (x_indices[i]) * n_particles_per_direction[1] + y_indices[j]);
-                    const types::LevelInd p_cell(cell->level(), cell->index());
+                  const Particle<dim> particle(position,
+                                               x_indices[i] * n_particles_per_direction[1] + y_indices[j]);
+                  const types::LevelInd p_cell(cell->level(), cell->index());
+                  std::cout << "position" << position << "id:" << particle.get_id() << std::endl;
+
+                  if (local_x_min <= position[0] && position[0] < local_x_max) {
                     particles.insert(std::make_pair(p_cell, particle));
                   }
-                  else if (position[0] == local_x_max) {
-                    const Particle<dim> particle(position,
-                                                 (x_indices[i]) * n_particles_per_direction[1] + y_indices[j]);
-                    const types::LevelInd p_cell(cell->level(), cell->index());
+                  else if (local_y_min <= position[1] && position[1] < local_y_max) {
                     particles.insert(std::make_pair(p_cell, particle));
                   }
-                  else if (position[1] == local_y_min) {
-                    const Particle<dim> particle(position,
-                                                 (x_indices[i]) * n_particles_per_direction[1] + y_indices[j]);
-                    const types::LevelInd p_cell(cell->level(), cell->index());
+                  else if (position[0] == extent[0]) {
                     particles.insert(std::make_pair(p_cell, particle));
                   }
-                  else if (position[1] == local_y_max) {
-                    const Particle<dim> particle(position,
-                                                 (x_indices[i]) * n_particles_per_direction[1] + y_indices[j]);
-                    const types::LevelInd p_cell(cell->level(), cell->index());
-                    particles.insert(std::make_pair(p_cell, particle));
-                  }
-                  else {
-                    const Particle<dim> particle(position,
-                                                 (x_indices[i]) * n_particles_per_direction[1] + y_indices[j]);
-                    const types::LevelInd p_cell(cell->level(), cell->index());
+                  else if (position[1] == extent[1]) {
                     particles.insert(std::make_pair(p_cell, particle));
                   }
                 }
               }
-
-//            int lower_x_limit = (int) std::ceil(local_x_min/spacing[0]);
-//            int upper_x_limit = (int) std::floor(local_x_max/spacing[0]);
-//            int left_y_limit = (int) std::ceil(local_y_min/spacing[1]);
-//            int right_y_limit = (int) std::floor(local_y_max/spacing[1]);
-//
-//            for (int j = left_y_limit; j < right_y_limit; j++)
-//            {
-//              for (int i = lower_x_limit; i < upper_x_limit; i++)
-//              {
-//                Point<dim> position(i*spacing[0], j*spacing[1]);
-//                const Particle<dim> particle(position, (i-1) * (int) (P_diff[1]/spacing[1]) + (j-1));
-//                const types::LevelInd p_cell(cell->level(), cell->index());
-//                particles.insert(std::make_pair(p_cell,particle));
-//              }
-//            }
             }
             else if (dim == 3)
-              for (unsigned int k = 0; k < n_particles_per_direction[2]; ++k)
-              {
-                const Point<dim> particle_position = Point<dim> (P_min[0]+i*spacing[0],P_min[1]+j*spacing[1],P_min[2]+k*spacing[2]);
+            {
+              // Find the dimensions of the current active cell owned by the current processor.
 
-                // Try to add the particle. If it is not in this domain, do not
-                // worry about it and move on to next point.
-                try
-                  {
-                    particles.insert(this->generate_particle(particle_position,particle_index));
+                double local_x_min, local_y_min, local_z_min;
+                double local_x_max, local_y_max, local_z_max;
+
+                local_x_min = cell->vertex(0)[0], local_y_min = cell->vertex(0)[1], local_z_min = cell->vertex(0)[2];
+                local_x_max = cell->vertex(0)[0], local_y_max = cell->vertex(0)[1], local_z_max = cell->vertex(0)[2];
+
+                for (int i = 1; i < GeometryInfo<dim>::vertices_per_cell; i++) {
+                  if (cell->vertex(i)[0] < local_x_min)
+                    local_x_min = cell->vertex(i)[0];
+                  if (cell->vertex(i)[1] < local_y_min)
+                    local_y_min = cell->vertex(i)[1];
+                  if (cell->vertex(i)[2] < local_z_min)
+                    local_z_min = cell->vertex(i)[2];
+                  if (cell->vertex(i)[0] > local_x_max)
+                    local_x_max = cell->vertex(i)[0];
+                  if (cell->vertex(i)[1] > local_y_max)
+                    local_y_max = cell->vertex(i)[1];
+                  if (cell->vertex(i)[2] > local_z_max)
+                    local_z_max = cell->vertex(i)[2];
+                }
+
+                /**
+                * If the current active cell is not within the dimensions of the uniform box, then
+                * we continue to the next active cell in the local domain.
+                */
+
+                if ((local_x_max <= P_min[0]) || (local_x_min >= P_max[0]) ||
+                    (local_y_max <= P_min[1]) || (local_y_min >= P_max[1]) ||
+                    (local_z_max <= P_min[2]) || (local_z_min >= P_max[2]))
+                  continue;
+
+                /**
+                 * For each dimension, compute the min and max indicies that bound all possible particles that can be
+                 * generated within the current cell's domain. These indices are collected in vectors of integers.
+                 */
+
+                std::vector<int> x_indices;
+
+                int max_index = (int) std::ceil((local_x_max - P_min[0]) / spacing[0]);
+                if ((max_index > n_particles_per_direction[0]) ||
+                    (P_min[0] + (n_particles_per_direction[0] - 1) * spacing[0] == local_x_max))
+                  max_index = n_particles_per_direction[0];
+
+                for (int i = (int) std::ceil((local_x_min - P_min[0]) / spacing[0]); i < max_index; i++) {
+                  double p_x = P_min[0] + spacing[0] * i;
+                  if (local_x_min <= p_x && p_x <= local_x_max) {
+                    x_indices.push_back(i);
                   }
-                catch (ExcParticlePointNotInDomain &)
-                  {}
-                particle_index++;
+                }
+
+                std::vector<int> y_indices;
+
+                max_index = (int) std::ceil((local_y_max - P_min[1]) / spacing[1]);
+                if ((max_index > n_particles_per_direction[1]) ||
+                    (P_min[1] + (n_particles_per_direction[1] - 1) * spacing[1] == local_y_max))
+                  max_index = n_particles_per_direction[1];
+
+                for (int i = (int) std::ceil((local_y_min - P_min[1]) / spacing[1]); i < max_index; i++) {
+                  double p_y = P_min[1] + spacing[1] * i;
+                  if (local_y_min <= p_y && p_y <= local_y_max) {
+                    y_indices.push_back(i);
+                  }
+                }
+
+                std::vector<int> z_indices;
+
+                max_index = (int) std::ceil((local_z_max - P_min[2]) / spacing[2]);
+                if ((max_index > n_particles_per_direction[2]) ||
+                    (P_min[2] + (n_particles_per_direction[2] - 1) * spacing[2] == local_z_max))
+                  max_index = n_particles_per_direction[2];
+
+                for (int i = (int) std::ceil((local_z_min - P_min[2]) / spacing[2]); i < max_index; i++) {
+                  double p_z = P_min[2] + spacing[2] * i;
+                  if (local_z_min <= p_z && p_z <= local_z_max) {
+                    z_indices.push_back(i);
+                  }
+                }
+
+                /**
+                 * If the current active cell contains no particles that need to be generated, then
+                 * we continue to the next active cell in the local domain.
+                 */
+
+                if (x_indices.size() == 0 || y_indices.size() == 0 || z_indices.size() == 0)
+                  continue;
+
+                /**
+                 * Finally, we generate the particles contained within the current cell.
+                 * We also hard code the edge cases where particles must be generated on the boundaries of the local cell.
+                 */
+
+                for (int i = 0; i < x_indices.size(); i++) {
+                  for (int j = 0; j < y_indices.size(); j++) {
+                    for (int k = 0; k < z_indices.size(); k++) {
+                      Point<dim> position(P_min[0] + x_indices[i] * spacing[0], P_min[1] + y_indices[j] * spacing[1], P_min[2] + z_indices[k] * spacing[2]);
+                      int particle_id = x_indices[i] * n_particles_per_direction[2] * n_particles_per_direction[1] + y_indices[j] * n_particles_per_direction[2] + z_indices[k];
+                      const Particle<dim> particle(position, particle_id);
+                      const types::LevelInd p_cell(cell->level(), cell->index());
+                      if (local_x_min <= position[0] && position[0] < local_x_max &&
+                              local_z_min <= position[2] && position[2] < local_z_max) {
+                        particles.insert(std::make_pair(p_cell, particle));
+                      }
+                      else if (local_x_min <= position[0] && position[0] < local_x_max &&
+                              local_y_min <= position[1] && position[1] < local_y_max) {
+                        particles.insert(std::make_pair(p_cell, particle));
+                      }
+                      else if (local_y_min <= position[1] && position[1] < local_y_max &&
+                              local_z_min <= position[2] && position[2] < local_z_max) {
+                        particles.insert(std::make_pair(p_cell, particle));
+                      }
+                      else if (position[0] == extent[0]) {
+                        particles.insert(std::make_pair(p_cell, particle));
+                      }
+                      else if (position[1] == extent[1]) {
+                        particles.insert(std::make_pair(p_cell, particle));
+                      }
+                      else if (position[2] == extent[2]) {
+                        particles.insert(std::make_pair(p_cell, particle));
+                      }
+                    }
+                  }
+                }
+
+//                const Point<dim> particle_position = Point<dim> (P_min[0]+i*spacing[0],P_min[1]+j*spacing[1],P_min[2]+k*spacing[2]);
+//
+//                // Try to add the particle. If it is not in this domain, do not
+//                // worry about it and move on to next point.
+//                try
+//                  {
+//                    particles.insert(this->generate_particle(particle_position,particle_index));
+//                  }
+//                catch (ExcParticlePointNotInDomain &)
+//                  {}
+//                particle_index++;
               }
             else
               ExcNotImplemented();
