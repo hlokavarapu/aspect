@@ -1787,17 +1787,22 @@ namespace aspect
           for (unsigned int c=0; c < parameters.n_compositional_fields; ++c)
             {
               const AdvectionField adv_field (AdvectionField::composition(c));
-              switch (adv_field.advection_method(introspection))
+              typename Introspection<dim>::FieldMethod::kind method = adv_field.method(introspection);
+              switch (method)
                 {
-                  case Introspection<dim>::AdvectionMethod::field:
+                  case Introspection<dim>::FieldMethod::continuous_fem_field:
                     assemble_advection_system (adv_field);
                     solve_advection(adv_field);
-                    if (parameters.use_discontinuous_composition_discretization
-                        && parameters.use_limiter_for_discontinuous_composition_solution)
+                    break;
+
+                  case Introspection<dim>::FieldMethod::discontinuous_fem_field:
+                    assemble_advection_system (adv_field);
+                    solve_advection(adv_field);
+                    if (parameters.use_limiter_for_discontinuous_composition_solution)
                       apply_limiter_to_dg_solutions(adv_field);
                     break;
 
-                  case Introspection<dim>::AdvectionMethod::particles:
+                  case Introspection<dim>::FieldMethod::particles:
                     interpolate_particle_properties(adv_field);
                     break;
 
