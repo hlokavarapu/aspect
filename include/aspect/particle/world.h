@@ -88,14 +88,6 @@ namespace aspect
         get_property_manager() const;
 
         /**
-         * Get the particle interpolator for this particle world.
-         *
-         * @return The interpolator for this world.
-         */
-        const Interpolator::Interface<dim> &
-        get_interpolator() const;
-
-        /**
          * Initialize the particle properties.
          */
         void generate_particles();
