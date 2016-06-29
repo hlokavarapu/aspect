@@ -86,6 +86,27 @@ namespace aspect
                                const double current_time) = 0;
 
           /**
+           * Returns the particle file name taking into account the file index as well as the mpi proccess.
+           */
+          virtual
+          const std::string
+          get_file_name();
+
+          /**
+           * Get the absolute path where the specified particle output will be generated.
+           */
+          virtual
+          const std::string
+          get_particle_output_location();
+
+          /**
+           * Get the current file index.
+           */
+          virtual
+          const std::string
+          get_file_index();
+
+          /**
            * Read or write the data of this object for serialization
            */
           template <class Archive>
@@ -163,7 +184,7 @@ namespace aspect
        */
       template <int dim>
       Interface<dim> *
-      create_particle_output (ParameterHandler &prm);
+      create_particle_output (const std::string &name);
 
       /**
        * Declare the runtime parameters of the registered particle outputs.
@@ -175,12 +196,21 @@ namespace aspect
       declare_parameters (ParameterHandler &prm);
 
       /**
+      * Return a list of names of all implemented output format models,
+      * separated by '|' so that it can be used in an object of type
+      * Patterns::Selection.
+      */
+      template <int dim>
+      std::string get_names ();
+
+      /**
        * Given a class name, a name, and a description for the parameter file
        * for a particle output, register it with the functions that
        * can declare their parameters and create these objects.
        *
        * @ingroup ParticleOutputs
        */
+
 #define ASPECT_REGISTER_PARTICLE_OUTPUT(classname, name, description) \
   template class classname<2>; \
   template class classname<3>; \
