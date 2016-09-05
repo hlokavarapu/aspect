@@ -50,66 +50,20 @@ namespace aspect
       {
         /****************************************************************************************/
         /****************************************************************************************/
-
-
-        u5 = (double)(-2*Z*n*PI*u2-u3*2*n*PI)*cos(n*PI*z); /* pressure */
-
-        u6 = (double)(u3*2*n*PI + 4*Z*n*PI*u2)*cos(n*PI*z); /* zz stress */
-        sum5 +=u5;
-        sum6 +=u6;
-
-        u1 *= cos(n*PI*z); /* x velocity */
-        sum1 += u1;
-        u2 *= sin(n*PI*z); /* z velocity */
-        sum2 += u2;
-        u3 *= 2*n*PI*cos(n*PI*z); /* xx stress */
-        sum3 += u3;
-        u4 *= 2*n*PI*sin(n*PI*z); /* zx stress */
-        sum4 += u4;
-
-
-        mag=sqrt(sum1*sum1+sum2*sum2);
-        /*printf("%0.7f %0.7f %0.7f %0.7f %0.7f %0.7f %0.7f %0.7f %0.7f\n",x,z,sum1,sum2,sum3,sum4,sum5,sum6,mag);*/
-
-
         /* Output */
-        if ( vel != NULL )
-          {
-            vel[0] = sum1;
-            vel[1] = sum2;
-          }
-        if ( presssure != NULL )
-          {
-            (*presssure) = sum5;
-          }
-        if ( total_stress != NULL )
-          {
-            total_stress[0] = sum3;
-            total_stress[1] = sum6;
-            total_stress[2] = sum4;
-          }
-        if ( strain_rate != NULL )
-          {
-            if ( x>xc )
-              {
-                Z = ZB;
-              }
-            else
-              {
-                Z = ZA;
-              }
-            strain_rate[0] = (sum3+sum5)/(2.0*Z);
-            strain_rate[1] = (sum6+sum5)/(2.0*Z);
-            strain_rate[2] = (sum4)/(2.0*Z);
-          }
-        /* Value checks, could be cleaned up if needed. Julian Giordani 2-Oct-2006*/
-        if ( fabs( sum5 - ( -0.5*(sum6+sum3) ) ) > 1e-5 )
-          {
-            assert(0);
-          }
+        vel[0] = -pos[1];  
+        vel[1] = pos[0];
+
+        (*presssure) = 1;
+
+        total_stress[0] = 0.0;
+        total_stress[1] = 0.0;
+        total_stress[2] = 0.0;
+
+        strain_rate[0] = 0;
+        strain_rate[1] = 0;
+        strain_rate[2] = 0;
       }
-
-
 
       /**
        * The exact solution for the SolCx benchmark, given the value
@@ -135,7 +89,7 @@ namespace aspect
             double pos[2]= {p(0),p(1)};
             double total_stress[3], strain_rate[3];
             double eta_A=1.0;
-            double eta_B=eta_B_;
+            double eta_B=1.0;
 
             // call the analytic function for the solution with a zero
             // background density
@@ -146,15 +100,13 @@ namespace aspect
              &values[0], &values[2], total_stress, strain_rate );
 
             // then add the background pressure to the value we just got
-            values[2] += (0.5-p[1])*background_density;
+            // values[2] += (0.5-p[1])*background_density;
+            values[2] = 0.0;
           }
         private:
           double eta_B_, background_density;
       };
     }
-
-
-
 
     /**
       * A material model that describes the <i>SolCx</i> benchmark of the
@@ -313,7 +265,7 @@ namespace aspect
                const Point<dim> &p) const
     {
       // defined as given in the Duretz et al. paper
-      return (p[0] < 0.5 ? 1 : eta_B);
+      return 1;
     }
 
 
@@ -379,6 +331,9 @@ namespace aspect
       return 0;
     }
 
+/**
+  TODO: A debugging idea is that we write another identical benchmark setups where in one case density is overridden by interpolated value of density and in this case with the analytical solution.
+**/
     template <int dim>
     double
     SolCxMaterial<dim>::
@@ -387,9 +342,9 @@ namespace aspect
              const std::vector<double> &, /*composition*/
              const Point<dim> &p) const
     {
-      // defined as given in the paper, plus the constant
-      // background density
-      return background_density-std::sin(numbers::PI*p[1])*std::cos(numbers::PI*p[0]);
+     /** TODO: Rename background_density to reference_density
+     **/
+      return background_density*(1-p[1])/2.0;
     }
 
 
@@ -433,10 +388,12 @@ namespace aspect
       {
         prm.enter_subsection("SolCx");
         {
-          prm.declare_entry ("Viscosity jump", "1e6",
+          prm.declare_entry ("Viscosity jump", "1",
                              Patterns::Double (0),
                              "Viscosity in the right half of the domain.");
-          prm.declare_entry ("Background density", "0",
+          /** TODO: Rename Background density to reference density
+          **/
+          prm.declare_entry ("Background density", "1",
                              Patterns::Double (0),
                              "Density value upon which the variation of this testcase "
                              "is overlaid. Since this background density is constant "
@@ -538,8 +495,8 @@ namespace aspect
       Vector<float> cellwise_errors_pl2 (this->get_triangulation().n_active_cells());
 
       ComponentSelectFunction<dim> comp_u(std::pair<unsigned int, unsigned int>(0,dim),
-                                          dim+2);
-      ComponentSelectFunction<dim> comp_p(dim, dim+2);
+                                          this->get_fe().n_components());
+      ComponentSelectFunction<dim> comp_p(dim, this->get_fe().n_components());
 
       VectorTools::integrate_difference (this->get_mapping(),this->get_dof_handler(),
                                          this->get_solution(),
@@ -608,5 +565,7 @@ namespace aspect
                                   "the SolCx, SolKz and inclusion benchmarks. The postprocessor inquires "
                                   "which material model is currently being used and adjusts "
                                   "which exact solution to use accordingly.")
+
+
   }
 }

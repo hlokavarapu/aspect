@@ -1,7 +1,4 @@
-# A description of the SolCX benchmark for which a known solution
-# is available. See the manual for more information.
-
-set Additional shared libraries            = ./libsolcx.so
+set Additional shared libraries            = ./libegp_hvl.so
 
 ############### Global parameters
 
@@ -23,23 +20,36 @@ subsection Geometry model
 
   subsection Box
     set X extent = 1
+    set X repetitions = 32
     set Y extent = 1
+    set Y repetitions = 32
+
+    set Box origin X coordinate = 0.5
+    set Box origin Y coordinate = 0.5
   end
 end
 
 
 subsection Model settings
-  set Prescribed velocity boundary indicators =
-  set Tangential velocity boundary indicators = left, right, bottom, top
+
+  set Prescribed velocity boundary indicators = 0: function, 1: function, 2: function, 3: function
+  set Tangential velocity boundary indicators = 
   set Zero velocity boundary indicators       =
 end
 
+subsection Boundary velocity model
+  subsection Function
+    set Variable names      = x,z
+    set Function constants  = pi=3.1415926
+    set Function expression = -z; x
+  end
+end
 
 subsection Material model
   set Model name = SolCxMaterial
 
   subsection SolCx
-    set Viscosity jump = 1e6
+    set Viscosity jump = 1
   end
 end
 
@@ -72,12 +82,54 @@ end
 
 subsection Mesh refinement
   set Initial adaptive refinement              = 0
-  set Initial global refinement                = 4
+  set Initial global refinement                = 0
 end
 
 
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = SolCxPostprocessor, visualization
+  set List of postprocessors = SolCxPostprocessor, visualization, tracers
+  
+  subsection Visualization
+    set Output format                 = vtu
+    set Number of grouped files       = 1
+    set Time between graphical output = 0
+    set List of output variables = density, viscosity, partition
+  end
+
+  subsection Tracers
+    set Number of tracers = 32
+    set Time between data output = 0
+    set Data output format = vtu
+    # set List of tracer properties = function
+    set Integration scheme = rk2
+    # set Interpolation scheme = cell average
+    # set Interpolation scheme = least squares
+    set Maximum tracers per cell = 16
+
+    subsection Function
+#     set Number of functions = 1
+      set Variable names      = x, z
+      set Function constants  = pi=3.1415926, eta_b=1e3, background_density=1.0
+#     set Function expression = ref_density - sin(pi*z) * cos(pi*x); if(x<0.5, 1, eta_b)
+      set Function expression = background_density - sin(pi*z) * cos(pi*x)
+    end
+
+    set Particle generator name = uniform box
+
+    subsection Generator
+      subsection Probability density function
+        set Variable names      = x,y
+        set Function expression = x*x*y
+      end
+
+      subsection Uniform box
+       set Minimum x = 0.25
+       set Maximum x = 0.4999999
+       set Minimum y = -.499999
+       set Maximum y = 0.4999999
+      end
+    end
+  end
 end
