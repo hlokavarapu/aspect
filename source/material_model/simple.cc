@@ -59,7 +59,11 @@ namespace aspect
                            :
                            0.0;
 
-          out.densities[i] = reference_rho * (1 - thermal_alpha * (in.temperature[i] - reference_T))
+          // Dependent on model where the height is 7.5e5
+          if (this->get_geometry_model().depth(in.position[i]) < 50e3)
+              out.densities[i] = 1;
+          else
+            out.densities[i] = reference_rho * (1 - thermal_alpha * (in.temperature[i] - reference_T))
                              + compositional_delta_rho * c;
 
           out.thermal_expansion_coefficients[i] = thermal_alpha;
@@ -73,7 +77,7 @@ namespace aspect
           // Change in composition due to chemical reactions at the
           // given positions. The term reaction_terms[i][c] is the
           // change in compositional field c at point i.
-          for (unsigned int c=0; c<in.composition[i].size(); ++c)
+          for ( unsigned int c=0; c<in.composition[i].size(); ++c)
             out.reaction_terms[i][c] = 0.0;
         }
     }
