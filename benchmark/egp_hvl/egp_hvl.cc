@@ -52,7 +52,7 @@ namespace aspect
         /****************************************************************************************/
         /* Output */
         vel[0] = -pos[1];  
-        vel[1] = pos[0];
+        vel[1] =  pos[0];
 
         (*presssure) = 1;
 
@@ -100,8 +100,8 @@ namespace aspect
              &values[0], &values[2], total_stress, strain_rate );
 
             // then add the background pressure to the value we just got
-            // values[2] += (0.5-p[1])*background_density;
-            values[2] = 0.0;
+            // values[2] = 0.0;
+            values[2] += (0.5-p[1])*background_density;
           }
         private:
           double eta_B_, background_density;
