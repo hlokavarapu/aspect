@@ -54,7 +54,7 @@ namespace aspect
         vel[0] = -pos[1];  
         vel[1] =  pos[0];
 
-        (*presssure) = 1;
+        (*presssure) = 1 - pos[1]*pos[1];
 
         total_stress[0] = 0.0;
         total_stress[1] = 0.0;
@@ -101,7 +101,7 @@ namespace aspect
 
             // then add the background pressure to the value we just got
             // values[2] = 0.0;
-            values[2] += (0.5-p[1])*background_density;
+            // values[2] += (0.5-p[1])*background_density;
           }
         private:
           double eta_B_, background_density;
@@ -344,7 +344,7 @@ namespace aspect
     {
      /** TODO: Rename background_density to reference_density
      **/
-      return background_density*(1-p[1])/2.0;
+      return 2.0 * p[1];
     }
 
 

@@ -6,6 +6,8 @@ set Dimension                              = 2
 
 set Start time                             = 0
 
+set End time                               = 6.283185307179586
+
 set Output directory                       = output
 
 set Pressure normalization                 = volume
@@ -48,16 +50,18 @@ subsection Material model
   set Model name = SolCxMaterial
 
   subsection SolCx
+    # Do not change these set of parameters! EGP && HL
     set Viscosity jump = 1
+    set Background density = 1
   end
 end
 
 
 subsection Gravity model
   set Model name = vertical
-  subsection Function
-    set Function expression = 1-(y*y);1-(y*y)
-  end
+#  subsection Function
+#    set Function expression = 0;2*y
+#  end
 end
 
 
