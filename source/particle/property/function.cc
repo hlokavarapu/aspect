@@ -29,7 +29,7 @@ namespace aspect
       template <int dim>
       Function<dim>::Function()
         :
-        n_functions (0)
+        number_of_functions (0)
       {}
 
       template <int dim>
@@ -37,7 +37,7 @@ namespace aspect
       Function<dim>::initialize_one_particle_property(const Point<dim> &position,
                                                       std::vector<double> &data) const
       {
-        for (unsigned int i = 0; i < n_functions; i++)
+        for (unsigned int i = 0; i < number_of_functions; i++)
           data.push_back(function->value(position, i));
       }
 
@@ -45,9 +45,7 @@ namespace aspect
       std::vector<std::pair<std::string, unsigned int> >
       Function<dim>::get_property_information() const
       {
-        std::vector<std::pair<std::string,unsigned int> > property_information;
-        for (unsigned int i = 0; i < n_functions; i++)
-          property_information.push_back(std::make_pair("function" + Utilities::to_string(i+1), 1));
+        const std::vector<std::pair<std::string,unsigned int> > property_information (1,std::make_pair("function",number_of_functions));
         return property_information;
       }
 
@@ -84,10 +82,10 @@ namespace aspect
           prm.enter_subsection("Tracers");
           {
             prm.enter_subsection("Function");
-            n_functions = prm.get_integer ("Number of functions");
+            number_of_functions = prm.get_integer ("Number of functions");
             try
               {
-                function.reset (new Functions::ParsedFunction<dim>(n_functions));
+                function.reset (new Functions::ParsedFunction<dim>(number_of_functions));
                 function->parse_parameters (prm);
               }
             catch (...)
