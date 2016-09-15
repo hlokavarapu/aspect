@@ -43,6 +43,9 @@ namespace aspect
     class RichardsonExtrapolation : public Interface<dim>, public ::aspect::SimulatorAccess<dim>
     {
       public:
+        virtual
+        void initialize ();
+
         /**
          * Evaluate the solution and determine the values at the
          * selected points.
@@ -65,9 +68,30 @@ namespace aspect
         void
         parse_parameters (ParameterHandler &prm);
 
+        bool
+        read_in_data_for_h_over_2_resolution();
+
+        bool
+        save_data_for_h_over_2_resolution();
+
+        /**
+         *  Function that computes the error between interpolated (read in) values
+         *  with the current solution at current nodal points.
+         */
+        void
+        compute_error ();
+
+        std::string
+        get_formatted_file_name();
+
       private:
-        std::vector<Point<dim> >                                       evaluation_points;
-        std::vector<std::pair<double, std::vector<Vector<double> > > > point_values;
+
+        BlockVector::
+
+        /**
+         * Run time parameters.
+         */
+        std::string file_name;
         double end_time;
     };
   }
