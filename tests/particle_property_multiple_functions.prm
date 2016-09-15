@@ -98,27 +98,20 @@ end
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = velocity statistics, composition statistics,tracers
+  set List of postprocessors = velocity statistics, composition statistics, tracers
 
   subsection Tracers
     set Number of tracers = 10
     set Time between data output = 70
-    set Data output format = ascii
+    set Data output format = vtu
     set List of tracer properties = velocity, function, initial composition, initial position
 
     subsection Function
-      set Number of functions = 2
+      set Number of components = 2
       set Variable names      = x,z
-      set Function expression = if( (z>0.2+0.02*cos(pi*x/0.9142)) , 0 , 1 );
+      set Function expression = if( (z>0.2+0.02*cos(pi*x/0.9142)) , 0 , 1 ); 0.5*(1+tanh((0.2+0.02*cos(pi*x/0.9142)-z)/0.02))
     end
 
     set Particle generator name = probability density function
-
-    subsection Generator
-      subsection Probability density function
-        set Variable names      = x,z
-        set Function expression = x*x*z
-      end
-    end
   end
 end
