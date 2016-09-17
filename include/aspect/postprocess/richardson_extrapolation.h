@@ -25,9 +25,6 @@
 #include <aspect/postprocess/interface.h>
 #include <aspect/simulator_access.h>
 
-#include <deal.II/base/data_out_base.h>
-
-
 namespace aspect
 {
   namespace Postprocess
@@ -85,13 +82,13 @@ namespace aspect
         get_formatted_file_name();
 
       private:
-
-        BlockVector::
-
+        std::vector<double> interpolated_values;
         /**
          * Run time parameters.
          */
-        std::string file_name;
+        std::string input_file_name;
+        std::string output_file_name;
+
         double end_time;
     };
   }
