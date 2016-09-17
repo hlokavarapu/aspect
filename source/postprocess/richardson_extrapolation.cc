@@ -20,10 +20,17 @@
 
 
 #include <aspect/postprocess/richardson_extrapolation.h>
+#include <deal.II/base/quadrature.h>
+#include <deal.II/base/quadrature_lib.h>
+
 #include <aspect/global.h>
-#include <deal.II/numerics/vector_tools.h>
+//#include <deal.II/numerics/vector_tools.h>
 
 #include <math.h>
+#include <deal.II/fe/fe_values.h>
+
+#include <aspect/simulator.h>
+#include <aspect/utilities.h>
 
 namespace aspect
 {
@@ -31,11 +38,20 @@ namespace aspect
   {
 
       template <int dim>
+      void
+      RichardsonExtrapolation<dim>::initialize() {
+          if(Utilities::fexists(input_file_name))
+          {
+              //Read in the data!
+          }
+      }
+
+      template <int dim>
       bool
       RichardsonExtrapolation<dim>::read_in_data_for_h_over_2_resolution()
       {
-          std::ifstream input;
-          input.open(file_name);
+          //std::ifstream input;
+          //input.open(file_name);
 
           // Read in data to internal data structure of this postprocessor.
       }
@@ -44,16 +60,16 @@ namespace aspect
       bool
       RichardsonExtrapolation<dim>::save_data_for_h_over_2_resolution()
       {
-          std::string fileName = "solution-" + Utilities::int_to_string(this->get_timestep_number(), 5) + ".mesh";
-          parallel::distributed::SolutionTransfer<dim, LinearAlgebra::BlockVector> sol_trans(this->get_dof_handler());
-          sol_trans.prepare_serialization (this->get_solution());
-          this->get_triangulation().save(fileName.c_str());
-
-/*           std::ofstream output (this->get_output_directory() + "solution-" + Utilities::int_to_string(this->get_timestep_number(), 5) + ".txt");
-           dealii::BlockVector<double> solution(this->get_solution());
-           solution.block_write(output);
-*/
-          return std::make_pair("Writing binary output to: ", fileName);
+//          std::string fileName = "solution-" + Utilities::int_to_string(this->get_timestep_number(), 5) + ".mesh";
+//          parallel::distributed::SolutionTransfer<dim, LinearAlgebra::BlockVector> sol_trans(this->get_dof_handler());
+//          sol_trans.prepare_serialization (this->get_solution());
+//          this->get_triangulation().save(fileName.c_str());
+//
+///*           std::ofstream output (this->get_output_directory() + "solution-" + Utilities::int_to_string(this->get_timestep_number(), 5) + ".txt");
+//           dealii::BlockVector<double> solution(this->get_solution());
+//           solution.block_write(output);
+//*/
+//          return std::make_pair("Writing binary output to: ", fileName);
       }
 
     template <int dim>
@@ -62,26 +78,82 @@ namespace aspect
     {
       if ( this->get_time() == end_time)
       {
-          Triangulation<dim> refined_mesh;
-          refined_mesh.copy_triangulation(this->get_triangulation());
-          refined_mesh.refine_global(1);
-          MappingQ1<dim> refined_mapping;
-          DoFHandler<dim> refined_dof_handler;
-          FiniteElement<dim> refined_fe(this->get_fe().base_element(introspection<dim>().base_elements.pressure));
+          std::ofstream interpolated_data_stream;
+          interpolated_data_stream.open(output_file_name, std::ios_base::out);
 
-          refined_dof_handler.initialize(refined_mesh, refined_fe);
+          interpolated_data_stream << std::setprecision(14) << "Position[0]" << "\t" << "Position[1]" << "\t" << "Value" << std::endl;
 
-          refined_dof_handler.distribute_dofs(this->get_fe());
+          /**
+          * Compute the Legendre gauss points at a different indirection.
+          **/
+          QGaussLobatto<1> base_quadrature(2);
+          QIterated<dim> quadrature_rule (base_quadrature, 2);
 
-          LinearAlgebra::Vector interpolated_solution(refined_dof_handler.n_dofs());
+          FEValues<dim> fe_values(this->get_mapping(),
+                                   this->get_fe(),
+                                   quadrature_rule,
+                                   update_values |
+                                   update_quadrature_points |
+                                   update_JxW_values);
 
-          VectorTools::interpolate_to_different_mesh(this->get_dof_handler(), this->get_solution().block(introspection<dim>().block_indices.pressure), refined_dof_handler, interpolated_solution);
+//          const FEValuesExtractors::Scalar &extractor_pressure = this->introspection().extractors.pressure;
+          const FEValuesExtractors::Scalar &extractor_temperature = this->introspection().extractors.temperature;
+
+          // iterate over all active cells on local mpi process
+          for (typename DoFHandler<dim>::active_cell_iterator
+               cell = this->get_dof_handler().begin_active();
+               cell != this->get_dof_handler().end();
+               ++cell)
+            {
+                fe_values.reinit(cell);
+                // Each vector is of the same length.
+                const std::vector<Point<dim>>  quadrature_points = fe_values.get_quadrature_points();
+                const std::vector<double>  jacobian_weight_points = fe_values.get_JxW_values();
+                std::vector<double> interpolated_values(quadrature_points.size());
+
+//                fe_values[extractor_pressure].get_function_values(this->get_solution(), interpolated_values);
+                fe_values[extractor_temperature].get_function_values(this->get_solution(), interpolated_values);
+
+                typename std::vector<double>::const_iterator itr1 = interpolated_values.begin();
+                typename std::vector<Point<dim>>::const_iterator itr2 = quadrature_points.begin();
+                typename std::vector<double>::const_iterator itr3 = jacobian_weight_points.begin();
+
+                interpolated_data_stream << cell->active_cell_index() << std::endl;
+
+                for (; itr1 != interpolated_values.end(); itr1++, itr2++, itr3++)
+                {
+                    // Add metadata that keeps
+                    interpolated_data_stream << (*itr2)[0] << "\t" << (*itr2)[1] << "\t" << *itr1 << "\t" << *itr3 << std::endl;
+                }
 
 
-          std::fstream interpolated_data;
-          interpolated_data.open("interpolated_values.dat");
-          interpolated_solution.print(interpolated_data, 14);
-          interpolated_data.close();
+            }
+
+
+
+
+//          Triangulation<dim> refined_mesh;
+//          MappingQ1<dim> refined_mapping;
+//          DoFHandler<dim> refined_dof_handler;
+//          const FiniteElement<dim> &refined_fe = this->get_fe().base_element((this->introspection().base_elements.pressure));
+//
+//          refined_mesh.copy_triangulation(this->get_triangulation());
+//          refined_mesh.refine_global(1);
+//
+//          refined_dof_handler.initialize(refined_mesh, refined_fe);
+//          refined_dof_handler.distribute_dofs(refined_fe);
+//
+////          LinearAlgebra::Vector interpolated_solution((double) * refined_dof_handler.n_dofs());
+//          // A distributed call to constructor is necessary but for a higher resolved mesh would mean reinitalizing the system partitioning.
+//          LinearAlgebra::Vector interpolated_solution(introspection.index_sets.system_partitioning[0], mpi_communicator);
+////          std::vector<double> interpolated_solution(refined_dof_handler.n_dofs());
+//
+//          VectorTools::interpolate_to_different_mesh(this->get_dof_handler(), this->get_solution().block(this->introspection().block_indices.pressure), refined_dof_handler, interpolated_solution);
+//
+//          std::fstream interpolated_data;
+//          interpolated_data.open("interpolated_values.dat");
+//        //  interpolated_solution.print(interpolated_data, 14);
+//          interpolated_data.close();
       }
         return std::pair<std::string, std::string> ("Richardson Extrapolation: ",
                                                     "");
@@ -109,10 +181,14 @@ namespace aspect
                                            "Units: Years if the "
                                            "'Use years in output instead of seconds' parameter is set; "
                                            "seconds otherwise.");
-                prm.declare_entry("File name of interpolated data",
+                prm.declare_entry("Input file name of interpolated data", "interpolated_data.txt",
                                   Patterns::Anything (),
                                   "The file name containing the interpolated solution at the nodal values "
                                   "at the current grid resolution.");
+                prm.declare_entry("Output file name of interpolated data", "interpolated_data.txt",
+                                  Patterns::Anything (),
+                                  "The file name containing the interpolated solution at the nodal values "
+                                  "at the current grid resolution * 4 cells.");
             }
             prm.leave_subsection();
         }
@@ -134,7 +210,8 @@ namespace aspect
                 if ( use_years == true)
                     end_time *= year_in_seconds;
 
-                file_name = prm.get("File name of interpolated data");
+                input_file_name = prm.get("Input file name of interpolated data");
+                output_file_name = prm.get("Output file name of interpolated data");
             }
             prm.leave_subsection();
         }
