@@ -342,9 +342,13 @@ namespace aspect
              const std::vector<double> &, /*composition*/
              const Point<dim> &p) const
     {
-     /** TODO: Rename background_density to reference_density
-     **/
-      return 2.0 * p[1];
+      /** TODO: Rename background_density to reference_density
+      **/
+      // This function creates a closed circuit flow for the 2d box geometry model.
+      //return 2.0 * p[1];
+      // Use this function if running 2d spherical shell geometry model.
+      return 1;
+   
     }
 
 
