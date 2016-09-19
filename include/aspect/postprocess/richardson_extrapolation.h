@@ -65,11 +65,17 @@ namespace aspect
         void
         parse_parameters (ParameterHandler &prm);
 
-        bool
-        read_in_data_for_h_over_2_resolution();
+        /**
+         * Read in the solution data.
+         */
+        void
+        read_in_data();
 
-        bool
-        save_data_for_h_over_2_resolution();
+        /**
+         * Write out the solution data.
+         */
+        void
+        write_out_data();
 
         /**
          *  Function that computes the error between interpolated (read in) values
@@ -77,19 +83,22 @@ namespace aspect
          */
         void
         compute_error ();
-
-        std::string
-        get_formatted_file_name();
-
       private:
-        std::vector<double> interpolated_values;
         /**
          * Run time parameters.
          */
         std::string input_file_name;
         std::string output_file_name;
-
         double end_time;
+
+        /**
+         * Data structure to store readin interpolated solution.
+         */
+        std::vector<Point<dim>> *quadrature_points_input;
+        std::vector<double> *temperature_input;
+        std::vector<double> *pressure_input;
+        std::vector<Tensor<1,dim>> *velocity_input;
+        std::vector<double> *weight_input;
     };
   }
 }
