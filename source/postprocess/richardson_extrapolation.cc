@@ -91,26 +91,26 @@ namespace aspect
          * For debugging purposes, we now write out what;s been read in.
          */
 
-          std::ofstream debugging;
-          debugging.open(output_file_name + ".g", std::ios_base::out);
-
-          typename std::vector<double>::const_iterator itr_temperature = temperature_input->begin();
-          typename std::vector<double>::const_iterator itr_pressure = pressure_input->begin();
-          typename std::vector<Tensor<1,dim>>::const_iterator itr_velocity = velocity_input->begin();
-//            typename std::vector<std::vector<double>>::const_iterator itr_compositional_fields = interpolated_compositional_fields.begin();
-
-          typename std::vector<Point<dim>>::const_iterator itr_quadrature_points = quadrature_points_input->begin();
-          typename std::vector<double>::const_iterator itr_weights = weight_input->begin();
-
-          for (; itr_quadrature_points != quadrature_points_input->end(); itr_quadrature_points++, itr_velocity++, itr_pressure++, itr_temperature++, itr_weights++)
-          {
-              // Add metadata
-              debugging << (*itr_quadrature_points)[0] << "\t" << (*itr_quadrature_points)[1]
-                        << "\t" << (*itr_velocity)[0] << "\t" << (*itr_velocity)[1]
-                        << "\t" << *itr_pressure << "\t" << *itr_temperature
-                        << "\t" << *itr_weights << std::endl;
-          }
-          debugging.close();
+//          std::ofstream debugging;
+//          debugging.open(output_file_name + ".g", std::ios_base::out);
+//
+//          typename std::vector<double>::const_iterator itr_temperature = temperature_input->begin();
+//          typename std::vector<double>::const_iterator itr_pressure = pressure_input->begin();
+//          typename std::vector<Tensor<1,dim>>::const_iterator itr_velocity = velocity_input->begin();
+////            typename std::vector<std::vector<double>>::const_iterator itr_compositional_fields = interpolated_compositional_fields.begin();
+//
+//          typename std::vector<Point<dim>>::const_iterator itr_quadrature_points = quadrature_points_input->begin();
+//          typename std::vector<double>::const_iterator itr_weights = weight_input->begin();
+//
+//          for (; itr_quadrature_points != quadrature_points_input->end(); itr_quadrature_points++, itr_velocity++, itr_pressure++, itr_temperature++, itr_weights++)
+//          {
+//              // Add metadata
+//              debugging << (*itr_quadrature_points)[0] << "\t" << (*itr_quadrature_points)[1]
+//                        << "\t" << (*itr_velocity)[0] << "\t" << (*itr_velocity)[1]
+//                        << "\t" << *itr_pressure << "\t" << *itr_temperature
+//                        << "\t" << *itr_weights << std::endl;
+//          }
+//          debugging.close();
       }
 
       template <int dim>
@@ -123,7 +123,7 @@ namespace aspect
           /**
           * Compute the Legendre gauss points at level 2 indirection.
           **/
-          QGaussLobatto<1> base_quadrature(2);
+          QGaussLobatto<1> base_quadrature(this->get_stokes_velocity_degree() + 1);
           QIterated<dim> quadrature_rule (base_quadrature, 2);
 
           FEValues<dim> fe_values(this->get_mapping(),
@@ -199,10 +199,8 @@ namespace aspect
             double pressure_l2_error = 0;
 //            double temperature_l2_error = 0;
 
-            int n_points = 0;
-
-            const QGauss<dim> quadrature_formula(this->get_parameters().stokes_velocity_degree);
-
+            const QGauss<dim> quadrature_formula(this->get_parameters().stokes_velocity_degree + 1);
+//            this->get_fe().base_element(this->introspection().base_elements.velocities).get_unit_support_points()
             FEValues<dim> fe_values(this->get_mapping(),
                                     this->get_fe(),
                                     quadrature_formula,
@@ -237,7 +235,7 @@ namespace aspect
                   fe_values.reinit(it.first);
 
                   const std::vector<Point<dim>>  quadrature_points = fe_values.get_quadrature_points();
-                  const std::vector<double>  jacobian_weight_points = fe_values.get_JxW_values();
+                  const std::vector<double>  jacobian_weights = fe_values.get_JxW_values();
 
 //                  fe_values[extractor_pressure].get_function_values(this->get_solution(), interpolated_pressure);
 //                  fe_values[extractor_temperature].get_function_values(this->get_solution(), interpolated_temperature);
@@ -246,16 +244,15 @@ namespace aspect
                   int index = 0;
                   for (int i=0; i<fe_values.n_quadrature_points; i++)
                   {
-                      if ( *itr_quadrature_points == quadrature_points[i])
+                      if ( (*itr_quadrature_points)[0] == (quadrature_points[i])[0]
+                              && (*itr_quadrature_points)[1] == (quadrature_points[i])[1])
                           index = i;
                   }
 
-                  velocity_l2_error += (interpolated_velocity[index] - (*itr_velocity))*(interpolated_velocity[index] - (*itr_velocity))*(*itr_weights)*(*itr_weights);
+                  velocity_l2_error += (interpolated_velocity[index] - (*itr_velocity))*(interpolated_velocity[index] - (*itr_velocity))*(jacobian_weights[index]);
 //                  pressure_l2_error += (interpolated_pressure[index] - (*itr_pressure))*(interpolated_pressure[index] - (*itr_pressure));
-                  n_points++;
             }
 
-          n_points = Utilities::MPI::sum(n_points, this->get_mpi_communicator());
           velocity_l2_error = std::sqrt(Utilities::MPI::sum(velocity_l2_error, this->get_mpi_communicator()));
 //          pressure_l2_error = std::sqrt(Utilities::MPI::sum(pressure_l2_error, this->get_mpi_communicator())/n_points);
 
