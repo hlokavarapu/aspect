@@ -101,6 +101,15 @@ namespace aspect
         std::vector<double> *pressure_input;
         std::vector<Tensor<1,dim>> *velocity_input;
         std::vector<double> *weight_input;
+
+//        struct
+//        {
+//            std::vector<Point<dim>> *quadrature_points_input;
+//            std::vector<double> *temperature_input;
+//            std::vector<double> *pressure_input;
+//            std::vector<Tensor<1,dim>> *velocity_input;
+//            std::vector<double> *weight_input;
+//        } interpolated_solution;
     };
   }
 }
