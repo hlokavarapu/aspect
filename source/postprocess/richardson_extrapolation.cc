@@ -140,11 +140,10 @@ namespace aspect
           const FEValuesExtractors::Scalar &extractor_temperature = this->introspection().extractors.temperature;
           const FEValuesExtractors::Vector &extractor_velocity = this->introspection().extractors.velocities;
 
-          // iterate over all active cells on local mpi process
-          for (typename DoFHandler<dim>::active_cell_iterator
-                       cell = this->get_dof_handler().begin_active();
-               cell != this->get_dof_handler().end();
-               ++cell)
+          // Declaring an iterator over all active cells on local mpi process
+          typename DoFHandler<dim>::active_cell_iterator cell = this->get_dof_handler().begin_active();
+          for (; cell != this->get_dof_handler().end();
+                 ++cell)
           {
               if (!(cell->is_locally_owned()))
                   continue;
@@ -157,32 +156,53 @@ namespace aspect
               std::vector<double> interpolated_temperature(quadrature_points.size());
               std::vector<double> interpolated_pressure(quadrature_points.size());
               std::vector<Tensor<1,dim>> interpolated_velocity(quadrature_points.size());
-//                std::vector<std::vector<double>> interpolated_compositional_fields(quadrature_points.size());
+              std::vector<std::vector<double>> interpolated_compositional_fields(this->n_compositional_fields(),
+                                                                                 std::vector<double>(quadrature_points.size()));
 
               fe_values[extractor_pressure].get_function_values(this->get_solution(), interpolated_pressure);
               fe_values[extractor_temperature].get_function_values(this->get_solution(), interpolated_temperature);
               fe_values[extractor_velocity].get_function_values(this->get_solution(), interpolated_velocity);
-//                for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
-//                    fe_values[this->introspection().extractors.compositional_fields[c]].get_function_values(this->get_solution(),
-//                                                                                                            interpolated_compositional_fields[c]);
+
+              typename std::vector<std::vector<double>>::const_iterator itr_compositional_fields = interpolated_compositional_fields.begin();
+
+              int index = 0;
+              for(; itr_compositional_fields != interpolated_compositional_fields.end(); itr_compositional_fields++) {
+                  for (std::vector<double>::const_iterator itr_compositional_field = itr_compositional_fields->begin();
+                       itr_compositional_field != itr_compositional_fields->begin();
+                       itr_compositional_field++) {
+                      fe_values[this->introspection().extractors.compositional_fields[index]].get_function_values(
+                              this->get_solution(),
+                              interpolated_compositional_fields[index]);
+                  }
+                  index++;
+              }
+
 
               typename std::vector<double>::const_iterator itr_temperature = interpolated_temperature.begin();
               typename std::vector<double>::const_iterator itr_pressure = interpolated_pressure.begin();
               typename std::vector<Tensor<1,dim>>::const_iterator itr_velocity = interpolated_velocity.begin();
-//                typename std::vector<std::vector<double>>::const_iterator itr_compositional_fields = interpolated_compositional_fields.begin();
 
               typename std::vector<Point<dim>>::const_iterator itr_quadrature_points = quadrature_points.begin();
               typename std::vector<double>::const_iterator itr_weights = jacobian_weight_points.begin();
 
-//                interpolated_data_stream << cell->active_cell_index() << std::endl;
-
-              for (; itr_quadrature_points != quadrature_points.end(); itr_quadrature_points++, itr_velocity++, itr_pressure++, itr_temperature++, itr_weights++)
+              for (; itr_quadrature_points != quadrature_points.end();
+                     itr_quadrature_points++, itr_velocity++, itr_pressure++, itr_temperature++, itr_weights++, itr_compositional_fields++)
               {
-                  // Add metadata
                   interpolated_data_stream << (*itr_quadrature_points)[0] << "\t" << (*itr_quadrature_points)[1]
                                            << "\t" << (*itr_velocity)[0] << "\t" << (*itr_velocity)[1]
                                            << "\t" << *itr_pressure << "\t" << *itr_temperature
-                                           << "\t" << *itr_weights << std::endl;
+                                           << "\t" << *itr_weights << "\t";
+                  if (this->n_compositional_fields() != 0)
+                      for (std::vector<double>::const_iterator itr_compositional_field = itr_compositional_fields->begin();
+                                   itr_compositional_field != (itr_compositional_fields->end());
+                          itr_compositional_field++)
+                      {
+                          if(itr_compositional_field != --itr_compositional_fields->end())
+                             interpolated_data_stream << *itr_compositional_field << "\t";
+                          else
+                             interpolated_data_stream << *itr_compositional_field;
+                      }
+                  interpolated_data_stream << std::endl;
               }
           }
 
@@ -255,13 +275,14 @@ namespace aspect
                   {
                     const double tol_tmp =1e-6;
                     Point<dim> tmp((*itr_quadrature_points) - quadrature_points[i]);
-                      if ( std::sqrt(tmp.square()) <= tol_tmp)//&& *itr_weights== jacobian_weight_points[i])
+                      if ( std::sqrt(tmp.square()) <= tol_tmp) //&& *itr_weights== jacobian_weight_points[i])
+                      {
                           index = i;
 //                          debug << (*itr_quadrature_points)[0] << "\t" << (*itr_quadrature_points)[1] << "\t"
 //                                << interpolated_velocity[i][0] << "\t" << interpolated_velocity[i][1] << std::endl;
                       }
                   }
-                  Assert (index < 1000, ExcInternalError());
+//                  Assert (index < 1000, ExcInternalError());
 
                   velocity_l2_error += (interpolated_velocity[index] - (*itr_velocity))*(interpolated_velocity[index] - (*itr_velocity))*(jacobian_weights[index]);
 //                  pressure_l2_error += (interpolated_pressure[index] - (*itr_pressure))*(interpolated_pressure[index] - (*itr_pressure));
