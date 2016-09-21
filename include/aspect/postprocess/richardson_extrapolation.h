@@ -66,13 +66,15 @@ namespace aspect
         parse_parameters (ParameterHandler &prm);
 
         /**
-         * Read in the solution data.
+         * Read in the solution data. Currently, we read in an ascii input file.
+         * Ideally, we read from a binary file.
          */
         void
         read_in_data();
 
         /**
-         * Write out the solution data.
+         * Write out the solution data. Again, this is written out into an ascii
+         * file and instead, should be written out in binary format.
          */
         void
         write_out_data();
