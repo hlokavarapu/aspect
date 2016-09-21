@@ -125,7 +125,8 @@ namespace aspect
           /**
           * Compute the Legendre gauss points at level 2 indirection.
           **/
-          QGaussLobatto<1> base_quadrature(this->get_stokes_velocity_degree() + 1);
+          //QGaussLobatto<1> base_quadrature(this->get_stokes_velocity_degree() + 1);
+          QGauss<1> base_quadrature(this->get_stokes_velocity_degree() + 1);
           QIterated<dim> quadrature_rule (base_quadrature, 2);
 
           FEValues<dim> fe_values(this->get_mapping(),
@@ -249,15 +250,18 @@ namespace aspect
 //                  fe_values[extractor_temperature].get_function_values(this->get_solution(), interpolated_temperature);
                   fe_values[extractor_velocity].get_function_values(this->get_solution(), interpolated_velocity);
 
-                  int index = 0;
-                  for (int i=0; i<fe_values.n_quadrature_points; i++) {
-                      if ((*itr_quadrature_points)[0] == (quadrature_points[i])[0]
-                          && (*itr_quadrature_points)[1] == (quadrature_points[i])[1]) {
+                  unsigned int index = 1000;
+                  for (unsigned int i=0; i<fe_values.n_quadrature_points; i++)
+                  {
+                    const double tol_tmp =1e-6;
+                    Point<dim> tmp((*itr_quadrature_points) - quadrature_points[i]);
+                      if ( std::sqrt(tmp.square()) <= tol_tmp)//&& *itr_weights== jacobian_weight_points[i])
                           index = i;
 //                          debug << (*itr_quadrature_points)[0] << "\t" << (*itr_quadrature_points)[1] << "\t"
 //                                << interpolated_velocity[i][0] << "\t" << interpolated_velocity[i][1] << std::endl;
                       }
                   }
+                  Assert (index < 1000, ExcInternalError());
 
                   velocity_l2_error += (interpolated_velocity[index] - (*itr_velocity))*(interpolated_velocity[index] - (*itr_velocity))*(jacobian_weights[index]);
 //                  pressure_l2_error += (interpolated_pressure[index] - (*itr_pressure))*(interpolated_pressure[index] - (*itr_pressure));
