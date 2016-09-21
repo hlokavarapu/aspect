@@ -58,8 +58,7 @@ namespace aspect
       RichardsonExtrapolation<dim>::read_in_data()
       {
           /**
-         * Assuming that the number of active cells * number of quadrature points = number of readin solution components,
-         * we then allocate the input vectors.
+         * Initializing private variables.
          */
           quadrature_points_input = new std::vector<Point<dim>>;
           temperature_input = new std::vector<double>;
@@ -67,6 +66,9 @@ namespace aspect
           velocity_input = new std::vector<Tensor<1,dim>>;
           weight_input = new std::vector<double>;
 
+          /**
+           * Looping and reading over data.
+           */
           std::ifstream input(input_file_name);
           std::string line;
 
@@ -221,6 +223,11 @@ namespace aspect
             typename std::vector<Point<dim>>::const_iterator itr_quadrature_points = quadrature_points_input->begin();
             typename std::vector<double>::const_iterator itr_weights = weight_input->begin();
 
+            /**
+              * For debugging purposes, writing out the base elements of the solution vector.
+              */
+            std::ofstream debug("debug.log", std::ios_base::out);
+
             for (; itr_quadrature_points !=
                    quadrature_points_input->end(); itr_quadrature_points++, itr_velocity++, itr_pressure++, itr_temperature++, itr_weights++) {
                   std::pair<const typename DoFHandler<dim>::active_cell_iterator,
@@ -228,11 +235,12 @@ namespace aspect
                   if (! it.first->is_locally_owned())
                       continue;
 
+                fe_values.reinit(it.first);
+
 //                  std::vector<double> interpolated_temperature(fe_values.n_quadrature_points);
 //                  std::vector<double> interpolated_pressure(fe_values.n_quadrature_points);
                   std::vector<Tensor<1,dim>> interpolated_velocity(fe_values.n_quadrature_points);
 
-                  fe_values.reinit(it.first);
 
                   const std::vector<Point<dim>>  quadrature_points = fe_values.get_quadrature_points();
                   const std::vector<double>  jacobian_weights = fe_values.get_JxW_values();
@@ -242,16 +250,20 @@ namespace aspect
                   fe_values[extractor_velocity].get_function_values(this->get_solution(), interpolated_velocity);
 
                   int index = 0;
-                  for (int i=0; i<fe_values.n_quadrature_points; i++)
-                  {
-                      if ( (*itr_quadrature_points)[0] == (quadrature_points[i])[0]
-                              && (*itr_quadrature_points)[1] == (quadrature_points[i])[1])
+                  for (int i=0; i<fe_values.n_quadrature_points; i++) {
+                      if ((*itr_quadrature_points)[0] == (quadrature_points[i])[0]
+                          && (*itr_quadrature_points)[1] == (quadrature_points[i])[1]) {
                           index = i;
+//                          debug << (*itr_quadrature_points)[0] << "\t" << (*itr_quadrature_points)[1] << "\t"
+//                                << interpolated_velocity[i][0] << "\t" << interpolated_velocity[i][1] << std::endl;
+                      }
                   }
 
                   velocity_l2_error += (interpolated_velocity[index] - (*itr_velocity))*(interpolated_velocity[index] - (*itr_velocity))*(jacobian_weights[index]);
 //                  pressure_l2_error += (interpolated_pressure[index] - (*itr_pressure))*(interpolated_pressure[index] - (*itr_pressure));
             }
+
+            debug.close();
 
           velocity_l2_error = std::sqrt(Utilities::MPI::sum(velocity_l2_error, this->get_mpi_communicator()));
 //          pressure_l2_error = std::sqrt(Utilities::MPI::sum(pressure_l2_error, this->get_mpi_communicator())/n_points);
