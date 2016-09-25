@@ -49,8 +49,8 @@ namespace aspect
                                const std::vector<Point<dim> > &positions,
                                const typename parallel::distributed::Triangulation<dim>::active_cell_iterator &cell) const;
 
-      //    void
-      //    calculate_linear_constants(double *c1, double *c2, double *c3, dealii::FullMatrix<double> A, dealii::FullMatrix<double> r);
+          //    void
+          //    calculate_linear_constants(double *c1, double *c2, double *c3, dealii::FullMatrix<double> A, dealii::FullMatrix<double> r);
       };
     }
   }

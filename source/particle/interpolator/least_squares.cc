@@ -35,8 +35,8 @@ namespace aspect
       template <int dim>
       std::vector<std::vector<double> >
       LeastSquares<dim>::properties_at_points(const std::multimap<types::LevelInd, Particle<dim> > &particles,
-                                             const std::vector<Point<dim> > &positions,
-                                             const typename parallel::distributed::Triangulation<dim>::active_cell_iterator &cell) const
+                                              const std::vector<Point<dim> > &positions,
+                                              const typename parallel::distributed::Triangulation<dim>::active_cell_iterator &cell) const
       {
         typename parallel::distributed::Triangulation<dim>::active_cell_iterator found_cell;
 
@@ -77,103 +77,103 @@ namespace aspect
                                "average' interpolation scheme does not support this case. "));
 
 //        const std::vector<double> particle_properties = particle->second.get_properties();
-      for (typename std::vector<Point<dim>>::const_iterator itr = positions.begin(); itr != positions.end(); itr++) 
-      {
-        std::vector<double> cell_properties2 (n_properties,0.0);
-        for (unsigned int i = 0; i < n_properties; ++i)
-        {
-          dealii::FullMatrix<double> A(3,3); // = dealii::FullMatrix<double>(3,3);
-          dealii::FullMatrix<double> r(3,1); // = dealii::FullMatrix<double>(3,3);
-          A = 0;
-          r = 0;
-         
-          for (typename std::multimap<types::LevelInd, Particle<dim> >::const_iterator particle = particle_range.first;
-               particle != particle_range.second; ++particle)
+        for (typename std::vector<Point<dim>>::const_iterator itr = positions.begin(); itr != positions.end(); itr++)
           {
+            std::vector<double> cell_properties2 (n_properties,0.0);
+            for (unsigned int i = 0; i < n_properties; ++i)
+              {
+                dealii::FullMatrix<double> A(3,3); // = dealii::FullMatrix<double>(3,3);
+                dealii::FullMatrix<double> r(3,1); // = dealii::FullMatrix<double>(3,3);
+                A = 0;
+                r = 0;
 
-            const double particle_property = particle->second.get_properties()[i];
-            const Point<dim> position = particle->second.get_location();
-            A(0,0) += position[0] * position[0];
-            A(0,1) += position[0] * position[1];
-            A(0,2) += position[0];
-            A(1,1) += position[1] * position[1];
-            A(1,2) += position[1];
-            A(2,2) += 1;
- 
-            r(0,0) += particle_property * position[0];
-            r(1,0) += particle_property * position[1];
-            r(2,0) += particle_property;
-          }
-   
-          A(1,0) = A(0,1);
-          A(2,0) = A(0,2);
-          A(2,1) = A(1,2);
+                for (typename std::multimap<types::LevelInd, Particle<dim> >::const_iterator particle = particle_range.first;
+                     particle != particle_range.second; ++particle)
+                  {
 
-          dealii::FullMatrix<double> c(3,1);
-          c = 0;
-          dealii::FullMatrix<double> A_inverse(A);
-          A_inverse.gauss_jordan();
-          A_inverse.mmult(c, r); 
+                    const double particle_property = particle->second.get_properties()[i];
+                    const Point<dim> position = particle->second.get_location();
+                    A(0,0) += position[0] * position[0];
+                    A(0,1) += position[0] * position[1];
+                    A(0,2) += position[0];
+                    A(1,1) += position[1] * position[1];
+                    A(1,2) += position[1];
+                    A(2,2) += 1;
+
+                    r(0,0) += particle_property * position[0];
+                    r(1,0) += particle_property * position[1];
+                    r(2,0) += particle_property;
+                  }
+
+                A(1,0) = A(0,1);
+                A(2,0) = A(0,2);
+                A(2,1) = A(1,2);
+
+                dealii::FullMatrix<double> c(3,1);
+                c = 0;
+                dealii::FullMatrix<double> A_inverse(A);
+                A_inverse.gauss_jordan();
+                A_inverse.mmult(c, r);
 
 //Debugging purposes:
 //          std::cout << "c" << std::endl;
 //          c.print(std::cout, 12, 12);
 
-          Point<dim> support_point = *itr;
-          cell_properties2[i] = c(2,0) + c(0,0)*(support_point[0]) + c(1,0)*(support_point[1]);
+                Point<dim> support_point = *itr;
+                cell_properties2[i] = c(2,0) + c(0,0)*(support_point[0]) + c(1,0)*(support_point[1]);
 
-/*          std::cout << "A" << std::endl;
-          A.print(std::cout, 12, 10);
-          dealii::FullMatrix<double> A_inverse(A);
-          A_inverse.gauss_jordan();
-//          A_inverse = 0;
- 
-           
-          std::cout << "A^(-1)" << std::endl;
-          A_inverse.print(std::cout, 12, 10);
-          dealii::FullMatrix<double> I(3,3);
-          A.mmult(I, A_inverse, false);
-          std::cout << "I" << std::endl;
-          I.print(std::cout, 12, 10);
+                /*          std::cout << "A" << std::endl;
+                          A.print(std::cout, 12, 10);
+                          dealii::FullMatrix<double> A_inverse(A);
+                          A_inverse.gauss_jordan();
+                //          A_inverse = 0;
 
-          std::cout << "r" << std::endl;
-          r.print(std::cout, 12, 10);*/
-        }
-        properties.push_back(cell_properties2);
-      }
 
-/*        for (typename std::multimap<types::LevelInd, Particle<dim> >::const_iterator particle = particle_range.first;
-             particle != particle_range.second; ++particle)
-          {
-            const std::vector<double> particle_properties = particle->second.get_properties();
+                          std::cout << "A^(-1)" << std::endl;
+                          A_inverse.print(std::cout, 12, 10);
+                          dealii::FullMatrix<double> I(3,3);
+                          A.mmult(I, A_inverse, false);
+                          std::cout << "I" << std::endl;
+                          I.print(std::cout, 12, 10);
 
-            for (unsigned int i = 0; i < n_properties; ++i)
-            {
-              cell_properties[i] += particle_properties[i] / n_particles;
-            }
+                          std::cout << "r" << std::endl;
+                          r.print(std::cout, 12, 10);*/
+              }
+            properties.push_back(cell_properties2);
           }
 
-        const std::vector<std::vector<double> > properties(positions.size(),cell_properties);
-*/
+        /*        for (typename std::multimap<types::LevelInd, Particle<dim> >::const_iterator particle = particle_range.first;
+                     particle != particle_range.second; ++particle)
+                  {
+                    const std::vector<double> particle_properties = particle->second.get_properties();
+
+                    for (unsigned int i = 0; i < n_properties; ++i)
+                    {
+                      cell_properties[i] += particle_properties[i] / n_particles;
+                    }
+                  }
+
+                const std::vector<std::vector<double> > properties(positions.size(),cell_properties);
+        */
         return properties;
       }
 
-/*      template <int dim>
-      void
-      LeastSquares<dim>::calculate_linear_constants(double *c1, double *c2, double *c3, dealii::FullMatrix<double> A, dealii::FullMatrix<double> r)
-      {
-        std::cout << "A" << std::endl;
-        A.print(std::cout, 12, 10);
-        dealii::FullMatrix<double> A_inverse(3,3);
-        A_inverse = 0;
-        A.invert(A_inverse);
+      /*      template <int dim>
+            void
+            LeastSquares<dim>::calculate_linear_constants(double *c1, double *c2, double *c3, dealii::FullMatrix<double> A, dealii::FullMatrix<double> r)
+            {
+              std::cout << "A" << std::endl;
+              A.print(std::cout, 12, 10);
+              dealii::FullMatrix<double> A_inverse(3,3);
+              A_inverse = 0;
+              A.invert(A_inverse);
 
-        std::cout << "A^(-1)" << std::endl;
-        A_inverse.print(std::cout, 12, 10);
-        std::cout << "r" << std::endl;
-        r.print(std::cout, 12, 10);
-      }
-*/ 
+              std::cout << "A^(-1)" << std::endl;
+              A_inverse.print(std::cout, 12, 10);
+              std::cout << "r" << std::endl;
+              r.print(std::cout, 12, 10);
+            }
+      */
     }
   }
 }

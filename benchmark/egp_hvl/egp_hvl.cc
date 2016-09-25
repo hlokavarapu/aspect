@@ -51,7 +51,7 @@ namespace aspect
         /****************************************************************************************/
         /****************************************************************************************/
         /* Output */
-        vel[0] = -pos[1];  
+        vel[0] = -pos[1];
         vel[1] =  pos[0];
 
         (*presssure) = 1 - pos[1]*pos[1];
@@ -331,9 +331,9 @@ namespace aspect
       return 0;
     }
 
-/**
-  TODO: A debugging idea is that we write another identical benchmark setups where in one case density is overridden by interpolated value of density and in this case with the analytical solution.
-**/
+    /**
+      TODO: A debugging idea is that we write another identical benchmark setups where in one case density is overridden by interpolated value of density and in this case with the analytical solution.
+    **/
     template <int dim>
     double
     SolCxMaterial<dim>::
@@ -348,7 +348,9 @@ namespace aspect
       //return 2.0 * p[1];
       // Use this function if running 2d spherical shell geometry model.
       double r = p.norm();
-      return r*r;
+      double theta = acos(p[0]/r);
+      double density = r*r;
+      return density;
     }
 
 
