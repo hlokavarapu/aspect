@@ -1,4 +1,4 @@
-set Additional shared libraries            = ./../libegp_hvl.so
+set Additional shared libraries            = ./libegp_hvl.so
 
 ############### Global parameters
 
@@ -45,9 +45,9 @@ subsection Model settings
 # Set to tangential velocity boundary conditions.
 # Note that the function specified in "Boundary velocity model" has no influence unless the following line is unmommneted 
 # and the parameter  "Tangential velocity boundary indicators" is reset.
-  #set Prescribed velocity boundary indicators = 0: function, 1: function 
-  set Prescribed velocity boundary indicators =
-  set Tangential velocity boundary indicators = 0,1
+  set Prescribed velocity boundary indicators = 0: function, 1: function 
+#  set Prescribed velocity boundary indicators =
+  set Tangential velocity boundary indicators = 
   set Zero velocity boundary indicators       =
 end
 
@@ -55,7 +55,7 @@ subsection Boundary velocity model
   subsection Function
     set Function constants  = pi=3.1415926
     set Variable names      = r,theta,t
-    set Function expression = 0.1*cos(theta);0.5*sin(theta)
+    set Function expression = 0;r
   end
 end
 
@@ -72,6 +72,10 @@ end
 
 subsection Gravity model
   set Model name = radial constant
+  subsection Radial constant
+    set Magnitude = 1
+  end
+
   subsection Function
     set Variable names      = r,theta,t
     set Function expression = 0;0
@@ -133,7 +137,7 @@ end
 subsection Mesh refinement
   set Coarsening fraction                      = 0
   set Initial adaptive refinement              = 0
-  set Initial global refinement                = 4
+  set Initial global refinement                = 5
 end
 
 
@@ -145,25 +149,18 @@ subsection Postprocess
   subsection Visualization
     set Output format                 = vtu
     set Number of grouped files       = 1
-    set Time between graphical output = 0.5
+    set Time between graphical output = 0
     set List of output variables = density, viscosity, partition
   end
 
   subsection Tracers
     set Number of tracers = 1024
-    set Time between data output = 0.5
+    set Time between data output = 0
     set Data output format = vtu
-    set List of tracer properties = function
     set Integration scheme = rk2
     #set Interpolation scheme = cell average
     # set Interpolation scheme = least squares
     set Maximum tracers per cell = 36864
-
-    subsection Function
-      set Number of functions = 1
-      set Variable names      = x, z
-      set Function expression =  x*x + z*z
-    end
 
     set Particle generator name = uniform radial
 
@@ -173,10 +170,6 @@ subsection Postprocess
        set Maximum x = .49739583333333333334
        set Minimum y = -.49739583333333333334
        set Maximum y = .49739583333333333334
-       set Number of particles in x = 192
-       set Number of particles in y = 192
-       set Delta x = .00520833333333333333
-       set Delta y = .00520833333333333333
       end
 
       subsection Uniform radial
@@ -188,7 +181,6 @@ subsection Postprocess
         set Center y = 0.0
         set Radial layers = 16
       end
-
     end
   end
 end

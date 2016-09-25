@@ -347,8 +347,8 @@ namespace aspect
       // This function creates a closed circuit flow for the 2d box geometry model.
       //return 2.0 * p[1];
       // Use this function if running 2d spherical shell geometry model.
-      return 1;
-   
+      double r = p.norm();
+      return r*r;
     }
 
 
