@@ -91,6 +91,7 @@ namespace aspect
          */
         std::string input_file_name;
         std::string output_file_name;
+        std::string data_output_file_name;
         double end_time;
 
         /**
