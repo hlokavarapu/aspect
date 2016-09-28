@@ -340,11 +340,11 @@ namespace aspect
               compositional_field_l2_error[compositional_field_index] = std::sqrt(Utilities::MPI::sum(compositional_field_l2_error[compositional_field_index], this->get_mpi_communicator()));
 
           if(Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0) {
-              std::ofstream error_log("Errors.dat", std::ios_base::app);
-              info = "u_l2: " + std::to_string(velocity_l2_error);
-              error_log << std::setprecision(14) << "Errors: u_l2: " << velocity_l2_error << " p_l2: " << pressure_l2_error << " t_l2: " << temperature_l2_error;
+              std::ofstream error_log(data_output_file_name, std::ios_base::app);
+              info = std::to_string(velocity_l2_error);
+              error_log << std::setprecision(14) << velocity_l2_error << " " << pressure_l2_error << " " << temperature_l2_error;
               for(unsigned int compositional_field_index = 0; compositional_field_index < this->n_compositional_fields(); compositional_field_index++)
-                  error_log << " c_" + Utilities::int_to_string(compositional_field_index) + ": " << compositional_field_l2_error[compositional_field_index];
+                  error_log << " " << compositional_field_l2_error[compositional_field_index];
               error_log << std::endl;
               error_log.close();
           }
@@ -388,6 +388,10 @@ namespace aspect
                                   Patterns::Anything (),
                                   "The file name containing the interpolated solution at the nodal values "
                                   "at the current grid resolution * 4 cells.");
+                prm.declare_entry("Output file name of errors", "Errors.dat",
+                                  Patterns::Anything(),
+                                  "A file name to append the computed little L2 error oo the interpolated "
+                                  "solution to current solution at quadrature points.");
             }
             prm.leave_subsection();
         }
@@ -411,6 +415,7 @@ namespace aspect
 
                 input_file_name = prm.get("Input file name of interpolated data");
                 output_file_name = prm.get("Output file name of interpolated data");
+                data_output_file_name = prm.get("Output file name of errors");
             }
             prm.leave_subsection();
         }
