@@ -6,6 +6,13 @@
  *
  * <ol>
  *
+ * <li> Changed: The timestep entry in the statistics file has been moved to
+ * column 3 and is now the timestep used for the timestep corresponding to the
+ * current row.
+ * <br>
+ * (Jonathan Robey, 2016/09/16)
+ * </li>
+ *
  * <li> Changed: The 'cell average' particle interpolator is now more
  * tolerant against cells without particles by interpolating properties
  * from neighboring cells. This is necessary, because during refinement
@@ -87,6 +94,12 @@
  * provided name).
  * <br>
  * (Rene Gassmoeller, 2016/07/18)
+ *
+ * <li> New: Added parameter “Adapt by fraction of cells” to switch between 
+ * refining a certain number of cells based on the fraction of total error 
+ * (default behaviour) and the fraction of total number of cells
+ * <br>
+ * (Lev Karatun, 2016/07/20)
  *
  * <li> Changed: It is now possible to set the gravity to a negative
  * value in order to calculate backward advection.
