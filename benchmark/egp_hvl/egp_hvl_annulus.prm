@@ -29,16 +29,6 @@ subsection Geometry model
     # symmetries
     #set Cells along circumference = 11
   end
-
-  subsection Box
-    set X extent = 1
-    set X repetitions = 32
-    set Y extent = 1
-    set Y repetitions = 32
-
-    set Box origin X coordinate = -0.5
-    set Box origin Y coordinate = -0.5
-  end
 end
 
 subsection Model settings
@@ -60,12 +50,12 @@ subsection Boundary velocity model
 end
 
 subsection Material model
-  set Model name = SolCxMaterial
+  set Model name = EGPHVLMaterial
 
-  subsection SolCx
+  subsection EGPHVL
     # Do not change these set of parameters! EGP && HL
     set Viscosity jump = 1
-    set Background density = 1
+    set Reference density = 1
   end
 end
 
@@ -144,7 +134,7 @@ end
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = visualization, tracers
+  set List of postprocessors = visualization, tracers, EGPHVLPostprocessor
   
   subsection Visualization
     set Output format                 = vtu

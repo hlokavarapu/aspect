@@ -41,7 +41,7 @@ namespace aspect
       // release 1.7.0. As mentioned in the Underworld Manual, this code has been
       // released under the GNU General Public License (GPL).
 
-      void _Velic_solCx(
+      void analytic_solution(
         double pos[],
         double _eta_A, double _eta_B,   /* Input parameters: density, viscosity A, viscosity B */
         double _x_c, int _n,      /* Input parameters: viscosity jump location, wavenumber in x */
@@ -70,10 +70,10 @@ namespace aspect
        * of the jump in viscosity $\eta_B$.
        */
       template <int dim>
-      class FunctionSolCx : public Function<dim>
+      class FunctionStreamline : public Function<dim>
       {
         public:
-          FunctionSolCx (const double eta_B,
+          FunctionStreamline (const double eta_B,
                          const double background_density)
             :
             Function<dim>(),
@@ -93,7 +93,7 @@ namespace aspect
 
             // call the analytic function for the solution with a zero
             // background density
-            AnalyticSolutions::_Velic_solCx
+            AnalyticSolutions::analytic_solution
             (pos,
              eta_A, eta_B,
              0.5, 1,
@@ -108,23 +108,8 @@ namespace aspect
       };
     }
 
-    /**
-      * A material model that describes the <i>SolCx</i> benchmark of the
-      * paper cited in the documentation of the DuretzEtAl namespace.
-      *
-      * @note The SolCx benchmark only talks about the flow field, not about
-      * a temperature field. All quantities related to the temperature are
-      * therefore set to zero in the implementation of this class.
-      *
-      * @note The analytic solution of this benchmark is implemented in the
-      * "SolCx error" postprocessor in
-      * aspect::Postprocessor::DuretzEtAl::SolCx class and can be used to
-      * assess the accuracy of the computed solution.
-      *
-      * @ingroup MaterialModels
-      */
     template <int dim>
-    class SolCxMaterial : public MaterialModel::InterfaceCompatibility<dim>
+    class BenchmarkMaterialModel : public MaterialModel::InterfaceCompatibility<dim>
     {
       public:
         /**
@@ -257,7 +242,7 @@ namespace aspect
 
     template <int dim>
     double
-    SolCxMaterial<dim>::
+    BenchmarkMaterialModel<dim>::
     viscosity (const double,
                const double,
                const std::vector<double> &,       /*composition*/
@@ -271,7 +256,7 @@ namespace aspect
 
     template <int dim>
     double
-    SolCxMaterial<dim>::
+    BenchmarkMaterialModel<dim>::
     reference_viscosity () const
     {
       return 1;
@@ -279,7 +264,7 @@ namespace aspect
 
     template <int dim>
     double
-    SolCxMaterial<dim>::
+    BenchmarkMaterialModel<dim>::
     reference_density () const
     {
       return background_density;
@@ -287,7 +272,7 @@ namespace aspect
 
     template <int dim>
     double
-    SolCxMaterial<dim>::
+    BenchmarkMaterialModel<dim>::
     reference_thermal_expansion_coefficient () const
     {
       return 0;
@@ -295,7 +280,7 @@ namespace aspect
 
     template <int dim>
     double
-    SolCxMaterial<dim>::
+    BenchmarkMaterialModel<dim>::
     specific_heat (const double,
                    const double,
                    const std::vector<double> &, /*composition*/
@@ -306,7 +291,7 @@ namespace aspect
 
     template <int dim>
     double
-    SolCxMaterial<dim>::
+    BenchmarkMaterialModel<dim>::
     reference_cp () const
     {
       return 0;
@@ -314,7 +299,7 @@ namespace aspect
 
     template <int dim>
     double
-    SolCxMaterial<dim>::
+    BenchmarkMaterialModel<dim>::
     thermal_conductivity (const double,
                           const double,
                           const std::vector<double> &, /*composition*/
@@ -325,7 +310,7 @@ namespace aspect
 
     template <int dim>
     double
-    SolCxMaterial<dim>::
+    BenchmarkMaterialModel<dim>::
     reference_thermal_diffusivity () const
     {
       return 0;
@@ -336,7 +321,7 @@ namespace aspect
     **/
     template <int dim>
     double
-    SolCxMaterial<dim>::
+    BenchmarkMaterialModel<dim>::
     density (const double,
              const double,
              const std::vector<double> &, /*composition*/
@@ -348,7 +333,6 @@ namespace aspect
       //return 2.0 * p[1];
       // Use this function if running 2d spherical shell geometry model.
       double r = p.norm();
-      double theta = acos(p[0]/r);
       double density = r*r;
       return density;
     }
@@ -356,7 +340,7 @@ namespace aspect
 
     template <int dim>
     double
-    SolCxMaterial<dim>::
+    BenchmarkMaterialModel<dim>::
     thermal_expansion_coefficient (const double temperature,
                                    const double,
                                    const std::vector<double> &, /*composition*/
@@ -368,7 +352,7 @@ namespace aspect
 
     template <int dim>
     double
-    SolCxMaterial<dim>::
+    BenchmarkMaterialModel<dim>::
     compressibility (const double,
                      const double,
                      const std::vector<double> &, /*composition*/
@@ -380,7 +364,7 @@ namespace aspect
 
     template <int dim>
     bool
-    SolCxMaterial<dim>::
+    BenchmarkMaterialModel<dim>::
     is_compressible () const
     {
       return false;
@@ -388,18 +372,16 @@ namespace aspect
 
     template <int dim>
     void
-    SolCxMaterial<dim>::declare_parameters (ParameterHandler &prm)
+    BenchmarkMaterialModel<dim>::declare_parameters (ParameterHandler &prm)
     {
       prm.enter_subsection("Material model");
       {
-        prm.enter_subsection("SolCx");
+        prm.enter_subsection("EGPHVL");
         {
           prm.declare_entry ("Viscosity jump", "1",
                              Patterns::Double (0),
                              "Viscosity in the right half of the domain.");
-          /** TODO: Rename Background density to reference density
-          **/
-          prm.declare_entry ("Background density", "1",
+          prm.declare_entry ("Reference density", "1",
                              Patterns::Double (0),
                              "Density value upon which the variation of this testcase "
                              "is overlaid. Since this background density is constant "
@@ -416,14 +398,14 @@ namespace aspect
 
     template <int dim>
     void
-    SolCxMaterial<dim>::parse_parameters (ParameterHandler &prm)
+    BenchmarkMaterialModel<dim>::parse_parameters (ParameterHandler &prm)
     {
       prm.enter_subsection("Material model");
       {
-        prm.enter_subsection("SolCx");
+        prm.enter_subsection("EGPHVL");
         {
           eta_B = prm.get_double ("Viscosity jump");
-          background_density = prm.get_double("Background density");
+          background_density = prm.get_double("Reference density");
         }
         prm.leave_subsection();
       }
@@ -439,7 +421,7 @@ namespace aspect
 
     template <int dim>
     double
-    SolCxMaterial<dim>::get_eta_B() const
+    BenchmarkMaterialModel<dim>::get_eta_B() const
     {
       return eta_B;
     }
@@ -447,7 +429,7 @@ namespace aspect
 
     template <int dim>
     double
-    SolCxMaterial<dim>::get_background_density() const
+    BenchmarkMaterialModel<dim>::get_background_density() const
     {
       return background_density;
     }
@@ -462,7 +444,7 @@ namespace aspect
       * benchmarks defined in the paper Duretz et al. reference above.
       */
     template <int dim>
-    class SolCxPostprocessor : public Postprocess::Interface<dim>, public ::aspect::SimulatorAccess<dim>
+    class EGPHVLPostprocessor : public Postprocess::Interface<dim>, public ::aspect::SimulatorAccess<dim>
     {
       public:
         /**
@@ -475,16 +457,16 @@ namespace aspect
 
     template <int dim>
     std::pair<std::string,std::string>
-    SolCxPostprocessor<dim>::execute (TableHandler &statistics)
+    EGPHVLPostprocessor<dim>::execute (TableHandler &statistics)
     {
       std_cxx1x::shared_ptr<Function<dim> > ref_func;
-      if (dynamic_cast<const SolCxMaterial<dim> *>(&this->get_material_model()) != NULL)
+      if (dynamic_cast<const BenchmarkMaterialModel<dim> *>(&this->get_material_model()) != NULL)
         {
-          const SolCxMaterial<dim> *
+          const BenchmarkMaterialModel<dim> *
           material_model
-            = dynamic_cast<const SolCxMaterial<dim> *>(&this->get_material_model());
+            = dynamic_cast<const BenchmarkMaterialModel<dim> *>(&this->get_material_model());
 
-          ref_func.reset (new AnalyticSolutions::FunctionSolCx<dim>(material_model->get_eta_B(),
+          ref_func.reset (new AnalyticSolutions::FunctionStreamline<dim>(material_model->get_eta_B(),
                                                                     material_model->get_background_density()));
         }
       else
@@ -557,17 +539,16 @@ namespace aspect
 {
   namespace InclusionBenchmark
   {
-    ASPECT_REGISTER_MATERIAL_MODEL(SolCxMaterial,
-                                   "SolCxMaterial",
-                                   "A material model that corresponds to the 'SolCx' benchmark "
-                                   "defined in Duretz et al., G-Cubed, 2011.")
+    ASPECT_REGISTER_MATERIAL_MODEL(BenchmarkMaterialModel,
+                                   "EGPHVLMaterial",
+                                   "EGP and HVL benchmark material model.")
 
 
-    ASPECT_REGISTER_POSTPROCESSOR(SolCxPostprocessor,
-                                  "SolCxPostprocessor",
+    ASPECT_REGISTER_POSTPROCESSOR(EGPHVLPostprocessor,
+                                  "EGPHVLPostprocessor",
                                   "A postprocessor that compares the solution of the benchmarks from "
-                                  "the Duretz et al., G-Cubed, 2011, paper with the one computed by ASPECT "
-                                  "and reports the error. Specifically, it can compute the errors for "
+                                  "derived analytical solution with the one computed by ASPECT "
+                                  "and reports the error. Specifically, it can also compute the errors for "
                                   "the SolCx, SolKz and inclusion benchmarks. The postprocessor inquires "
                                   "which material model is currently being used and adjusts "
                                   "which exact solution to use accordingly.")

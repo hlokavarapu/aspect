@@ -47,12 +47,12 @@ subsection Boundary velocity model
 end
 
 subsection Material model
-  set Model name = SolCxMaterial
+  set Model name = EGPHVLMaterial
 
-  subsection SolCx
+  subsection EGPHVL
     # Do not change these set of parameters! EGP && HL
     set Viscosity jump = 1
-    set Background density = 1
+    set Reference density = 1
   end
 end
 
@@ -108,7 +108,7 @@ end
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = SolCxPostprocessor, visualization, tracers
+  set List of postprocessors = EGPHVLPostprocessor, visualization, tracers
   
   subsection Visualization
     set Output format                 = vtu
