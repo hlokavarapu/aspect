@@ -291,7 +291,7 @@ namespace aspect
 
                   index = 1000;
 
-                const double tol_tmp = 1e-6 * it.first->diameter();
+                const double tol_tmp = it.first->diameter() * 1e-2;
                   for (unsigned int i=0; i<fe_values.n_quadrature_points; i++)
                   {
                     Point<dim> tmp((*itr_input_quadrature_points) - quadrature_points[i]);
@@ -340,11 +340,13 @@ namespace aspect
               compositional_field_l2_error[compositional_field_index] = std::sqrt(Utilities::MPI::sum(compositional_field_l2_error[compositional_field_index], this->get_mpi_communicator()));
 
           if(Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0) {
+              std::ofstream error_log("Errors.dat", std::ios_base::app);
               info = "u_l2: " + std::to_string(velocity_l2_error);
-              std::cout << std::setprecision(14) << "Errors: u_l2: " << velocity_l2_error << " p_l2: " << pressure_l2_error << " t_l2: " << temperature_l2_error;
+              error_log << std::setprecision(14) << "Errors: u_l2: " << velocity_l2_error << " p_l2: " << pressure_l2_error << " t_l2: " << temperature_l2_error;
               for(unsigned int compositional_field_index = 0; compositional_field_index < this->n_compositional_fields(); compositional_field_index++)
-                  std::cout << " c_" + Utilities::int_to_string(compositional_field_index) + ": " << compositional_field_l2_error[compositional_field_index];
-              std::cout << std::endl;
+                  error_log << " c_" + Utilities::int_to_string(compositional_field_index) + ": " << compositional_field_l2_error[compositional_field_index];
+              error_log << std::endl;
+              error_log.close();
           }
         }
 
