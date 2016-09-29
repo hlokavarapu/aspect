@@ -476,6 +476,60 @@ namespace aspect
         }
 
       const QGauss<dim> quadrature_formula (this->get_fe().base_element(this->introspection().base_elements.velocities).degree+2);
+//                  const QGauss<dim> quadrature_formula(this->get_parameters().stokes_velocity_degree + 1);
+//            const QGauss<dim> quadrature_formula_for_pressure(this->get_fe().base_element(this->introspection().base_elements.pressure).degree);
+
+//            this->get_fe().base_element(this->introspection().base_elements.velocities).get_unit_support_points()
+            FEValues<dim> fe_values(this->get_mapping(),
+                                    this->get_fe(),
+                                    quadrature_formula,
+                                    update_values |
+                                    update_quadrature_points |
+                                    update_JxW_values);
+
+          const FEValuesExtractors::Scalar &extractor_pressure = this->introspection().extractors.pressure;
+          const FEValuesExtractors::Scalar &extractor_temperature = this->introspection().extractors.temperature;
+            const FEValuesExtractors::Vector &extractor_velocity = this->introspection().extractors.velocities;
+
+            unsigned int quadrature_point_index = 0;
+
+      typename DoFHandler<dim>::active_cell_iterator cell = this->get_dof_handler().begin_active();
+      for (; cell != this->get_dof_handler().end();
+             ++cell) {
+        if (!(cell->is_locally_owned()))
+          continue;
+
+        fe_values.reinit(cell);
+        // Each vector is of the same length.
+        const std::vector<Point<dim>> quadrature_points = fe_values.get_quadrature_points();
+
+        std::vector<double> temperature(fe_values.n_quadrature_points);
+        std::vector<double> pressure(fe_values.n_quadrature_points);
+        std::vector<Tensor<1, dim>> velocity(fe_values.n_quadrature_points);
+        std::vector<std::vector<double>> compositional_fields(this->n_compositional_fields(),
+                                                              std::vector<double>(fe_values.n_quadrature_points));
+
+        const std::vector<double> jacobian_weights = fe_values.get_JxW_values();
+
+        fe_values[extractor_pressure].get_function_values(this->get_solution(), pressure);
+        fe_values[extractor_temperature].get_function_values(this->get_solution(), temperature);
+        fe_values[extractor_velocity].get_function_values(this->get_solution(), velocity);
+
+        unsigned int quadrature_point_index = 0;
+        for (;quadrature_point_index < fe_values.n_quadrature_points; quadrature_point_index++)
+        {
+          unsigned int my_rank = Utilities::MPI::this_mpi_process(this->get_mpi_communicator());
+          std::ofstream solution_log("computed_solution_" + Utilities::int_to_string(my_rank) + ".log", std::ios_base::app);
+          solution_log << std::setprecision(14) << quadrature_points[quadrature_point_index][0] << " "
+                                                << quadrature_points[quadrature_point_index][1] << " "
+                                                << velocity[quadrature_point_index][0] << " "
+                                                << velocity[quadrature_point_index][1] << " "
+                                                << temperature[quadrature_point_index] << " "
+                                                << pressure[quadrature_point_index] << std::endl;
+          solution_log.close();
+        }
+      }
+
 
       Vector<float> cellwise_errors_u (this->get_triangulation().n_active_cells());
       Vector<float> cellwise_errors_p (this->get_triangulation().n_active_cells());
