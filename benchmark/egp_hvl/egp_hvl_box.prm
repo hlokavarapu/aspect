@@ -6,14 +6,16 @@ set Dimension                              = 2
 
 set Start time                             = 0
 
-set End time                               = 0
+#set End time                               = 12.566370614359172
 
 set Output directory                       = output_egp_hvl_box
 
 set Pressure normalization                 = volume
 set Nonlinear solver scheme                = IMPES
 
+set Use years in output instead of seconds     = false
 
+#set Resume computation = true
 ############### Parameters describing the model
 
 subsection Geometry model
@@ -21,9 +23,9 @@ subsection Geometry model
 
   subsection Box
     set X extent = 6.283185307179586
-    set X repetitions = 16
+    set X repetitions = 1
     set Y extent = 6.283185307179586
-    set Y repetitions = 16
+    set Y repetitions = 1
 
 #    set Box origin X coordinate = 0
 #    set Box origin Y coordinate = 0
@@ -103,14 +105,16 @@ end
 
 subsection Mesh refinement
   set Initial adaptive refinement              = 0
-  set Initial global refinement                = 0
+  set Initial global refinement = 5
+  set Time steps between mesh refinement       = 0
+  set Coarsening fraction                      = 0
 end
 
 
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = visualization, EGPHVLPostprocessor
+  set List of postprocessors = visualization, EGPHVLPostprocessor, tracers
   
   subsection Visualization
     set Output format                 = vtu
@@ -120,7 +124,7 @@ subsection Postprocess
   end
 
   subsection Tracers
-    set Number of tracers = 64
+    set Number of tracers = 512
     set Time between data output = 0
     set Data output format = vtu
     # set List of tracer properties = function
@@ -153,12 +157,12 @@ subsection Postprocess
       end
 
       subsection Uniform radial
-        set Minimum radius = 0.05
-        set Maximum radius = 0.15
+        set Minimum radius = 0.04908738521234052
+        set Maximum radius = 1.1780972450961724
         set Minimum longitude = 0.0
         set Maximum longitude = 270.0
-        set Center x = 0.0
-        set Center y = 0.0
+        set Center x = 3.141592653589793
+        set Center y = 3.141592653589793
         set Radial layers = 4
       end
 

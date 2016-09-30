@@ -334,7 +334,7 @@ namespace aspect
       // Use this function if running 2d spherical shell geometry model.
       double r = p.norm();
       double density = r*r;
-      return density;
+      return 1;
     }
 
 
@@ -477,6 +477,7 @@ namespace aspect
 
       const QGauss<dim> quadrature_formula (this->get_fe().base_element(this->introspection().base_elements.velocities).degree+2);
 #ifdef DEBUG
+     /* 
             FEValues<dim> fe_values(this->get_mapping(),
                                     this->get_fe(),
                                     quadrature_formula,
@@ -529,6 +530,7 @@ namespace aspect
 
       std::ofstream stream_solution("solution.dat", std::ios_base::app);
       this->get_solution().print(stream_solution, 14);
+     */
 #endif
       Vector<float> cellwise_errors_u (this->get_triangulation().n_active_cells());
       Vector<float> cellwise_errors_p (this->get_triangulation().n_active_cells());
