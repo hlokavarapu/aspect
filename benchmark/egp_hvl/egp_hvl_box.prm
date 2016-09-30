@@ -1,4 +1,4 @@
-set Additional shared libraries            = ./libegp_hvl.so
+set Additional shared libraries            = ./libegp_hvl_box.so
 
 ############### Global parameters
 
@@ -6,12 +6,12 @@ set Dimension                              = 2
 
 set Start time                             = 0
 
-set End time                               = 6.283185307179586
+set End time                               = 0
 
-set Output directory                       = output
+set Output directory                       = output_egp_hvl_box
 
 set Pressure normalization                 = volume
-set Nonlinear solver scheme                = Stokes only
+set Nonlinear solver scheme                = IMPES
 
 
 ############### Parameters describing the model
@@ -20,13 +20,13 @@ subsection Geometry model
   set Model name = box
 
   subsection Box
-    set X extent = 1
-    set X repetitions = 32
-    set Y extent = 1
-    set Y repetitions = 32
+    set X extent = 6.283185307179586
+    set X repetitions = 16
+    set Y extent = 6.283185307179586
+    set Y repetitions = 16
 
-    set Box origin X coordinate = -0.5
-    set Box origin Y coordinate = -0.5
+#    set Box origin X coordinate = 0
+#    set Box origin Y coordinate = 0
   end
 end
 
@@ -40,9 +40,9 @@ end
 
 subsection Boundary velocity model
   subsection Function
-    set Variable names      = x,z
-    set Function constants  = pi=3.1415926
-    set Function expression = -z; x
+    set Variable names      = x,y
+    set Function constants  = pi=6.283185307179586
+    set Function expression = -1*cos(y)*sin(x); cos(x)*sin(y)
   end
 end
 
@@ -58,10 +58,12 @@ end
 
 
 subsection Gravity model
-  set Model name = vertical
-#  subsection Function
-#    set Function expression = 0;2*y
-#  end
+  set Model name = function
+  subsection Function
+    set Variable names      = x,y,t
+    set Function constants = PI=3.141592653589793
+    set Function expression = -sin(x)*cos(y);-cos(x)*sin(y)
+  end
 end
 
 
@@ -108,13 +110,13 @@ end
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = EGPHVLPostprocessor, visualization, tracers
+  set List of postprocessors = visualization, EGPHVLPostprocessor
   
   subsection Visualization
     set Output format                 = vtu
     set Number of grouped files       = 1
     set Time between graphical output = 0
-    set List of output variables = density, viscosity, partition
+    set List of output variables = density, viscosity, partition, gravity
   end
 
   subsection Tracers
