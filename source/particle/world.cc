@@ -53,7 +53,7 @@ namespace aspect
     {
       connect_to_signals(this->get_signals());
 
-      if (particle_load_balancing == repartition)
+      if (particle_load_balancing & ParticleLoadBalancing::repartition)
         this->get_triangulation().signals.cell_weight.connect(std_cxx11::bind(&aspect::Particle::World<dim>::cell_weight,
                                                                               std_cxx11::ref(*this),
                                                                               std_cxx11::_1,
@@ -86,6 +86,13 @@ namespace aspect
     World<dim>::get_particles() const
     {
       return particles;
+    }
+
+    template <int dim>
+    const std::multimap<types::LevelInd, Particle<dim> > &
+    World<dim>::get_ghost_particles() const
+    {
+      return ghost_particles;
     }
 
     template <int dim>
@@ -272,6 +279,7 @@ namespace aspect
           // can change because of discarded or newly generated particles
           data_offset = numbers::invalid_unsigned_int;
           update_n_global_particles();
+          exchange_ghost_particles();
         }
     }
 
@@ -279,7 +287,8 @@ namespace aspect
     void
     World<dim>::apply_particle_per_cell_bounds()
     {
-      if ((particle_load_balancing == remove_particles) || (particle_load_balancing == remove_and_add_particles))
+      // If any load balancing technique is selected that creates/destroys particles
+      if (particle_load_balancing & ParticleLoadBalancing::remove_and_add_particles)
         {
           // First do some preparation for particle generation in poorly
           // populated areas. For this we need to know which particle ids to
@@ -287,7 +296,7 @@ namespace aspect
           // Ensure this by communicating the number of particles that every
           // process is going to generate.
           types::particle_index local_next_particle_index = next_free_particle_index;
-          if (particle_load_balancing == remove_and_add_particles)
+          if (particle_load_balancing & ParticleLoadBalancing::add_particles)
             {
               types::particle_index particles_to_add_locally = 0;
 
@@ -342,7 +351,7 @@ namespace aspect
                 const unsigned int n_particles_in_cell = particles.count(found_cell);
 
                 // Add particles if necessary
-                if ((particle_load_balancing == remove_and_add_particles) &&
+                if ((particle_load_balancing & ParticleLoadBalancing::add_particles) &&
                     (n_particles_in_cell < min_particles_per_cell))
                   {
                     for (unsigned int i = n_particles_in_cell; i < min_particles_per_cell; ++i,++local_next_particle_index)
@@ -358,7 +367,8 @@ namespace aspect
                   }
 
                 // Remove particles if necessary
-                else if (n_particles_in_cell > max_particles_per_cell)
+                else if ((particle_load_balancing & ParticleLoadBalancing::remove_particles) &&
+                         (n_particles_in_cell > max_particles_per_cell))
                   {
                     const std::pair<typename std::multimap<types::LevelInd, Particle<dim> >::iterator, typename std::multimap<types::LevelInd, Particle<dim> >::iterator>
                     particles_in_cell = particles.equal_range(found_cell);
@@ -532,6 +542,67 @@ namespace aspect
                 }
             }
         }
+    }
+
+    template <int dim>
+    void
+    World<dim>::exchange_ghost_particles()
+    {
+      TimerOutput::Scope timer_section(this->get_computing_timer(), "Particles: Exchange ghosts");
+
+      // First clear the current ghost_particle information
+      ghost_particles.clear();
+
+      std::multimap<types::subdomain_id, std::pair<types::LevelInd, Particle<dim> > > ghost_particles_by_domain;
+      std::vector<std::set<unsigned int> > vertex_to_neighbor_subdomain(this->get_triangulation().n_vertices());
+
+      typename DoFHandler<dim>::active_cell_iterator
+      cell = this->get_dof_handler().begin_active(),
+      endc = this->get_dof_handler().end();
+      for (; cell != endc; ++cell)
+        {
+          if (cell->is_ghost())
+            for (unsigned int v=0; v<GeometryInfo<dim>::vertices_per_cell; ++v)
+              vertex_to_neighbor_subdomain[cell->vertex_index(v)].insert(cell->subdomain_id());
+        }
+
+      cell = this->get_triangulation().begin_active();
+      for (; cell != endc; ++cell)
+        {
+          if (!cell->is_ghost())
+            {
+              std::set<unsigned int> cell_to_neighbor_subdomain;
+              for (unsigned int v=0; v<GeometryInfo<dim>::vertices_per_cell; ++v)
+                {
+                  cell_to_neighbor_subdomain.insert(vertex_to_neighbor_subdomain[cell->vertex_index(v)].begin(),
+                                                    vertex_to_neighbor_subdomain[cell->vertex_index(v)].end());
+                }
+
+              if (cell_to_neighbor_subdomain.size() > 0)
+                {
+                  const std::pair< const typename std::multimap<types::LevelInd,Particle <dim> >::iterator,
+                        const typename std::multimap<types::LevelInd,Particle <dim> >::iterator>
+                        particle_range_in_cell = particles.equal_range(std::make_pair(cell->level(),cell->index()));
+
+                  for (std::set<unsigned int>::iterator domain=cell_to_neighbor_subdomain.begin();
+                       domain != cell_to_neighbor_subdomain.end(); ++domain)
+                    {
+                      for (typename std::multimap<types::LevelInd,Particle <dim> >::iterator particle = particle_range_in_cell.first;
+                           particle != particle_range_in_cell.second;
+                           ++particle)
+
+                        ghost_particles_by_domain.insert(std::make_pair(*domain,*particle));
+                    }
+                }
+            }
+        }
+
+      std::vector<std::pair<types::LevelInd, Particle<dim> > > received_ghost_particles;
+      send_recv_particles(ghost_particles_by_domain,
+                          received_ghost_particles);
+
+      ghost_particles.insert(received_ghost_particles.begin(),
+                             received_ghost_particles.end());
     }
 
     template <int dim>
@@ -920,9 +991,6 @@ namespace aspect
             }
 #endif
 
-          Assert(cell->is_locally_owned(),
-                 ExcMessage("Another process sent us a particle, but the particle is not in our domain."));
-
           const types::LevelInd found_cell = std::make_pair(cell->level(),cell->index());
 
           received_particles.push_back(std::make_pair(found_cell, recv_particle));
@@ -1129,6 +1197,7 @@ namespace aspect
                   local_initialize_particles(particle_range_in_cell.first,
                                              particle_range_in_cell.second);
               }
+          exchange_ghost_particles();
         }
     }
 
@@ -1218,6 +1287,10 @@ namespace aspect
 
       // Update the number of global particles if some have left the domain
       update_n_global_particles();
+
+      // Now that all particle information was updated, exchange the new
+      // ghost particles.
+      exchange_ghost_particles();
     }
 
     template <int dim>
@@ -1246,9 +1319,9 @@ namespace aspect
       {
         prm.enter_subsection("Tracers");
         {
-          prm.declare_entry ("Load balancing strategy", "none",
-                             Patterns::Selection ("none|remove particles|"
-                                                  "remove and add particles|repartition"),
+          prm.declare_entry ("Load balancing strategy", "repartition",
+                             Patterns::MultipleSelection ("none|remove particles|add particles|"
+                                                          "remove and add particles|repartition"),
                              "Strategy that is used to balance the computational"
                              "load across processors for adaptive meshes.");
           prm.declare_entry ("Minimum tracers per cell", "0",
@@ -1279,10 +1352,15 @@ namespace aspect
           prm.declare_entry ("Tracer weight", "10",
                              Patterns::Integer (0),
                              "Weight that is associated with the computational load of "
-                             "a single particle. The sum of tracer weights will be added "
+                             "a single particle. The sum of particle weights will be added "
                              "to the sum of cell weights to determine the partitioning of "
-                             "the mesh. Every cell without tracers is associated with a "
-                             "weight of 1000.");
+                             "the mesh if the 'repartition' particle load balancing strategy "
+                             "is selected. The optimal weight depends on the used "
+                             "integrator and particle properties. In general for a more "
+                             "expensive integrator and more expensive properties a larger "
+                             "particle weight is recommended. Before adding the weights "
+                             "of particles, each cell already carries a weight of 1000 to "
+                             "account for the cost of field-based computations.");
         }
         prm.leave_subsection ();
       }
@@ -1328,16 +1406,34 @@ namespace aspect
 
           tracer_weight = prm.get_integer("Tracer weight");
 
-          if (prm.get ("Load balancing strategy") == "none")
-            particle_load_balancing = no_balancing;
-          else if (prm.get ("Load balancing strategy") == "remove particles")
-            particle_load_balancing = remove_particles;
-          else if (prm.get ("Load balancing strategy") == "remove and add particles")
-            particle_load_balancing = remove_and_add_particles;
-          else if (prm.get ("Load balancing strategy") == "repartition")
-            particle_load_balancing = repartition;
-          else
-            AssertThrow (false, ExcNotImplemented());
+          const std::vector<std::string> strategies = Utilities::split_string_list(prm.get ("Load balancing strategy"));
+          particle_load_balancing = ParticleLoadBalancing::no_balancing;
+
+          for (std::vector<std::string>::const_iterator strategy = strategies.begin(); strategy != strategies.end(); ++strategy)
+            {
+              if (*strategy == "remove particles")
+                particle_load_balancing = typename ParticleLoadBalancing::Kind(particle_load_balancing | ParticleLoadBalancing::remove_particles);
+              else if (*strategy == "add particles")
+                particle_load_balancing = typename ParticleLoadBalancing::Kind(particle_load_balancing | ParticleLoadBalancing::add_particles);
+              else if (*strategy == "remove and add particles")
+                particle_load_balancing = typename ParticleLoadBalancing::Kind(particle_load_balancing | ParticleLoadBalancing::remove_and_add_particles);
+              else if (*strategy == "repartition")
+                particle_load_balancing = typename ParticleLoadBalancing::Kind(particle_load_balancing | ParticleLoadBalancing::repartition);
+              else if (*strategy == "none")
+                {
+                  particle_load_balancing = ParticleLoadBalancing::no_balancing;
+                  AssertThrow(strategies.size() == 1,
+                              ExcMessage("The particle load balancing strategy 'none' is not compatible "
+                                         "with any other strategy, yet it seems another is selected as well. "
+                                         "Please check the parameter file."));
+                }
+              else
+                AssertThrow(false,
+                            ExcMessage("The 'Load balancing strategy' parameter contains an unknown value: <" + *strategy
+                                       + ">. This value does not correspond to any known load balancing strategy. Possible values "
+                                       "are listed in the corresponding manual subsection."));
+            }
+
         }
         prm.leave_subsection ();
       }
