@@ -19,6 +19,7 @@
 /benchmark/**/output/
 /benchmark/tangurnis/*/*csv
 /benchmark/tangurnis/*/solution*
+/benchmark/egp_hvl/*
 /build*/
 /cmake_install.cmake
 /cookbooks/**/lib*.so
