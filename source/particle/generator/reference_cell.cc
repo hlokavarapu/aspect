@@ -37,61 +37,60 @@ namespace aspect
       void
       ReferenceCell<dim>::generate_particles(std::multimap<types::LevelInd, Particle<dim> > &particles)
       {
-
-
-        const Tensor<1,dim> P_diff = P_max - P_min;
-
-        double volume(1.0);
-        for (unsigned int i = 0; i < dim; ++i)
-          volume *= P_diff[i];
-
         std_cxx11::array<unsigned int,dim> n_particles_per_direction;
         std_cxx11::array<double,dim> spacing;
 
         // Calculate separation of particles
         for (unsigned int i = 0; i < dim; ++i)
           {
-            n_particles_per_direction[i] = round(std::pow(n_tracers * std::pow(P_diff[i],dim) / volume, 1./dim));
-            spacing[i] = P_diff[i] / fmax(n_particles_per_direction[i] - 1,1);
+            n_particles_per_direction[i] = n_particles_per_direction_per_cell;
+            spacing[i] = 1.0/n_particles_per_direction[i];
           }
+
 
         types::particle_index particle_index = 0;
 
-        for (unsigned int i = 0; i < n_particles_per_direction[0]; ++i)
+        typename Triangulation<dim>::active_cell_iterator
+        cell = this->get_triangulation().begin_active(),
+        endc = this->get_triangulation().end();
+        for (; cell != endc; cell++)
           {
-            for (unsigned int j = 0; j < n_particles_per_direction[1]; ++j)
+            for (unsigned int i = 0; i < n_particles_per_direction[0]; ++i)
               {
-                if (dim == 2)
+                for (unsigned int j = 0; j < n_particles_per_direction[1]; ++j)
                   {
-                    const Point<dim> particle_position = Point<dim> (P_min[0]+i*spacing[0],P_min[1]+j*spacing[1]);
-
-                    // Try to add the particle. If it is not in this domain, do not
-                    // worry about it and move on to next point.
-                    try
+                    if (dim == 2)
                       {
-                        particles.insert(this->generate_particle(particle_position,particle_index));
+                        Point<dim> position_unit = Point<dim> (i*spacing[0] + spacing[0]/2,j*spacing[1] + spacing[1]/2);
+                        Point<dim> position_real = this->get_mapping().transform_unit_to_real_cell(cell, position_unit);
+                        // Try to add the particle. If it is not in this domain, do not
+                        // worry about it and move on to next point.
+                        try
+                          {
+                            particles.insert(this->generate_particle(cell, position_unit, position_real, particle_index));
+                          }
+                        catch (ExcParticlePointNotInDomain &)
+                          {}
+                        particle_index++;
                       }
-                    catch (ExcParticlePointNotInDomain &)
-                      {}
-                    particle_index++;
-                  }
-                else if (dim == 3)
-                  for (unsigned int k = 0; k < n_particles_per_direction[2]; ++k)
-                    {
-                      const Point<dim> particle_position = Point<dim> (P_min[0]+i*spacing[0],P_min[1]+j*spacing[1],P_min[2]+k*spacing[2]);
-
-                      // Try to add the particle. If it is not in this domain, do not
-                      // worry about it and move on to next point.
-                      try
+                    else if (dim == 3)
+                      for (unsigned int k = 0; k < n_particles_per_direction[2]; ++k)
                         {
-                          particles.insert(this->generate_particle(particle_position,particle_index));
+                          Point<dim> position_unit = Point<dim> (i*spacing[0] + spacing[0]/2,j*spacing[1] + spacing[1]/2, k*spacing[2] + spacing[2]/2);
+                          Point<dim> position_real = this->get_mapping().transform_unit_to_real_cell(cell, position_unit);
+                          // Try to add the particle. If it is not in this domain, do not
+                          // worry about it and move on to next point.
+                          try
+                            {
+                              particles.insert(this->generate_particle(cell, position_unit, position_real, particle_index));
+                            }
+                          catch (ExcParticlePointNotInDomain &)
+                            {}
+                          particle_index++;
                         }
-                      catch (ExcParticlePointNotInDomain &)
-                        {}
-                      particle_index++;
-                    }
-                else
-                  ExcNotImplemented();
+                    else
+                      ExcNotImplemented();
+                  }
               }
           }
       }
@@ -114,26 +113,14 @@ namespace aspect
 
             prm.enter_subsection("Generator");
             {
-              prm.enter_subsection("Uniform box");
+              prm.enter_subsection("Reference cell");
               {
-                prm.declare_entry ("Minimum x", "0",
-                                   Patterns::Double (),
-                                   "Minimum x coordinate for the region of tracers.");
-                prm.declare_entry ("Maximum x", "1",
-                                   Patterns::Double (),
-                                   "Maximum x coordinate for the region of tracers.");
-                prm.declare_entry ("Minimum y", "0",
-                                   Patterns::Double (),
-                                   "Minimum y coordinate for the region of tracers.");
-                prm.declare_entry ("Maximum y", "1",
-                                   Patterns::Double (),
-                                   "Maximum y coordinate for the region of tracers.");
-                prm.declare_entry ("Minimum z", "0",
-                                   Patterns::Double (),
-                                   "Minimum z coordinate for the region of tracers.");
-                prm.declare_entry ("Maximum z", "1",
-                                   Patterns::Double (),
-                                   "Maximum z coordinate for the region of tracers.");
+                prm.declare_entry ("Number of tracers per cell per direction", "10",
+                                   Patterns::Double (0),
+                                   "Total number of tracers to create per element per direction. "
+                                   "The number is parsed as a floating point number (so that one can "
+                                   "specify, for example, '1e4' particles) but it is interpreted as "
+                                   "an integer, of course.");
               }
               prm.leave_subsection();
             }
@@ -153,22 +140,12 @@ namespace aspect
         {
           prm.enter_subsection("Tracers");
           {
-            n_tracers    = static_cast<types::particle_index>(prm.get_double ("Number of tracers"));
-
             prm.enter_subsection("Generator");
             {
-              prm.enter_subsection("Uniform box");
+              prm.enter_subsection("Reference cell");
               {
-                P_min(0) = prm.get_double ("Minimum x");
-                P_max(0) = prm.get_double ("Maximum x");
-                P_min(1) = prm.get_double ("Minimum y");
-                P_max(1) = prm.get_double ("Maximum y");
-
-                if (dim == 3)
-                  {
-                    P_min(2) = prm.get_double ("Minimum z");
-                    P_max(2) = prm.get_double ("Maximum z");
-                  }
+                n_particles_per_direction_per_cell = prm.get_double ("Number of tracers per cell per direction");
+                n_tracers = static_cast<types::particle_index>(std::pow(n_particles_per_direction_per_cell,dim));
               }
               prm.leave_subsection();
             }
@@ -191,7 +168,7 @@ namespace aspect
     namespace Generator
     {
       ASPECT_REGISTER_PARTICLE_GENERATOR(ReferenceCell,
-                                         "uniform box",
+                                         "reference cell",
                                          "Generate a uniform distribution of particles "
                                          "over a rectangular domain in 2D or 3D. Uniform here means "
                                          "the particles will be generated with an equal spacing in "

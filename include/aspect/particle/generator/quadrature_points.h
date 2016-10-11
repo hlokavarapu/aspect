@@ -18,8 +18,8 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __aspect__particle_generator_reference_cell_h
-#define __aspect__particle_generator_reference_cell_h
+#ifndef __aspect__particle_quadrature_points_h
+#define __aspect__particle_quadrature_points_h
 
 #include <aspect/particle/generator/interface.h>
 
@@ -30,17 +30,12 @@ namespace aspect
     namespace Generator
     {
       /**
-       * Generate a uniform distribution of particles in a box region in the
-       * model domain. Uniform here means the particles will be generated with
-       * an equal spacing in each spatial dimension. Note that in order
-       * to produce a regular distribution the number of generated
-       * tracers might not exactly match the one specified in the
-       * input file.
-       *
+       * Generate particles at the quadrature points of each active cell of the triangulation mesh.
+       * The number of tracers is set at parsing.
        * @ingroup ParticleGenerators
        */
       template <int dim>
-      class ReferenceCell : public Interface<dim>
+      class QuadraturePoints : public Interface<dim>
       {
         public:
           /**
@@ -73,7 +68,6 @@ namespace aspect
            * Number of initial particles to create for each dimension.
            */
           types::particle_index n_tracers;
-          double n_particles_per_direction_per_cell;
       };
 
     }

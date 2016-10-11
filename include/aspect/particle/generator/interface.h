@@ -103,6 +103,12 @@ namespace aspect
           generate_particle (const typename parallel::distributed::Triangulation<dim>::active_cell_iterator &cell,
                              const types::particle_index id);
 
+          std::pair<types::LevelInd,Particle<dim> >
+          generate_particle (const typename parallel::distributed::Triangulation<dim>::active_cell_iterator &cell_itr,
+                             const Point<dim> &position_unit,
+                             const Point<dim> &position_real,
+                             const types::particle_index id);
+
 
           /**
            * Declare the parameters this class takes through input files. The
