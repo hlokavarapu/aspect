@@ -75,6 +75,21 @@ namespace aspect
 
       template <int dim>
       std::pair<types::LevelInd,Particle<dim> >
+      Interface<dim>::generate_particle(const typename parallel::distributed::Triangulation<dim>::active_cell_iterator &cell_itr,
+                                        const Point<dim> &position_unit,
+                                        const Point<dim> &position_real,
+                                        const types::particle_index id)
+      {
+        // Try to find the cell of the given position. If the position is not
+        // in the domain on the local process, throw a ExcParticlePointNotInDomain
+        // exception.
+        const Particle<dim> particle(position_real, position_unit, id);
+        const types::LevelInd cell(cell_itr->level(), cell_itr->index());
+        return std::make_pair(cell,particle);
+      }
+
+      template <int dim>
+      std::pair<types::LevelInd,Particle<dim> >
       Interface<dim>::generate_particle (const typename parallel::distributed::Triangulation<dim>::active_cell_iterator &cell,
                                          const types::particle_index id)
       {
