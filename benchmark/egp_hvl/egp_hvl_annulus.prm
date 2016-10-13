@@ -1,4 +1,4 @@
-set Additional shared libraries            = ./libegp_hvl.so
+set Additional shared libraries            = ./libegp_hvl_annulus.so
 
 ############### Global parameters
 
@@ -8,7 +8,7 @@ set Start time                             = 0
 
 set End time                               = 100
 
-set Output directory                       = output_test
+set Output directory                       = output_annulus_test
 
 set Pressure normalization                 = volume
 set Nonlinear solver scheme                = Stokes only
@@ -127,7 +127,7 @@ end
 subsection Mesh refinement
   set Coarsening fraction                      = 0
   set Initial adaptive refinement              = 0
-  set Initial global refinement                = 5
+  set Initial global refinement                = 4
 end
 
 
