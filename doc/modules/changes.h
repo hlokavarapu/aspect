@@ -6,6 +6,31 @@
  *
  * <ol>
  *
+ * <li> Improved: The matrix assembly of Stokes and Advection systems has been
+ * optimized, by assembling less (only the relevant) DoFs, and by optimizing
+ * calls to deal.II functions. The overall speedup for box models is between
+ * 20 and 40% of the assembly time, likely somewhat less for curved geometries.
+ * This change will require changes in user written assembler plugins, because
+ * the Stokes system assembly now only loops over Stokes degrees of freedom.
+ * <br>
+ * (Rene Gassmoeller, 2016/10/17)
+ *
+ * <li> Improved: Box models without deformed mesh now use a MappingCartesian,
+ * which assumes all mesh cells are aligned with cartesian coordinate axes.
+ * Matrix assembly and particle transport in such mappings is around 20 % faster
+ * compared to a general MappingQ1 for other box models.
+ * <br>
+ * (Rene Gassmoeller, 2016/10/14)
+ *
+ * <li> Changed: HDF5 particle output files are now named 'particles-...'
+ * instead of 'particle-...' to be consistent with the vtu output. Also 
+ * particle properties with more than one component are now correctly split
+ * into scalar fields in the output files, if they have more or less components
+ * than the number of spatial dimensions in the model.
+ * <br>
+ * (Rene Gassmoeller, 2016/09/20)
+ *
+ * </li>
  * <li> New: Multiple particle properties can be intialized by specifying
  * multiple particle property function components as opposed to one particle
  * property.
