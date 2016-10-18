@@ -335,7 +335,7 @@ namespace aspect
       //return 2.0 * p[1];
       // Use this function if running 2d spherical shell geometry model.
       double r = p.norm();
-      double density = -0.5*r*r;
+      double density = r;
       return density;
     }
 

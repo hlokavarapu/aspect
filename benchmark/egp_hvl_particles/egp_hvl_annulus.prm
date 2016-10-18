@@ -1,4 +1,4 @@
-set Additional shared libraries            = ./libegp_hvl.so
+set Additional shared libraries            = ./libegp_hvl_annulus.so
 
 ############### Global parameters
 
@@ -8,7 +8,7 @@ set Start time                             = 0
 
 set End time                               = 100
 
-set Output directory                       = output_test
+set Output directory                       = output_annulus_test
 
 set Pressure normalization                 = volume
 set Nonlinear solver scheme                = Stokes only
@@ -21,23 +21,13 @@ subsection Geometry model
   set Model name = spherical shell
 
   subsection Spherical shell
-    set Inner radius = 0.1
-    set Outer radius = 0.5
+    set Inner radius = 1
+    set Outer radius = 5
     set Opening angle = 360
 
     # use a number of cells the is guaranteed to not create any
     # symmetries
     #set Cells along circumference = 11
-  end
-
-  subsection Box
-    set X extent = 1
-    set X repetitions = 32
-    set Y extent = 1
-    set Y repetitions = 32
-
-    set Box origin X coordinate = -0.5
-    set Box origin Y coordinate = -0.5
   end
 end
 
@@ -60,12 +50,12 @@ subsection Boundary velocity model
 end
 
 subsection Material model
-  set Model name = SolCxMaterial
+  set Model name = EGPHVLMaterial
 
-  subsection SolCx
+  subsection EGPHVL
     # Do not change these set of parameters! EGP && HL
     set Viscosity jump = 1
-    set Background density = 1
+    set Reference density = 1
   end
 end
 
@@ -75,21 +65,10 @@ subsection Gravity model
   subsection Radial constant
     set Magnitude = 1
   end
-
-  subsection Function
-    set Variable names      = r,theta,t
-    set Function expression = 0;0
-  end
 end
 
 
 ############### Parameters describing the temperature field
-
-subsection Boundary temperature model
-  set Model name = box
-end
-
-
 subsection Initial conditions
   set Model name = function
   subsection Function
@@ -109,19 +88,17 @@ subsection Adiabatic conditions model
 end
 
 subsection Compositional fields
-#  set Number of fields = 0
-#  set Names of fields = density_comp #, viscosity_comp
-#  set Compositional field methods = particles #, particles
-  # set Mapped particle properties = density_comp:function1 #, viscosity_comp:function2
-  # This is what was recommended by Rene on Friday, August 11, 2016
-#  set Mapped particle properties = density_comp:function1
+  set Number of fields = 2
+  set Names of fields = density_comp, density_comp2
+  set Compositional field methods = particles, particles
+  set Mapped particle properties = density_comp:function [0], density_comp2:function [1]
 end
 
 subsection Compositional initial conditions
   set Model name = function
   subsection Function
     set Variable names      = x,z
-    set Function expression = 0
+    set Function expression = 2;2
   end
 end
 
@@ -137,14 +114,14 @@ end
 subsection Mesh refinement
   set Coarsening fraction                      = 0
   set Initial adaptive refinement              = 0
-  set Initial global refinement                = 5
+  set Initial global refinement                = 4
 end
 
 
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = visualization, tracers
+  set List of postprocessors = visualization, tracers, EGPHVLPostprocessor
   
   subsection Visualization
     set Output format                 = vtu
@@ -154,17 +131,28 @@ subsection Postprocess
   end
 
   subsection Tracers
-    set Number of tracers = 1024
+    set Number of tracers = 49152
     set Time between data output = 0
     set Data output format = vtu
     set Integration scheme = rk2
-    #set Interpolation scheme = cell average
-    # set Interpolation scheme = least squares
-    set Maximum tracers per cell = 36864
+    set Interpolation scheme = cell average
+    set Maximum tracers per cell = 49152
+    set List of tracer properties = function
 
-    set Particle generator name = uniform radial
+    set Particle generator name = reference cell
+
+    subsection Function
+      set Number of components = 2
+      set Variable names      = x, y
+      set Function constants  = pi=3.1415926
+      set Function expression = sqrt(x*x+y*y);1
+    end
 
     subsection Generator
+      subsection Reference cell
+        set Number of tracers per cell per direction = 4
+      end
+       
       subsection Uniform box
        set Minimum x = -.49739583333333333334
        set Maximum x = .49739583333333333334

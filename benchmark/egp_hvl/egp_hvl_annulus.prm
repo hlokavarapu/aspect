@@ -8,7 +8,7 @@ set Start time                             = 0
 
 set End time                               = 100
 
-set Output directory                       = output_annulus_test
+set Output directory                       = output_annulus_test_d
 
 set Pressure normalization                 = volume
 set Nonlinear solver scheme                = Stokes only
@@ -21,13 +21,9 @@ subsection Geometry model
   set Model name = spherical shell
 
   subsection Spherical shell
-    set Inner radius = 0.1
-    set Outer radius = 0.5
+    set Inner radius = 1
+    set Outer radius = 5
     set Opening angle = 360
-
-    # use a number of cells the is guaranteed to not create any
-    # symmetries
-    #set Cells along circumference = 11
   end
 end
 
@@ -44,8 +40,11 @@ end
 subsection Boundary velocity model
   subsection Function
     set Function constants  = pi=3.1415926
-    set Variable names      = x,z
-    set Function expression = -z;x
+    set Variable names      = x,y
+#    set Function expression = -1*y*(x*x+y*y);x*(x*x+y*y)
+#    set Function expression = -y/sqrt(x*x+y*y);x/sqrt(x*x+y*y)
+#    set Function expression = y;-x
+    set Function expression = -y;x
   end
 end
 
@@ -67,8 +66,10 @@ subsection Gravity model
   end
 
   subsection Function
-    set Variable names      = r,theta,t
-    set Function expression = 0;0
+    set Variable names      = x,y
+#    set Function expression = (y/(x*x+y*y));(-x/(x*x+y*y))
+#    set Function expression = 8*y;-8*x
+    set Function expression = x;y
   end
 end
 
@@ -127,7 +128,7 @@ end
 subsection Mesh refinement
   set Coarsening fraction                      = 0
   set Initial adaptive refinement              = 0
-  set Initial global refinement                = 4
+  set Initial global refinement                = 5
 end
 
 
@@ -140,7 +141,7 @@ subsection Postprocess
     set Output format                 = vtu
     set Number of grouped files       = 1
     set Time between graphical output = 0
-    set List of output variables = density, viscosity, partition
+    set List of output variables = density, viscosity, partition, gravity
   end
 
   subsection Tracers
@@ -163,8 +164,8 @@ subsection Postprocess
       end
 
       subsection Uniform radial
-        set Minimum radius = 0.15
-        set Maximum radius = 0.45
+        set Minimum radius = 1.5
+        set Maximum radius = 4.5
         set Minimum longitude = 0.0
         set Maximum longitude = 360.0
         set Center x = 0.0
