@@ -11,7 +11,8 @@ set End time                               = 100
 set Output directory                       = output_annulus_test
 
 set Pressure normalization                 = volume
-set Nonlinear solver scheme                = Stokes only
+set Nonlinear solver scheme                = IMPES
+#set Nonlinear solver scheme                = Stokes only
 
 set CFL number                             = 0.8
 
@@ -88,17 +89,17 @@ subsection Adiabatic conditions model
 end
 
 subsection Compositional fields
-  set Number of fields = 2
-  set Names of fields = density_comp, density_comp2
-  set Compositional field methods = particles, particles
-  set Mapped particle properties = density_comp:function [0], density_comp2:function [1]
+  set Number of fields = 1
+  set Names of fields = density_comp
+  set Compositional field methods = particles
+  set Mapped particle properties = density_comp:function [0]
 end
 
 subsection Compositional initial conditions
   set Model name = function
   subsection Function
-    set Variable names      = x,z
-    set Function expression = 2;2
+    set Variable names      = x,y
+    set Function expression = sqrt(x*x+y*y)
   end
 end
 
@@ -114,7 +115,7 @@ end
 subsection Mesh refinement
   set Coarsening fraction                      = 0
   set Initial adaptive refinement              = 0
-  set Initial global refinement                = 4
+  set Initial global refinement                = 5
 end
 
 
@@ -131,7 +132,7 @@ subsection Postprocess
   end
 
   subsection Tracers
-    set Number of tracers = 49152
+    set Number of tracers = 196608
     set Time between data output = 0
     set Data output format = vtu
     set Integration scheme = rk2
