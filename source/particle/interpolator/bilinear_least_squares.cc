@@ -18,7 +18,7 @@
  <http://www.gnu.org/licenses/>.
  */
 
-#include <aspect/particle/interpolator/least_squares.h>
+#include <aspect/particle/interpolator/bilinear_least_squares.h>
 
 #include <deal.II/grid/grid_tools.h>
 
@@ -34,9 +34,9 @@ namespace aspect
        */
       template <int dim>
       std::vector<std::vector<double> >
-      LeastSquares<dim>::properties_at_points(const std::multimap<types::LevelInd, Particle<dim> > &particles,
-                                              const std::vector<Point<dim> > &positions,
-                                              const typename parallel::distributed::Triangulation<dim>::active_cell_iterator &cell) const
+      BilinearLeastSquares<dim>::properties_at_points(const std::multimap<types::LevelInd, Particle<dim> > &particles,
+                                                      const std::vector<Point<dim> > &positions,
+                                                      const typename parallel::distributed::Triangulation<dim>::active_cell_iterator &cell) const
       {
         typename parallel::distributed::Triangulation<dim>::active_cell_iterator found_cell;
 
@@ -115,65 +115,14 @@ namespace aspect
                 A_inverse.gauss_jordan();
                 A_inverse.mmult(c, r);
 
-//Debugging purposes:
-//          std::cout << "c" << std::endl;
-//          c.print(std::cout, 12, 12);
-
                 Point<dim> support_point = *itr;
                 cell_properties2[i] = c(2,0) + c(0,0)*(support_point[0]) + c(1,0)*(support_point[1]);
-
-                /*          std::cout << "A" << std::endl;
-                          A.print(std::cout, 12, 10);
-                          dealii::FullMatrix<double> A_inverse(A);
-                          A_inverse.gauss_jordan();
-                //          A_inverse = 0;
-
-
-                          std::cout << "A^(-1)" << std::endl;
-                          A_inverse.print(std::cout, 12, 10);
-                          dealii::FullMatrix<double> I(3,3);
-                          A.mmult(I, A_inverse, false);
-                          std::cout << "I" << std::endl;
-                          I.print(std::cout, 12, 10);
-
-                          std::cout << "r" << std::endl;
-                          r.print(std::cout, 12, 10);*/
               }
             properties.push_back(cell_properties2);
           }
-
-        /*        for (typename std::multimap<types::LevelInd, Particle<dim> >::const_iterator particle = particle_range.first;
-                     particle != particle_range.second; ++particle)
-                  {
-                    const std::vector<double> particle_properties = particle->second.get_properties();
-
-                    for (unsigned int i = 0; i < n_properties; ++i)
-                    {
-                      cell_properties[i] += particle_properties[i] / n_particles;
-                    }
-                  }
-
-                const std::vector<std::vector<double> > properties(positions.size(),cell_properties);
-        */
         return properties;
       }
 
-      /*      template <int dim>
-            void
-            LeastSquares<dim>::calculate_linear_constants(double *c1, double *c2, double *c3, dealii::FullMatrix<double> A, dealii::FullMatrix<double> r)
-            {
-              std::cout << "A" << std::endl;
-              A.print(std::cout, 12, 10);
-              dealii::FullMatrix<double> A_inverse(3,3);
-              A_inverse = 0;
-              A.invert(A_inverse);
-
-              std::cout << "A^(-1)" << std::endl;
-              A_inverse.print(std::cout, 12, 10);
-              std::cout << "r" << std::endl;
-              r.print(std::cout, 12, 10);
-            }
-      */
     }
   }
 }
@@ -186,8 +135,8 @@ namespace aspect
   {
     namespace Interpolator
     {
-      ASPECT_REGISTER_PARTICLE_INTERPOLATOR(LeastSquares,
-                                            "least squares",
+      ASPECT_REGISTER_PARTICLE_INTERPOLATOR(BilinearLeastSquares,
+                                            "bilinear",
                                             "Return the average of all tracer properties in the given cell.")
     }
   }

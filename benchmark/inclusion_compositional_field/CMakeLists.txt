@@ -32,8 +32,8 @@ ENDIF ()
 
 DEAL_II_INITIALIZE_CACHED_VARIABLES()
 
-SET(TARGET "solkz_particles")
+SET(TARGET "inclusion_compositional")
 PROJECT(${TARGET})
 
-ADD_LIBRARY(${TARGET} SHARED solkz_particles.cc)
-ASPECT_SETUP_PLUGIN(${TARGET})	
+ADD_LIBRARY(${TARGET} SHARED inclusion_compositional.cc)
+ASPECT_SETUP_PLUGIN(${TARGET})
