@@ -6,7 +6,7 @@ set Dimension                              = 2
 
 set Start time                             = 0
 
-set End time                               = 100
+set End time                               = 0
 
 set Output directory                       = output_annulus_test
 
@@ -45,8 +45,8 @@ end
 subsection Boundary velocity model
   subsection Function
     set Function constants  = pi=3.1415926
-    set Variable names      = x,z
-    set Function expression = -z;x
+    set Variable names      = x,y
+    set Function expression = -y;x
   end
 end
 
@@ -62,9 +62,12 @@ end
 
 
 subsection Gravity model
-  set Model name = radial constant
+  set Model name = function
   subsection Radial constant
     set Magnitude = 1
+  end
+  subsection Function
+    set Function expression = (1/(sqrt(x*x+y*y)))*x;(1/(sqrt(x*x+y*y)))*y
   end
 end
 
@@ -99,7 +102,7 @@ subsection Compositional initial conditions
   set Model name = function
   subsection Function
     set Variable names      = x,y
-    set Function expression = sqrt(x*x+y*y)
+    set Function expression = 1
   end
 end
 
@@ -122,7 +125,8 @@ end
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = visualization, tracers, EGPHVLPostprocessor
+  set List of postprocessors = tracers, visualization, EGPHVLPostprocessor
+  #set List of postprocessors = pressure statistics
   
   subsection Visualization
     set Output format                 = vtu
@@ -136,17 +140,17 @@ subsection Postprocess
     set Time between data output = 0
     set Data output format = vtu
     set Integration scheme = rk2
-    set Interpolation scheme = cell average
+    set Interpolation scheme = bilinear
     set Maximum tracers per cell = 49152
     set List of tracer properties = function
 
     set Particle generator name = reference cell
 
     subsection Function
-      set Number of components = 2
+      set Number of components = 1
       set Variable names      = x, y
       set Function constants  = pi=3.1415926
-      set Function expression = sqrt(x*x+y*y);1
+      set Function expression = 1
     end
 
     subsection Generator

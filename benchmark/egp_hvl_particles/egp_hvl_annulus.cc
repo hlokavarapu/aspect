@@ -53,8 +53,14 @@ namespace aspect
         /* Output */
         vel[0] = -pos[1];
         vel[1] =  pos[0];
-
-        (*pressure) = 0;
+//        double r = sqrt(pos[0]*pos[0] + pos[1]*pos[1]);
+//        AssertThrow(r==(sqrt(vel[0]*vel[0] + vel[1]*vel[1])),ExcInternalError());
+        /**
+         * The constant is set to the minimum computed pressure value by the statistics postprocessor
+         * at grid refinement level of 5.
+         */
+        double constant = -2.4444552085639812 - 1;
+        (*pressure) = std::sqrt(pos[0]*pos[0] + pos[1]*pos[1]) + constant;
 
         total_stress[0] = 0.0;
         total_stress[1] = 0.0;
