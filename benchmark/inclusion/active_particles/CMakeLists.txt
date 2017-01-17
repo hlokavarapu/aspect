@@ -1,4 +1,4 @@
-# Copyright (C) 2016 by the authors of the ASPECT code.
+# Copyright (C) 2017 by the authors of the ASPECT code.
 #
 # This file is part of ASPECT.
 #
@@ -30,10 +30,21 @@ IF (NOT Aspect_FOUND)
         "manual for more information.")
 ENDIF ()
 
+IF (NOT ASPECT_SOURCE_DIR)
+  MESSAGE(FATAL_ERROR "\n"
+    "Please specify the path to the source directory of ASPECT by passing\n"
+	"-DASPECT_SOURCE_DIR=<path to ASPECT source>\n"
+	"to cmake. This is required since inclusion_active_particles is dependent"
+	"on inclusion_compositional_field benchmark and inclusion benchmark.")
+ENDIF ()
+
 DEAL_II_INITIALIZE_CACHED_VARIABLES()
 
-SET(TARGET "solcx_particles")
+SET(TARGET "inclusion_particles")
 PROJECT(${TARGET})
 
-ADD_LIBRARY(${TARGET} SHARED solcx_particles.cc)
+INCLUDE_DIRECTORIES(${ASPECT_SOURCE_DIR}/benchmark/inclusion)
+INCLUDE_DIRECTORIES(${ASPECT_SOURCE_DIR}/benchmark/inclusion/compositional_field)
+
+ADD_LIBRARY(${TARGET} SHARED "${ASPECT_SOURCE_DIR}/benchmark/inclusion/compositional_field/inclusion_compositional_field.cc")
 ASPECT_SETUP_PLUGIN(${TARGET})
