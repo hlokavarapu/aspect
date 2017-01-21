@@ -2368,23 +2368,46 @@ namespace aspect
             .erase (parameters.additional_refinement_times.begin());
           }
       }
-    else
-      {
-        // Instead of calling global_refine(n) we flag all cells for
-        // refinement and then allow the mesh refinement plugins to unflag
-        // the cells if desired. This procedure is repeated n times. If there
-        // is no plugin that modifies the flags, it is equivalent to
-        // refine_global(n).
-        for (unsigned int n=0; n<parameters.initial_global_refinement; ++n)
-          {
-            for (typename Triangulation<dim>::active_cell_iterator
-                 cell = triangulation.begin_active();
-                 cell != triangulation.end(); ++cell)
-              cell->set_refine_flag ();
+    else {
+      // Instead of calling global_refine(n) we flag all cells for
+      // refinement and then allow the mesh refinement plugins to unflag
+      // the cells if desired. This procedure is repeated n times. If there
+      // is no plugin that modifies the flags, it is equivalent to
+      // refine_global(n).
+      for (unsigned int n = 0; n < parameters.initial_global_refinement; ++n) {
+        for (typename Triangulation<dim>::active_cell_iterator
+                     cell = triangulation.begin_active();
+             cell != triangulation.end(); ++cell)
+          cell->set_refine_flag();
 
-            mesh_refinement_manager.tag_additional_cells ();
-            triangulation.execute_coarsening_and_refinement();
+        mesh_refinement_manager.tag_additional_cells();
+        triangulation.execute_coarsening_and_refinement();
+      }
+
+      // At this point we then flag all boundary cells of the DSF interface.
+
+      const QGauss<dim> quadrature_formula(parameters.stokes_velocity_degree + 1);
+      FEValues<dim> fe_values(*mapping,
+                              finite_element,
+                              quadrature_formula,
+                              update_quadrature_points);
+
+      for (unsigned int n = 0; n < parameters.dsf_refinements; ++n) {
+        for (typename Triangulation<dim>::active_cell_iterator
+                     cell = triangulation.begin_active();
+             cell != triangulation.end(); ++cell) {
+          if (cell->is_locally_owned()) {
+            fe_values.reinit(cell);
+            Point<dim> q_point = fe_values.get_quadrature_points()[0];
+            if (sqrt(std::pow((q_point[1] - 1e6), 2)) <= (geometry_model->maximal_depth() / parameters.global_x_repetitions)) {
+              cell->set_refine_flag();
+            }
           }
+        }
+        mesh_refinement_manager.tag_additional_cells();
+        triangulation.execute_coarsening_and_refinement();
+      }
+
 
         time                      = parameters.start_time;
         timestep_number           = 0;

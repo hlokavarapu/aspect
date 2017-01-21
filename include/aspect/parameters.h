@@ -301,7 +301,9 @@ namespace aspect
      */
     typename NonlinearSolver::Kind nonlinear_solver;
 
-    double                         nonlinear_tolerance;
+      unsigned int global_x_repetitions;
+      unsigned int dsf_refinements;
+      double                         nonlinear_tolerance;
     bool                           resume_computation;
     double                         start_time;
     double                         CFL_number;

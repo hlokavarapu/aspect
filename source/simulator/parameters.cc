@@ -46,6 +46,12 @@ namespace aspect
   Parameters<dim>::
   declare_parameters (ParameterHandler &prm)
   {
+    prm.declare_entry ("Y repetitions global", "1",
+                       Patterns::Integer (1),
+                       "Number of cells in X direction.");
+    prm.declare_entry ("DSF refinement", "1",
+                       Patterns::Integer (1),
+                       "DSF number of refinements.");
     prm.declare_entry ("Dimension", "2",
                        Patterns::Integer (2,4),
                        "The number of space dimensions you want to run this program in. "
@@ -888,6 +894,8 @@ namespace aspect
     AssertThrow (prm.get_integer("Dimension") == dim,
                  ExcInternalError());
 
+    global_x_repetitions = prm.get_integer("Y repetitions global");
+    dsf_refinements = prm.get_integer("DSF refinement");
     CFL_number              = prm.get_double ("CFL number");
     use_conduction_timestep = prm.get_bool ("Use conduction timestep");
     convert_to_years        = prm.get_bool ("Use years in output instead of seconds");
