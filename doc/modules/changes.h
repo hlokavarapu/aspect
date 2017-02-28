@@ -11,7 +11,7 @@
  * or biquadratic function is approximated and evaluated onto compositional
  * fields with a simple overshoot and undershoot correction.
  * <br>
- * (Harsha Lokavarapu, Ying He, Gerry Puckett, 2016/12/28)
+ * (Harsha Lokavarapu, Ying He, Gerry Puckett, 2017/02/27)
  *
  * <li> New: Blankenbach benchmarks were added.
  * <br>
@@ -87,11 +87,6 @@
  * the according particle property in the same way. Also updated
  * and extended the cookbook description in the manual.
  * <br> (Rene Gassmoeller, 2017/01/19)
-=======
- * fields with a simple overshoot and undershoot correction. Support for
- * 2D models only, has been implemented.
- * <br> (Harsha Lokavarapu, Ying He, Gerry Puckett, 2016/12/28)
->>>>>>> Updated code in response to PR #1333 comments
  *
  * <li> New: Added a "heat flux densities" postprocessor.
  * <br> (Timo Heister, 2016/12/26)
