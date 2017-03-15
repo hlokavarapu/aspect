@@ -608,7 +608,7 @@ namespace aspect
     template <int dim>
     double
     SolKzMaterial<dim>::
-    thermal_expansion_coefficient (const double temperature,
+    thermal_expansion_coefficient (const double,
                                    const double,
                                    const std::vector<double> &, /*composition*/
                                    const Point<dim> &) const
@@ -641,7 +641,7 @@ namespace aspect
     template <int dim>
     void
     SolKzMaterial<dim>::
-    parse_parameters (ParameterHandler &prm)
+    parse_parameters (ParameterHandler &)
     {
       // Declare dependencies on solution variables
       this->model_dependence.viscosity = MaterialModel::NonlinearDependence::none;
@@ -654,15 +654,15 @@ namespace aspect
 
     template <int dim>
     std::pair<std::string,std::string>
-    SolKzPostprocessor<dim>::execute (TableHandler &statistics)
+    SolKzPostprocessor<dim>::execute (TableHandler &)
     {
       std_cxx1x::shared_ptr<Function<dim> > ref_func;
       if (dynamic_cast<const SolKzMaterial<dim> *>(&this->get_material_model()) != NULL)
         {
-          const SolKzMaterial<dim> *
+         /* const SolKzMaterial<dim> *
           material_model
             = dynamic_cast<const SolKzMaterial<dim> *>(&this->get_material_model());
-
+         */
           ref_func.reset (new AnalyticSolutions::FunctionSolKz<dim>());
         }
       else

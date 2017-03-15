@@ -59,13 +59,13 @@ namespace aspect
          * @name Physical parameters used in the basic equations
          * @{
          */
-        virtual double viscosity (const double                  temperature,
+        virtual inline double viscosity (const double                  temperature,
                                   const double                  pressure,
                                   const std::vector<double>    &compositional_fields,
                                   const SymmetricTensor<2,dim> &strain_rate,
                                   const Point<dim>             &position) const;
 
-        virtual double density (const double temperature,
+        virtual inline double density (const double temperature,
                                 const double pressure,
                                 const std::vector<double> &compositional_fields,
                                 const Point<dim> &position) const;

@@ -2947,22 +2947,6 @@ namespace aspect
     template<int dim>
     double
     SolCxMaterial<dim>::
-    reference_density() const
-    {
-      return background_density;
-    }
-
-    template<int dim>
-    double
-    SolCxMaterial<dim>::
-    reference_thermal_expansion_coefficient() const
-    {
-      return 0;
-    }
-
-    template<int dim>
-    double
-    SolCxMaterial<dim>::
     specific_heat(const double,
                   const double,
                   const std::vector<double> &, /*composition*/
@@ -2974,26 +2958,10 @@ namespace aspect
     template<int dim>
     double
     SolCxMaterial<dim>::
-    reference_cp() const
-    {
-      return 0;
-    }
-
-    template<int dim>
-    double
-    SolCxMaterial<dim>::
     thermal_conductivity(const double,
                          const double,
                          const std::vector<double> &, /*composition*/
                          const Point<dim> &) const
-    {
-      return 0;
-    }
-
-    template<int dim>
-    double
-    SolCxMaterial<dim>::
-    reference_thermal_diffusivity() const
     {
       return 0;
     }
@@ -3014,7 +2982,7 @@ namespace aspect
     template<int dim>
     double
     SolCxMaterial<dim>::
-    thermal_expansion_coefficient(const double temperature,
+    thermal_expansion_coefficient(const double,
                                   const double,
                                   const std::vector<double> &, /*composition*/
                                   const Point<dim> &) const
@@ -3105,7 +3073,7 @@ namespace aspect
 
     template<int dim>
     std::pair<std::string, std::string>
-    SolCxPostprocessor<dim>::execute(TableHandler &statistics)
+    SolCxPostprocessor<dim>::execute(TableHandler &)
     {
       std_cxx1x::shared_ptr <Function<dim>> ref_func;
       if (dynamic_cast<const SolCxMaterial<dim> *>(&this->get_material_model()) != NULL)

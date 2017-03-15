@@ -14,7 +14,7 @@ namespace aspect
                const double,
                const std::vector<double> &composition,
                const SymmetricTensor<2,dim> &,
-               const Point<dim> &p) const
+               const Point<dim> &) const
     {
       return composition[0];
     }

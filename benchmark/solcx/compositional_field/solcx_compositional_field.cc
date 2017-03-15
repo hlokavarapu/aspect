@@ -14,7 +14,7 @@ namespace aspect
                const double,
                const std::vector<double> &composition,
                const SymmetricTensor<2,dim> &,
-               const Point<dim> &p) const
+               const Point<dim> &) const
     {
       // defined as given in the Duretz et al. paper: (p[0] < 0.5 ? 1 : eta_B)
       // (p[0] < 0.5 ? 1 : eta_B)
@@ -27,7 +27,7 @@ namespace aspect
     density (const double,
              const double,
              const std::vector<double> &composition,
-             const Point<dim> &p) const
+             const Point<dim> &) const
     {
       // defined as given in the paper, plus the constant background density:
       // background_density - std::sin(numbers::PI*p[1])*std::cos(numbers::PI*p[0])
