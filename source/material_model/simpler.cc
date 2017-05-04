@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2017 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -41,14 +41,6 @@ namespace aspect
     reference_viscosity () const
     {
       return eta;
-    }
-
-    template <int dim>
-    double
-    Simpler<dim>::
-    reference_density () const
-    {
-      return reference_rho;
     }
 
     template <int dim>

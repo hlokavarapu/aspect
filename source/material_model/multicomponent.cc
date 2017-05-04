@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2015 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2017 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -171,38 +171,6 @@ namespace aspect
     reference_viscosity () const
     {
       return viscosities[0]; //background
-    }
-
-    template <int dim>
-    double
-    Multicomponent<dim>::
-    reference_density () const
-    {
-      return densities[0];  //background
-    }
-
-    template <int dim>
-    double
-    Multicomponent<dim>::
-    reference_thermal_expansion_coefficient () const
-    {
-      return thermal_expansivities[0]; //background
-    }
-
-    template <int dim>
-    double
-    Multicomponent<dim>::
-    reference_cp () const
-    {
-      return specific_heats[0]; //background
-    }
-
-    template <int dim>
-    double
-    Multicomponent<dim>::
-    reference_thermal_diffusivity () const
-    {
-      return thermal_conductivities[0] /( densities[0]* specific_heats[0] ); //background
     }
 
     template <int dim>

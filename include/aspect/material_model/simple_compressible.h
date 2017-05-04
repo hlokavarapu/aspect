@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2014 by the authors of the ASPECT code.
+  Copyright (C) 2014 - 2017 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -45,8 +45,8 @@ namespace aspect
     {
       public:
         /**
-        * Evaluate material properties.
-        */
+         * Evaluate material properties.
+         */
         virtual void evaluate(const MaterialModelInputs<dim> &in,
                               MaterialModelOutputs<dim> &out) const;
 
@@ -73,14 +73,6 @@ namespace aspect
          * @{
          */
         virtual double reference_viscosity () const;
-
-        virtual double reference_density () const;
-
-        virtual double reference_thermal_expansion_coefficient () const;
-
-        double reference_thermal_diffusivity () const;
-
-        double reference_cp () const;
         /**
          * @}
          */

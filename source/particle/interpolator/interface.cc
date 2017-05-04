@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 by the authors of the ASPECT code.
+  Copyright (C) 2015 - 2017 by the authors of the ASPECT code.
 
  This file is part of ASPECT.
 
@@ -30,10 +30,25 @@ namespace aspect
       Interface<dim>::~Interface ()
       {}
 
+
+
+      template <int dim>
+      std::vector<std::vector<double> >
+      Interface<dim>::properties_at_points(const std::multimap<types::LevelInd, Particle<dim> > &particles,
+                                           const std::vector<Point<dim> > &positions,
+                                           const typename parallel::distributed::Triangulation<dim>::active_cell_iterator &cell) const
+      {
+        return properties_at_points(particles,positions,ComponentMask(), cell);
+      }
+
+
+
       template <int dim>
       void
       Interface<dim>::declare_parameters (ParameterHandler &)
       {}
+
+
 
       template <int dim>
       void

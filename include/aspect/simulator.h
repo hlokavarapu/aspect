@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2017 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -262,6 +262,14 @@ namespace aspect
          * field. See Introspection::block_indices for more information.
          */
         unsigned int block_index(const Introspection<dim> &introspection) const;
+
+        /**
+         * Returns an index that runs from 0 (temperature field) to n (nth
+         * compositional field), and uniquely identifies the current advection
+         * field among the list of all advection fields. Can be used to index
+         * vectors that contain entries for all advection fields.
+         */
+        unsigned int field_index() const;
 
         /**
          * Look up the base element within the larger composite finite element
@@ -1274,6 +1282,7 @@ namespace aspect
       double                                                    old_time_step;
       unsigned int                                              timestep_number;
       unsigned int                                              pre_refinement_step;
+      unsigned int                                              nonlinear_iteration;
       /**
        * @}
        */

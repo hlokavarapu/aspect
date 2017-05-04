@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2015 - 2017 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -38,13 +38,6 @@ namespace aspect
       return eta_0;
     }
 
-    template <int dim>
-    double
-    MeltSimple<dim>::
-    reference_density () const
-    {
-      return reference_rho_s;
-    }
 
     template <int dim>
     bool

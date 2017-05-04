@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2015 - 2017 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -56,9 +56,6 @@ namespace aspect
          * or as $\nabla \cdot \mathbf{u}=0$ (incompressible Stokes).
          */
         virtual bool is_compressible () const;
-        /**
-         * @}
-         */
 
         /**
          * @name Reference quantities
@@ -66,13 +63,15 @@ namespace aspect
          */
         virtual double reference_viscosity () const;
 
-        virtual double reference_density () const;
-
         virtual void evaluate(const typename Interface<dim>::MaterialModelInputs &in,
                               typename Interface<dim>::MaterialModelOutputs &out) const;
 
         virtual void melt_fractions (const MaterialModel::MaterialModelInputs<dim> &in,
                                      std::vector<double> &melt_fractions) const;
+
+        /**
+         * @}
+         */
 
         /**
          * @name Functions used in dealing with run-time parameters

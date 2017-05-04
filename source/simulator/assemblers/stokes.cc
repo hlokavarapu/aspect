@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2016 by the authors of the ASPECT code.
+  Copyright (C) 2016 - 2017 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -239,10 +239,11 @@ namespace aspect
                                             const bool                                       /*rebuild_stokes_matrix*/,
                                             internal::Assembly::Scratch::StokesSystem<dim>  &scratch,
                                             internal::Assembly::CopyData::StokesSystem<dim> &data,
-                                            const Parameters<dim> &parameters) const
+                                            const Parameters<dim>                           &parameters) const
     {
       // assemble RHS of:
       //  - div u = 1/rho * drho/dz g/||g||* u
+      (void)parameters;
       Assert(parameters.formulation_mass_conservation ==
              Parameters<dim>::Formulation::MassConservation::reference_density_profile,
              ExcInternalError());
@@ -287,10 +288,11 @@ namespace aspect
                                                      const bool                                       rebuild_stokes_matrix,
                                                      internal::Assembly::Scratch::StokesSystem<dim>  &scratch,
                                                      internal::Assembly::CopyData::StokesSystem<dim> &data,
-                                                     const Parameters<dim> &parameters) const
+                                                     const Parameters<dim>                           &parameters) const
     {
       // assemble compressibility term of:
       //  - div u - 1/rho * drho/dz g/||g||* u = 0
+      (void)parameters;
       Assert(parameters.formulation_mass_conservation ==
              Parameters<dim>::Formulation::MassConservation::implicit_reference_density_profile,
              ExcInternalError());
@@ -325,8 +327,8 @@ namespace aspect
 
           for (unsigned int i=0; i<stokes_dofs_per_cell; ++i)
             for (unsigned int j=0; j<stokes_dofs_per_cell; ++j)
-              data.local_matrix(i,j) += (pressure_scaling *
-                                         one_over_rho * drho_dz * scratch.phi_u[j] * scratch.phi_p[i])
+              data.local_matrix(i,j) += -(pressure_scaling *
+                                          one_over_rho * drho_dz * scratch.phi_u[j] * scratch.phi_p[i])
                                         * JxW;
         }
     }
@@ -340,10 +342,11 @@ namespace aspect
                                  const bool                                       /*rebuild_stokes_matrix*/,
                                  internal::Assembly::Scratch::StokesSystem<dim>  &scratch,
                                  internal::Assembly::CopyData::StokesSystem<dim> &data,
-                                 const Parameters<dim> &parameters) const
+                                 const Parameters<dim>                           &parameters) const
     {
       // assemble RHS of:
       //  - div u = 1/rho * drho/dp rho * g * u
+      (void)parameters;
       Assert(parameters.formulation_mass_conservation ==
              Parameters<dim>::Formulation::MassConservation::isothermal_compression,
              ExcInternalError());

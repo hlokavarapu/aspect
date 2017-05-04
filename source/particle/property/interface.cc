@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015, 2016 by the authors of the ASPECT code.
+  Copyright (C) 2015 - 2017 by the authors of the ASPECT code.
 
  This file is part of ASPECT.
 
@@ -331,6 +331,7 @@ namespace aspect
 
                   const std::vector<std::vector<double> > interpolated_properties = interpolator.properties_at_points(particles,
                                                                                     std::vector<Point<dim> > (1,particle.get_location()),
+                                                                                    ComponentMask(property_information.n_components(),true),
                                                                                     found_cell);
                   for (unsigned int property_component = 0; property_component < property_information.get_components_by_plugin_index(property_index); ++property_component)
                     particle_properties.push_back(interpolated_properties[0][property_information.get_position_by_plugin_index(property_index)+property_component]);

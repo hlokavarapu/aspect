@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2017 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -260,14 +260,6 @@ namespace aspect
     reference_viscosity () const
     {
       return ref_visc;
-    }
-
-    template <int dim>
-    double
-    DiffusionDislocation<dim>::
-    reference_density () const
-    {
-      return densities[0];
     }
 
     template <int dim>

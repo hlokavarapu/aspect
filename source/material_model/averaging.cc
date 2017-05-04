@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2015 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2017 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -425,14 +425,6 @@ namespace aspect
     reference_viscosity() const
     {
       return base_model->reference_viscosity();
-    }
-
-    template <int dim>
-    double
-    Averaging<dim>::
-    reference_density() const
-    {
-      return base_model->reference_density();
     }
   }
 }
