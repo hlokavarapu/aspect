@@ -29,17 +29,23 @@ namespace aspect
   {
     namespace Output
     {
+        template <int dim>
+        VTUOutput<dim>::VTUOutput()
+                :
+                Interface<dim>()
+        {}
+
       template <int dim>
-      VTUOutput<dim>::VTUOutput()
+      VTUOutput<dim>::VTUOutput(std::string output_file_suffix)
         :
-        file_index(0)
+        Interface<dim> (output_file_suffix)
       {}
 
       template <int dim>
       void VTUOutput<dim>::initialize ()
       {
-        aspect::Utilities::create_directory (this->get_output_directory() + "particles/",
-                                             this->get_mpi_communicator(),
+        aspect::Utilities::create_directory (this->get_particle_output_location(),
+                                             Interface<dim>::get_mpi_communicator(),
                                              true);
       }
 
@@ -49,9 +55,9 @@ namespace aspect
                                            const Property::ParticlePropertyInformation &property_information,
                                            const double current_time)
       {
-        const std::string output_file_prefix = "particles-" + Utilities::int_to_string (file_index, 5);
-        const std::string full_filename = get_particle_output_location()
-                                          + get_file_name();
+        const std::string output_file_prefix = "particles-" + this->get_file_index();
+        const std::string full_filename = this->get_particle_output_location()
+                                          + this->get_file_name();
 
         std::ofstream output (full_filename.c_str());
         AssertThrow (output, ExcIO());
@@ -174,7 +180,7 @@ namespace aspect
         if (Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
           {
             const std::string pvtu_filename = (output_file_prefix + ".pvtu");
-            const std::string full_pvtu_filename = get_particle_output_location()
+            const std::string full_pvtu_filename = this->get_particle_output_location()
                                                    + pvtu_filename;
 
             std::ofstream pvtu_output (full_pvtu_filename.c_str());
@@ -233,7 +239,7 @@ namespace aspect
             std::ofstream visit_master (visit_master_filename.c_str());
             DataOutBase::write_visit_record (visit_master, times_and_vtu_file_names);
           }
-        file_index++;
+        this->increment_file_index();
 
         return "vtu";
       }
@@ -243,8 +249,7 @@ namespace aspect
       void VTUOutput<dim>::serialize (Archive &ar, const unsigned int)
       {
         // invoke serialization of the base class
-        ar &file_index
-        & times_and_pvtu_file_names
+        ar &times_and_pvtu_file_names
         & times_and_vtu_file_names
         ;
       }
@@ -265,31 +270,31 @@ namespace aspect
         ia >> (*this);
       }
 
-      template <int dim>
-      const std::string
-      VTUOutput<dim>::get_file_name()
-      {
-        return "particles-"
-               + get_file_index()
-               + "."
-               + Utilities::int_to_string(Utilities::MPI::this_mpi_process(this->get_mpi_communicator()), 4)
-               + ".vtu";
-      }
+//      template <int dim>
+//      const std::string
+//      VTUOutput<dim>::get_file_name()
+//      {
+//        return "particles-"
+//               + get_file_index()
+//               + "."
+//               + Utilities::int_to_string(Utilities::MPI::this_mpi_process(this->get_mpi_communicator()), 4)
+//               + ".vtu";
+//      }
 
-      template <int dim>
-      const std::string
-      VTUOutput<dim>::get_particle_output_location()
-      {
-        return this->get_output_directory()
-               + "particles/";
-      }
+//      template <int dim>
+//      const std::string
+//      VTUOutput<dim>::get_particle_output_location()
+//      {
+//        return this->get_output_directory()
+//               + "particles/";
+//      }
 
-      template <int dim>
-      const std::string
-      VTUOutput<dim>::get_file_index()
-      {
-        return Utilities::int_to_string (file_index, 5);
-      }
+//      template <int dim>
+//      const std::string
+//      VTUOutput<dim>::get_file_index()
+//      {
+//        return Utilities::int_to_string (file_index, 5);
+//      }
     }
   }
 }

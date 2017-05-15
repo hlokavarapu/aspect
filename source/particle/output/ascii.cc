@@ -28,10 +28,16 @@ namespace aspect
   {
     namespace Output
     {
-      template <int dim>
-      ASCIIOutput<dim>::ASCIIOutput()
+        template <int dim>
+        ASCIIOutput<dim>::ASCIIOutput ()
         :
-        file_index(0)
+        Interface<dim>()
+        {}
+
+      template <int dim>
+      ASCIIOutput<dim>::ASCIIOutput (std::string output_file_suffix)
+        :
+        Interface<dim>(output_file_suffix)
       {}
 
       template <int dim>
@@ -48,8 +54,8 @@ namespace aspect
                                              const Property::ParticlePropertyInformation &property_information,
                                              const double /*time*/)
       {
-        const std::string full_filename = get_particle_output_location()
-                                          + get_file_name();
+        const std::string full_filename = this->get_particle_output_location()
+                                          + this->get_file_name();
 
         std::ofstream output (full_filename.c_str());
 
@@ -98,7 +104,7 @@ namespace aspect
             output << "\n";
           }
 
-        file_index++;
+        this->increment_file_index();
 
         return "txt";
       }
@@ -106,11 +112,7 @@ namespace aspect
       template <int dim>
       template <class Archive>
       void ASCIIOutput<dim>::serialize (Archive &ar, const unsigned int)
-      {
-        // invoke serialization of the base class
-        ar &file_index
-        ;
-      }
+      {}
 
       template <int dim>
       void
@@ -128,31 +130,31 @@ namespace aspect
         ia >> (*this);
       }
 
-      template <int dim>
-      const std::string
-      ASCIIOutput<dim>::get_file_name ()
-      {
-        return "particles-"
-               + get_file_index()
-               + "."
-               + Utilities::int_to_string(Utilities::MPI::this_mpi_process(this->get_mpi_communicator()), 4)
-               + ".txt";
-      }
+//      template <int dim>
+//      const std::string
+//      ASCIIOutput<dim>::get_file_name ()
+//      {
+//        return "particles-"
+//               + get_file_index()
+//               + "."
+//               + Utilities::int_to_string(Utilities::MPI::this_mpi_process(this->get_mpi_communicator()), 4)
+//               + ".txt";
+//      }
 
-      template <int dim>
-      const std::string
-      ASCIIOutput<dim>::get_particle_output_location ()
-      {
-        return this->get_output_directory()
-               + "particles/";
-      }
+//      template <int dim>
+//      const std::string
+//      ASCIIOutput<dim>::get_particle_output_location ()
+//      {
+//        return this->get_output_directory()
+//               + "particles/";
+//      }
 
-      template <int dim>
-      const std::string
-      ASCIIOutput<dim>::get_file_index ()
-      {
-        return Utilities::int_to_string(file_index, 5);
-      }
+//      template <int dim>
+//      const std::string
+//      ASCIIOutput<dim>::get_file_index ()
+//      {
+//        return Utilities::int_to_string(file_index, 5);
+//      }
     }
   }
 }

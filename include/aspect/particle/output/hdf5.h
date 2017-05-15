@@ -38,15 +38,19 @@ namespace aspect
        * @ingroup ParticleOutput
        */
       template <int dim>
-      class HDF5Output : public Interface<dim>,
-        public SimulatorAccess<dim>
+      class HDF5Output : public Interface<dim>
       {
         public:
-          /**
-           * Constructor.
-           *
-           */
+
           HDF5Output();
+          /**
+           * Constructor of the interface class initializes the suffix and
+           * file index.
+           *
+           * @param[in] output_file_suffix Set the file suffix based on output
+           * particle format.
+           */
+          HDF5Output(std::string output_file_suffix);
 
           /**
            * Initialization function. This function is called once at the
@@ -107,26 +111,26 @@ namespace aspect
           /**
            * Returns a constructed filename.
            */
-          const std::string
-          get_file_name();
+//          const std::string
+//          get_file_name();
 
           /**
           * Get the absolute path where the specified particle output will be generated.
           */
-          const std::string
-          get_particle_output_location();
+//          const std::string
+//          get_particle_output_location();
 
           /**
            * Get the current file index.
            */
-          const std::string
-          get_file_index();
+//          const std::string
+//          get_file_index();
 
         private:
-          /**
-           * Internal index of file output number.
-           */
-          unsigned int file_index;
+//          /**
+//           * Internal index of file output number.
+//           */
+//          unsigned int file_index;
 
           /**
            * Vector of so far created xdmf_entries (one per written output

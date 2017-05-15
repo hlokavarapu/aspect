@@ -29,6 +29,21 @@ namespace aspect
   {
     namespace Output
     {
+
+        template <int dim>
+        Interface<dim>::Interface()
+        {
+          output_file_suffix = "";
+          file_index = 0;
+        }
+
+        template <int dim>
+        Interface<dim>::Interface (std::string output_file_suffix)
+        {
+          output_file_suffix = output_file_suffix;
+          file_index = 0;
+        }
+
       template <int dim>
       Interface<dim>::~Interface ()
       {}
@@ -50,42 +65,61 @@ namespace aspect
 
       template <int dim>
       template <class Archive>
-      void Interface<dim>::serialize (Archive &ar, const unsigned int)
-      {}
+      void Interface<dim>::serialize (Archive &ar, const unsigned int) {
+        ar &output_file_suffix
+        &file_index
+        ;
+      }
+
+      //TODO: Save the appropriate variables.
+      template <int dim>
+      void
+      Interface<dim>::save (std::ostringstream &os) const
+      {
+        aspect::oarchive oa (os);
+        oa << (*this);
+      }
 
       template <int dim>
       void
-      Interface<dim>::save (std::ostringstream &) const
-      {}
-
-      template <int dim>
-      void
-      Interface<dim>::load (std::istringstream &)
-      {}
+      Interface<dim>::load (std::istringstream &is)
+      {
+        aspect::iarchive ia (is);
+        ia >> (*this);
+      }
 
       template <int dim>
       const std::string
       Interface<dim>::get_file_name()
       {
-        // To prevent warning statement during compilation
-        return "";
+        return "particles-"
+               + get_file_index()
+               + "."
+               + Utilities::int_to_string(Utilities::MPI::this_mpi_process(this->get_mpi_communicator()), 4)
+               + output_file_suffix;
       }
 
       template <int dim>
       const std::string
       Interface<dim>::get_particle_output_location()
       {
-        // To prevent warning statement during compilation
-        return "";
+        return this->get_output_directory()
+               + "particles/";
       }
 
       template <int dim>
       const std::string
       Interface<dim>::get_file_index()
       {
-        // To prevent warning statement during compilation
-        return "";
+        return Utilities::int_to_string(file_index, 5);
       }
+
+        template<int dim>
+        void
+        Interface<dim>::increment_file_index()
+        {
+          file_index++;
+        }
 
       // -------------------------------- Deal with registering models and automating
       // -------------------------------- their setup and selection at run time

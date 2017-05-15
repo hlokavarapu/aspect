@@ -40,9 +40,19 @@ namespace aspect
        * @ingroup ParticleOutput
        */
       template <int dim>
-      class Interface
+      class Interface : public SimulatorAccess<dim>
       {
         public:
+          Interface ();
+          /**
+           * Constructor of the interface class initializes the suffix and
+           * file index.
+           *
+           * @param[in] output_file_suffix Set the file suffix based on output
+           * particle format.
+           */
+          Interface (std::string output_file_suffix);
+
           /**
            * Destructor. Made virtual so that derived classes can be created
            * and destroyed through pointers to the base class.
@@ -107,6 +117,12 @@ namespace aspect
           get_file_index();
 
           /**
+           * Increment file index;
+           */
+          void
+          increment_file_index();
+
+          /**
            * Read or write the data of this object for serialization
            */
           template <class Archive>
@@ -147,6 +163,17 @@ namespace aspect
           virtual
           void
           parse_parameters (ParameterHandler &);
+
+      private:
+          /**
+           * Track the file suffix of a given particle output format.
+           */
+          std::string output_file_suffix;
+
+          /**
+           * Internal index of file output number.
+           */
+          unsigned int    file_index;
       };
 
 

@@ -45,11 +45,16 @@ namespace aspect
 #endif
 
 #endif
-
       template <int dim>
       HDF5Output<dim>::HDF5Output()
+      :
+      Interface<dim>()
+      {}
+
+      template <int dim>
+      HDF5Output<dim>::HDF5Output(std::string output_file_suffix)
         :
-        file_index(0)
+        Interface<dim>(output_file_suffix)
       {
 
 #ifndef DEAL_II_WITH_HDF5
@@ -78,8 +83,8 @@ namespace aspect
       {
 #ifdef DEAL_II_WITH_HDF5
         // Create the filename
-        const std::string h5_filename = get_particle_output_location()
-                                        + get_file_name();
+        const std::string h5_filename = this->get_particle_output_location()
+                                        + this->get_file_name();
 
         // Create the hdf5 output size information
         types::particle_index n_local_particles = particles.size();
@@ -255,7 +260,7 @@ namespace aspect
         if (Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
           {
             const std::string local_h5_filename = "particles/"
-                                                  + get_file_name();
+                                                  + this->get_file_name();
             XDMFEntry   entry(local_h5_filename, current_time, n_global_particles, 0, 3);
             DataOut<dim> data_out;
             const std::string xdmf_filename = (this->get_output_directory() + "particles.xdmf");
@@ -280,7 +285,7 @@ namespace aspect
             data_out.write_xdmf_file(xdmf_entries, xdmf_filename.c_str(), this->get_mpi_communicator());
           }
 
-        file_index++;
+        this->increment_file_index();
 
         return "h5";
 #else
@@ -297,8 +302,7 @@ namespace aspect
       void HDF5Output<dim>::serialize (Archive &ar, const unsigned int)
       {
         // invoke serialization of the base class
-        ar &file_index
-        &xdmf_entries
+        ar &xdmf_entries
         ;
       }
 
@@ -318,29 +322,29 @@ namespace aspect
         ia >> (*this);
       }
 
-      template <int dim>
-      const std::string
-      HDF5Output<dim>::get_file_name ()
-      {
-        return "particles-"
-               + get_file_index()
-               + ".h5";
-      }
+//      template <int dim>
+//      const std::string
+//      HDF5Output<dim>::get_file_name ()
+//      {
+//        return "particles-"
+//               + get_file_index()
+//               + ".h5";
+//      }
 
-      template <int dim>
-      const std::string
-      HDF5Output<dim>::get_particle_output_location()
-      {
-        return this->get_output_directory()
-               + "particles/";
-      }
+//      template <int dim>
+//      const std::string
+//      HDF5Output<dim>::get_particle_output_location()
+//      {
+//        return this->get_output_directory()
+//               + "particles/";
+//      }
 
-      template <int dim>
-      const std::string
-      HDF5Output<dim>::get_file_index()
-      {
-        return Utilities::int_to_string (file_index, 5);
-      }
+//      template <int dim>
+//      const std::string
+//      HDF5Output<dim>::get_file_index()
+//      {
+//        return Utilities::int_to_string (file_index, 5);
+//      }
     }
   }
 }
