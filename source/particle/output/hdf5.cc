@@ -47,14 +47,8 @@ namespace aspect
 #endif
       template <int dim>
       HDF5Output<dim>::HDF5Output()
-      :
-      Interface<dim>()
-      {}
-
-      template <int dim>
-      HDF5Output<dim>::HDF5Output(std::string output_file_suffix)
         :
-        Interface<dim>(output_file_suffix)
+        Interface<dim>()
       {
 
 #ifndef DEAL_II_WITH_HDF5
@@ -70,6 +64,7 @@ namespace aspect
       template <int dim>
       void HDF5Output<dim>::initialize ()
       {
+        this->output_file_suffix = ".h5";
         aspect::Utilities::create_directory (this->get_output_directory() + "particles/",
                                              this->get_mpi_communicator(),
                                              true);
@@ -322,29 +317,14 @@ namespace aspect
         ia >> (*this);
       }
 
-//      template <int dim>
-//      const std::string
-//      HDF5Output<dim>::get_file_name ()
-//      {
-//        return "particles-"
-//               + get_file_index()
-//               + ".h5";
-//      }
-
-//      template <int dim>
-//      const std::string
-//      HDF5Output<dim>::get_particle_output_location()
-//      {
-//        return this->get_output_directory()
-//               + "particles/";
-//      }
-
-//      template <int dim>
-//      const std::string
-//      HDF5Output<dim>::get_file_index()
-//      {
-//        return Utilities::int_to_string (file_index, 5);
-//      }
+      template <int dim>
+      const std::string
+      HDF5Output<dim>::get_file_name ()
+      {
+        return "particles-"
+               + Interface<dim>::get_file_index()
+               + ".h5";
+      }
     }
   }
 }

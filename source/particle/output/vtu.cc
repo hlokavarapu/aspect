@@ -29,21 +29,16 @@ namespace aspect
   {
     namespace Output
     {
-        template <int dim>
-        VTUOutput<dim>::VTUOutput()
-                :
-                Interface<dim>()
-        {}
-
       template <int dim>
-      VTUOutput<dim>::VTUOutput(std::string output_file_suffix)
+      VTUOutput<dim>::VTUOutput()
         :
-        Interface<dim> (output_file_suffix)
+        Interface<dim>()
       {}
 
       template <int dim>
       void VTUOutput<dim>::initialize ()
       {
+        this->output_file_suffix = ".vtu";
         aspect::Utilities::create_directory (this->get_particle_output_location(),
                                              Interface<dim>::get_mpi_communicator(),
                                              true);
@@ -230,8 +225,8 @@ namespace aspect
             // have to collect all files that together form this one time step
             std::vector<std::string> this_timestep_output_files;
             for (unsigned int i=0; i<Utilities::MPI::n_mpi_processes(this->get_mpi_communicator()); ++i)
-              this_timestep_output_files.push_back ("particles/" + output_file_prefix +
-                                                    "." + Utilities::int_to_string(i, 4) + ".vtu");
+              this_timestep_output_files.push_back ("particles/" +
+                                                    this->get_file_name());
             times_and_vtu_file_names.push_back (std::make_pair (current_time,
                                                                 this_timestep_output_files));
 
@@ -269,32 +264,6 @@ namespace aspect
         aspect::iarchive ia (is);
         ia >> (*this);
       }
-
-//      template <int dim>
-//      const std::string
-//      VTUOutput<dim>::get_file_name()
-//      {
-//        return "particles-"
-//               + get_file_index()
-//               + "."
-//               + Utilities::int_to_string(Utilities::MPI::this_mpi_process(this->get_mpi_communicator()), 4)
-//               + ".vtu";
-//      }
-
-//      template <int dim>
-//      const std::string
-//      VTUOutput<dim>::get_particle_output_location()
-//      {
-//        return this->get_output_directory()
-//               + "particles/";
-//      }
-
-//      template <int dim>
-//      const std::string
-//      VTUOutput<dim>::get_file_index()
-//      {
-//        return Utilities::int_to_string (file_index, 5);
-//      }
     }
   }
 }

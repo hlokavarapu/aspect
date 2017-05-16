@@ -39,15 +39,10 @@ namespace aspect
       class VTUOutput : public Interface<dim>
       {
         public:
-          VTUOutput();
           /**
-           * Constructor of the interface class initializes the suffix and
-           * file index.
-           *
-           * @param[in] output_file_suffix Set the file suffix based on output
-           * particle format.
-           */
-          VTUOutput(std::string output_file_suffix);
+           * Constructor.
+          */
+          VTUOutput();
 
           /**
            * Initialization function. This function is called once at the
@@ -104,30 +99,7 @@ namespace aspect
           void
           load (std::istringstream &is);
 
-          /**
-           * Returns a constructed filename.
-           */
-//          const std::string
-//          get_file_name();
-
-          /**
-           * Get the absolute path where the specified particle output will be generated.
-           */
-//          const std::string
-//          get_particle_output_location();
-
-          /**
-           * Get the current file index.
-           */
-//          const std::string
-//          get_file_index();
-
         private:
-          /**
-           * Internal index of file output number.
-           */
-//          unsigned int    file_index;
-
           /**
            * A list of pairs (time, pvtu_filename) that have so far been written
            * and that we will pass to DataOutInterface::write_pvd_record

@@ -29,21 +29,6 @@ namespace aspect
   {
     namespace Output
     {
-
-        template <int dim>
-        Interface<dim>::Interface()
-        {
-          output_file_suffix = "";
-          file_index = 0;
-        }
-
-        template <int dim>
-        Interface<dim>::Interface (std::string output_file_suffix)
-        {
-          output_file_suffix = output_file_suffix;
-          file_index = 0;
-        }
-
       template <int dim>
       Interface<dim>::~Interface ()
       {}
@@ -61,11 +46,14 @@ namespace aspect
       template <int dim>
       void
       Interface<dim>::initialize ()
-      {}
+      {
+        file_index = 0;
+      }
 
       template <int dim>
       template <class Archive>
-      void Interface<dim>::serialize (Archive &ar, const unsigned int) {
+      void Interface<dim>::serialize (Archive &ar, const unsigned int)
+      {
         ar &output_file_suffix
         &file_index
         ;
@@ -114,12 +102,12 @@ namespace aspect
         return Utilities::int_to_string(file_index, 5);
       }
 
-        template<int dim>
-        void
-        Interface<dim>::increment_file_index()
-        {
-          file_index++;
-        }
+      template<int dim>
+      void
+      Interface<dim>::increment_file_index()
+      {
+        file_index++;
+      }
 
       // -------------------------------- Deal with registering models and automating
       // -------------------------------- their setup and selection at run time

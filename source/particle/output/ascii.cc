@@ -28,21 +28,16 @@ namespace aspect
   {
     namespace Output
     {
-        template <int dim>
-        ASCIIOutput<dim>::ASCIIOutput ()
+      template <int dim>
+      ASCIIOutput<dim>::ASCIIOutput ()
         :
         Interface<dim>()
-        {}
-
-      template <int dim>
-      ASCIIOutput<dim>::ASCIIOutput (std::string output_file_suffix)
-        :
-        Interface<dim>(output_file_suffix)
       {}
 
       template <int dim>
       void ASCIIOutput<dim>::initialize ()
       {
+        this->output_file_suffix = ".txt";
         aspect::Utilities::create_directory (this->get_output_directory() + "particles/",
                                              this->get_mpi_communicator(),
                                              true);
@@ -111,7 +106,7 @@ namespace aspect
 
       template <int dim>
       template <class Archive>
-      void ASCIIOutput<dim>::serialize (Archive &ar, const unsigned int)
+      void ASCIIOutput<dim>::serialize (Archive &, const unsigned int)
       {}
 
       template <int dim>
@@ -129,32 +124,6 @@ namespace aspect
         aspect::iarchive ia (is);
         ia >> (*this);
       }
-
-//      template <int dim>
-//      const std::string
-//      ASCIIOutput<dim>::get_file_name ()
-//      {
-//        return "particles-"
-//               + get_file_index()
-//               + "."
-//               + Utilities::int_to_string(Utilities::MPI::this_mpi_process(this->get_mpi_communicator()), 4)
-//               + ".txt";
-//      }
-
-//      template <int dim>
-//      const std::string
-//      ASCIIOutput<dim>::get_particle_output_location ()
-//      {
-//        return this->get_output_directory()
-//               + "particles/";
-//      }
-
-//      template <int dim>
-//      const std::string
-//      ASCIIOutput<dim>::get_file_index ()
-//      {
-//        return Utilities::int_to_string(file_index, 5);
-//      }
     }
   }
 }
