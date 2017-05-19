@@ -24,6 +24,7 @@
 #include <aspect/assembly.h>
 #include <aspect/utilities.h>
 #include <aspect/melt.h>
+#include <aspect/vof/handler.h>
 #include <aspect/free_surface.h>
 
 #include <aspect/geometry_model/initial_topography_model/zero_topography.h>
@@ -150,6 +151,7 @@ namespace aspect
     assemblers (new internal::Assembly::AssemblerLists<dim>()),
     parameters (prm, mpi_communicator_),
     melt_handler (parameters.include_melt_transport ? new MeltHandler<dim> (prm) : NULL),
+    vof_handler (parameters.vof_tracking_enabled ? new VoFHandler<dim> (*this, prm) : NULL),
     post_signal_creation(
       std_cxx11::bind (&internals::SimulatorSignals::call_connector_functions<dim>,
                        std_cxx11::ref(signals))),
@@ -539,6 +541,11 @@ namespace aspect
         AssertThrow( !parameters.free_surface_enabled,
                      ExcMessage("Melt transport together with a free surface has not been tested.") );
         melt_handler->initialize_simulator (*this);
+      }
+
+    if (parameters.vof_tracking_enabled)
+      {
+        vof_handler->initialize (prm);
       }
 
     postprocess_manager.initialize_simulator (*this);
@@ -1076,6 +1083,15 @@ namespace aspect
                 Assert(false,ExcNotImplemented());
             }
         }
+
+      if (parameters.vof_tracking_enabled)
+        {
+          for (unsigned int f=0; f<vof_handler->get_n_fields(); ++f)
+            {
+              const unsigned int vof_c_index = vof_handler->get_field(f).fraction.first_component_index;
+              coupling[vof_c_index][vof_c_index] = DoFTools::always;
+            }
+        }
     }
 
     LinearAlgebra::BlockDynamicSparsityPattern sp;
@@ -1088,7 +1104,9 @@ namespace aspect
                mpi_communicator);
 #endif
 
-    if ((parameters.use_discontinuous_temperature_discretization) || (parameters.use_discontinuous_composition_discretization))
+    if ((parameters.use_discontinuous_temperature_discretization) ||
+        (parameters.use_discontinuous_composition_discretization) ||
+        (parameters.vof_tracking_enabled))
       {
         Table<2,DoFTools::Coupling> face_coupling (introspection.n_components,
                                                    introspection.n_components);
@@ -1120,6 +1138,15 @@ namespace aspect
                     default:
                       Assert(false,ExcNotImplemented());
                   }
+              }
+          }
+
+        if (parameters.vof_tracking_enabled)
+          {
+            for (unsigned int f=0; f<vof_handler->get_n_fields(); ++f)
+              {
+                const unsigned int vof_c_index = vof_handler->get_field(f).fraction.first_component_index;
+                face_coupling[vof_c_index][vof_c_index] = DoFTools::always;
               }
           }
 
@@ -1993,6 +2020,9 @@ namespace aspect
                     AssertThrow(false,ExcNotImplemented());
                 }
             }
+ 
+          if (parameters.vof_tracking_enabled)
+            vof_handler->do_vof_update ();
 
           for (unsigned int c=0; c<parameters.n_compositional_fields; ++c)
             current_linearization_point.block(introspection.block_indices.compositional_fields[c])
@@ -2117,6 +2147,9 @@ namespace aspect
                         AssertThrow(false,ExcNotImplemented());
                     }
                 }
+ 
+          if (parameters.vof_tracking_enabled)
+            vof_handler->do_vof_update ();
 
               // for consistency we update the current linearization point only after we have solved
               // all fields, so that we use the same point in time for every field when solving
@@ -2221,6 +2254,9 @@ namespace aspect
                     AssertThrow(false,ExcNotImplemented());
                 }
             }
+ 
+          if (parameters.vof_tracking_enabled)
+            vof_handler->do_vof_update ();
 
           for (unsigned int c=0; c<parameters.n_compositional_fields; ++c)
             current_linearization_point.block(introspection.block_indices.compositional_fields[c])
@@ -2324,6 +2360,9 @@ namespace aspect
                     AssertThrow(false,ExcNotImplemented());
                 }
             }
+ 
+          if (parameters.vof_tracking_enabled)
+            vof_handler->do_vof_update ();
 
           for (unsigned int c=0; c<parameters.n_compositional_fields; ++c)
             current_linearization_point.block(introspection.block_indices.compositional_fields[c])

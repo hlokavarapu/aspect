@@ -21,6 +21,7 @@
 
 #include <aspect/simulator.h>
 #include <aspect/melt.h>
+#include <aspect/vof/handler.h>
 #include <aspect/global.h>
 
 #include <aspect/heating_model/adiabatic_heating.h>
@@ -1106,6 +1107,14 @@ namespace aspect
   template <int dim>
   void Simulator<dim>::apply_limiter_to_dg_solutions (const AdvectionField &advection_field)
   {
+    // TODO: Modify to more robust method
+    // Skip if this composition field is being set from the vof handler
+    if (!advection_field.is_temperature() &&
+        parameters.vof_tracking_enabled)
+      for (unsigned int f=0; f<vof_handler->get_n_fields(); ++f)
+        if (vof_handler->get_field(f).c_field_name == introspection.name_for_compositional_index(advection_field.compositional_variable))
+          return;
+
     /*
      * First setup the quadrature points which are used to find the maximum and minimum solution values at those points.
      * A quadrature formula that combines all quadrature points constructed as all tensor products of

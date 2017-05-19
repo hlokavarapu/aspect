@@ -499,6 +499,16 @@ namespace aspect
      * @}
      */
 
+    /**
+     * @name Parameters that have to do with VoF calculations
+     * @{
+     */
+    bool                           vof_tracking_enabled;
+    /**
+     * @}
+     */
+
+
   };
 
 }

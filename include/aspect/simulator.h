@@ -75,6 +75,9 @@ namespace aspect
   template <int dim>
   class FreeSurfaceHandler;
 
+  template <int dim>
+  class VoFHandler;
+
   namespace internal
   {
     namespace Assembly
@@ -292,7 +295,6 @@ namespace aspect
          */
         unsigned int polynomial_degree(const Introspection<dim> &introspection) const;
       };
-
 
     private:
 
@@ -1202,7 +1204,16 @@ namespace aspect
       std_cxx11::shared_ptr<MeltHandler<dim> > melt_handler;
 
       SimulatorSignals<dim>               signals;
+
+      /**
+       * Shared pointer for an instance of the VoFHandler. This way,
+       * if we do not need the machinery for doing vof stuff, we do
+       * not even allocate it.
+       */
+      std_cxx11::shared_ptr<VoFHandler<dim> > vof_handler;
+
       const IntermediaryConstructorAction post_signal_creation;
+
       Introspection<dim>                  introspection;
 
 
@@ -1413,6 +1424,7 @@ namespace aspect
       friend class boost::serialization::access;
       friend class SimulatorAccess<dim>;
       friend class FreeSurfaceHandler<dim>;  //FreeSurfaceHandler needs access to the internals of the Simulator
+      friend class VoFHandler<dim>;          //VoFHandler needs access to the internals of the Simulator
       friend struct Parameters<dim>;
   };
 }

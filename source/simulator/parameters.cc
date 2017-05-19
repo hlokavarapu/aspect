@@ -23,6 +23,7 @@
 #include <aspect/global.h>
 #include <aspect/utilities.h>
 #include <aspect/melt.h>
+#include <aspect/vof/handler.h>
 #include <aspect/free_surface.h>
 
 #include <deal.II/base/parameter_handler.h>
@@ -865,6 +866,13 @@ namespace aspect
     }
     prm.leave_subsection ();
 
+    prm.declare_entry ("Use VoF tracking", "false",
+                       Patterns::Bool (),
+                       "When set to true, VoF interface tracking will be used");
+
+    // declare the VoF parameters
+    VoFHandler<dim>::declare_parameters(prm);
+
     // also declare the parameters that the FreeSurfaceHandler needs
     FreeSurfaceHandler<dim>::declare_parameters (prm);
 
@@ -1373,6 +1381,9 @@ namespace aspect
     }
     prm.leave_subsection ();
 
+    vof_tracking_enabled = prm.get_bool("Use VoF tracking");
+    if (vof_tracking_enabled)
+      Assert(dim==2,ExcMessage("VoF interface tracking not implemented for dim>2."));
 
     // then, finally, let user additions that do not go through the usual
     // plugin mechanism, declare their parameters if they have subscribed
@@ -1676,6 +1687,7 @@ namespace aspect
     GravityModel::declare_parameters<dim> (prm);
     InitialConditions::declare_parameters<dim> (prm);
     CompositionalInitialConditions::declare_parameters<dim> (prm);
+    VoFInitialConditions::declare_parameters<dim> (prm);
     PrescribedStokesSolution::declare_parameters<dim> (prm);
     BoundaryTemperature::declare_parameters<dim> (prm);
     BoundaryComposition::declare_parameters<dim> (prm);
