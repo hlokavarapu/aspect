@@ -75,7 +75,7 @@ subsection VoF initial conditions
 end
 
 subsection Postprocess
-  set List of postprocessors = vof statistics, composition statistics, vof mms, visualization
+  set List of postprocessors = vof statistics, composition statistics, vof mms
 
   subsection VoF MMS
     set Number error samples = 16
