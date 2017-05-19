@@ -12,7 +12,6 @@ Number of degrees of freedom: 1,460 (578+81+289+64+192+256)
    Postprocessing:
      Global VoF volumes (m^3):       0.785
      VoF Calculation(IEstL1/FEstL1): 5.49126816e-02/0.00000000e+00
-     Writing graphical output:       output-vof_circle_amr/solution/solution-00000
 
 Number of active cells: 91 (on 5 levels)
 Number of degrees of freedom: 2,111 (846+114+423+91+273+364)
@@ -24,7 +23,6 @@ Number of degrees of freedom: 2,111 (846+114+423+91+273+364)
 
    Postprocessing:
      Global VoF volumes (m^3): 0.785
-     Writing graphical output: output-vof_circle_amr/solution/solution-00001
 
 Number of active cells: 199 (on 6 levels)
 Number of degrees of freedom: 4,535 (1,806+234+903+199+597+796)
@@ -36,7 +34,6 @@ Number of degrees of freedom: 4,535 (1,806+234+903+199+597+796)
 
    Postprocessing:
      Global VoF volumes (m^3): 0.785
-     Writing graphical output: output-vof_circle_amr/solution/solution-00002
 
 Number of active cells: 187 (on 6 levels)
 Number of degrees of freedom: 4,283 (1,710+222+855+187+561+748)
@@ -1046,7 +1043,6 @@ Number of degrees of freedom: 4,283 (1,710+222+855+187+561+748)
    Postprocessing:
      Global VoF volumes (m^3):       0.785
      VoF Calculation(IEstL1/FEstL1): 2.42967303e-02/2.36213028e-02
-     Writing graphical output:       output-vof_circle_amr/solution/solution-00003
 
 Number of active cells: 187 (on 6 levels)
 Number of degrees of freedom: 4,283 (1,710+222+855+187+561+748)

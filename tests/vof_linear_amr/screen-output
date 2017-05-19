@@ -20,7 +20,6 @@ Number of degrees of freedom: 4,014 (1,586+211+793+178+534+712)
    Postprocessing:
      Global VoF volumes (m^3):       0.5
      VoF Calculation(IEstL1/FEstL1): 2.12825498e-17/0.00000000e+00
-     Writing graphical output:       output-vof_linear_amr/solution/solution-00000
 
 Number of active cells: 130 (on 5 levels)
 Number of degrees of freedom: 3,030 (1,218+163+609+130+390+520)
@@ -278,7 +277,6 @@ Number of degrees of freedom: 2,080 (842+113+421+88+264+352)
    Postprocessing:
      Global VoF volumes (m^3):       0.125
      VoF Calculation(IEstL1/FEstL1): 2.14765204e-16/2.13540394e-16
-     Writing graphical output:       output-vof_linear_amr/solution/solution-00001
 
 Number of active cells: 85 (on 5 levels)
 Number of degrees of freedom: 2,005 (810+110+405+85+255+340)
