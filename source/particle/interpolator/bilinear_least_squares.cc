@@ -98,7 +98,7 @@ namespace aspect
         // Noticed that the size of matrix A is n_particles x matrix_dimension
         // which usually is not a square matrix. Therefore, we solve Ax=r by
         // solving A^TAx= A^Tr.
-        const unsigned int matrix_dimension = 4;
+        const unsigned int matrix_dimension = std::pow(polynomial_degree, (dim == 2) ? 2 : 3);
         dealii::LAPACKFullMatrix<double> A(n_particles, matrix_dimension);
         Vector<double> r(n_particles);
         r = 0;
@@ -108,14 +108,33 @@ namespace aspect
         for (typename std::multimap<types::LevelInd, Particle<dim> >::const_iterator particle = particle_range.first;
              particle != particle_range.second; ++particle, ++index)
           {
+            const Point<dim> position = particle->second.get_location();
+//            std::cout << position << std::endl;
+            for (unsigned int i = 0; i < matrix_dimension; i++)
+            {
+//                std::cout << i << std::endl;
+              double coefficient = 1;
+              unsigned int power = i/polynomial_degree;
+              for (unsigned int d = 0; d < dim; d++)
+              {
+//                std::cout << power << std::endl;
+
+                coefficient *= std::pow((position[d] - approximated_cell_midpoint[d])/cell_diameter,
+                                        power);
+                power = i % polynomial_degree;
+
+              }
+//                std::cout << coefficient << std::endl;
+                A(index, i) = coefficient;
+            }
+
             const double particle_property_value = particle->second.get_properties()[property_index];
             r[index] = particle_property_value;
 
-            const Point<dim> position = particle->second.get_location();
-            A(index,0) = 1;
-            A(index,1) = (position[0] - approximated_cell_midpoint[0])/cell_diameter;
-            A(index,2) = (position[1] - approximated_cell_midpoint[1])/cell_diameter;
-            A(index,3) = (position[0] - approximated_cell_midpoint[0]) * (position[1] - approximated_cell_midpoint[1])/std::pow(cell_diameter,2);
+//            A(index,0) = 1;
+//            A(index,1) = (position[0] - approximated_cell_midpoint[0])/cell_diameter;
+//            A(index,2) = (position[1] - approximated_cell_midpoint[1])/cell_diameter;
+//            A(index,3) = (position[0] - approximated_cell_midpoint[0]) * (position[1] - approximated_cell_midpoint[1])/std::pow(cell_diameter,2);
           }
 
         dealii::LAPACKFullMatrix<double> B(matrix_dimension, matrix_dimension);
@@ -139,10 +158,26 @@ namespace aspect
         for (typename std::vector<Point<dim> >::const_iterator itr = positions.begin(); itr != positions.end(); ++itr, ++index_positions)
           {
             const Point<dim> support_point = *itr;
-            double interpolated_value = c[0] +
-                                        c[1]*(support_point[0] - approximated_cell_midpoint[0])/cell_diameter +
-                                        c[2]*(support_point[1] - approximated_cell_midpoint[1])/cell_diameter +
-                                        c[3]*(support_point[0] - approximated_cell_midpoint[0])*(support_point[1] - approximated_cell_midpoint[1])/std::pow(cell_diameter,2);
+
+              double interpolated_value = 0;
+            for (unsigned int i = 0; i < matrix_dimension; i++)
+            {
+              unsigned int power = i/polynomial_degree;
+
+              for (unsigned int d = 0; d < dim; d++)
+              {
+
+                interpolated_value += c[i] * std::pow((support_point[d] - approximated_cell_midpoint[d])/cell_diameter,
+                                        power);
+                power = i % polynomial_degree;
+              }
+
+            }
+
+//            double interpolated_value = c[0] +
+//                                        c[1]*(support_point[0] - approximated_cell_midpoint[0])/cell_diameter +
+//                                        c[2]*(support_point[1] - approximated_cell_midpoint[1])/cell_diameter +
+//                                        c[3]*(support_point[0] - approximated_cell_midpoint[0])*(support_point[1] - approximated_cell_midpoint[1])/std::pow(cell_diameter,2);
 
             // Overshoot and undershoot correction of interpolated particle property.
             if (use_global_valued_limiter)
@@ -186,6 +221,9 @@ namespace aspect
                                   Patterns::Bool (),
                                   "Whether to apply a global particle property limiting scheme to the interpolated "
                                   "particle properties.");
+                prm.declare_entry("Polynomial degree", "2",
+                                  Patterns::Integer (),
+                                  "Control the polynomial degree of the basis.");
 
               }
               prm.leave_subsection();
@@ -209,6 +247,7 @@ namespace aspect
             {
               prm.enter_subsection("Bilinear least squares");
               {
+                polynomial_degree = prm.get_integer("Polynomial degree");
                 use_global_valued_limiter = prm.get_bool("Use limiter");
                 if (use_global_valued_limiter)
                   {
@@ -225,6 +264,7 @@ namespace aspect
                     AssertThrow(global_maximum_particle_properties.size() == n_property_components,
                                 ExcMessage("Make sure that the size of list 'Global maximum particle property' "
                                            "is equivalent to the number of particle properties."));
+
                   }
               }
               prm.leave_subsection();
