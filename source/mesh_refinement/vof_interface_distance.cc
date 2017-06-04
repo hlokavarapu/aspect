@@ -35,98 +35,89 @@ namespace aspect
 {
   namespace MeshRefinement
   {
-    template <int dim>
+    template<int dim>
     void
     VoFInterfaceDistance<dim>::tag_additional_cells() const
     {
+      double distance = this->get_parameters().CFL_number * this->get_simulator().time_step *
+                        this->get_parameters().adaptive_refinement_interval;
+
       const QMidpoint<dim> qMidC;
 
-      std::vector<std::set<typename parallel::distributed::Triangulation<dim>::active_cell_iterator> > vert_cell_map =
-              GridTools::vertex_to_cell_map(this->get_dof_handler().get_triangulation());
 
-      FEValues<dim> fe_values (this->get_mapping(),
-                               this->get_fe(),
-                               qMidC,
-                               update_values |
-                               update_quadrature_points);
-      for (unsigned int f=0; f<this->get_vof_handler().get_n_fields(); ++f)
-      {
+      // Create a map from vertices to adjacent cells
+      const std::vector<std::set<typename Triangulation<dim>::active_cell_iterator> >
+      vertex_to_cells(GridTools::vertex_to_cell_map(this->get_triangulation()));
 
-        const FEValuesExtractors::Scalar vof_field = this->get_vof_handler().get_field(f).fraction.extractor_scalar();
-        std::vector<double> vof_q_values(qMidC.size());
-
-        // Should be vof_epsilon, look into how to accesss that
-        double voleps = vof_epsilon;
-
-        typename DoFHandler<dim>::active_cell_iterator
-                cell = this->get_dof_handler().begin_active(),
-                endc = this->get_dof_handler().end();
-        unsigned int i=0;
-        for (; cell!=endc; ++cell, ++i)
+      std::set<typename Triangulation<dim>::active_cell_iterator> marked_cells;
+      FEValues<dim> fe_values(this->get_mapping(),
+                              this->get_fe(),
+                              qMidC,
+                              update_values |
+                              update_quadrature_points);
+      for (unsigned int f = 0; f < this->get_vof_handler().get_n_fields(); ++f)
         {
-          // Skip if not local
-          if (!cell->is_locally_owned())
-            continue;
 
-          // Get cell vof
-          double cell_vof;
-          fe_values.reinit(cell);
-          fe_values[vof_field].get_function_values (this->get_solution(),
-                                                    vof_q_values);
-          cell_vof = vof_q_values[0];
+          const FEValuesExtractors::Scalar vof_field = this->get_vof_handler().get_field(
+                                                         f).fraction.extractor_scalar();
+          std::vector<double> vof_q_values(qMidC.size());
 
-          // Handle overshoots
-          if (cell_vof > 1.0)
-            cell_vof = 1.0;
+          // Should be vof_epsilon, look into how to access that
+          double voleps = vof_epsilon;
 
-          if (cell_vof < 0.0)
-            cell_vof = 0.0;
-
-          // Check if at interface
-          bool at_interface=false;
-          if (cell_vof>voleps && cell_vof<(1.0-voleps))
-          {
-            // Fractional volume
-            at_interface=true;
-          }
-          else
-          {
-            // Check neighbors, obtain set of cells sharing verticies with the original
-            std::vector<typename parallel::distributed::Triangulation<dim>::active_cell_iterator> neighbor_set;
-            for (unsigned int i=0; i<GeometryInfo<dim>::vertices_per_cell; ++i)
+          typename DoFHandler<dim>::active_cell_iterator cell = this->get_dof_handler().begin_active(),
+                                                         endc = this->get_dof_handler().end();
+          for (; cell != endc; ++cell)
             {
-              typename  std::set<typename parallel::distributed::Triangulation<dim>::active_cell_iterator> &neighbor_set =
-                      vert_cell_map[cell->vertex_index(i)];
-              // check for boundary
-              typename std::set<typename parallel::distributed::Triangulation<dim>::active_cell_iterator>::iterator
-                      neighbor_it = neighbor_set.begin(),
-                      end_n = neighbor_set.end();
-              for (; neighbor_it!=end_n; ++neighbor_it)
-              {
-                typename DoFHandler<dim>::active_cell_iterator neighbor(*(*neighbor_it), &(this->get_dof_handler()));
-                fe_values.reinit(neighbor);
+              // Skip if not local
+              if (!cell->is_locally_owned())
+                continue;
 
-                fe_values[vof_field].get_function_values(this->get_solution(),
-                                                         vof_q_values);
+              // Get cell vof
+              double cell_vof;
+              fe_values.reinit(cell);
+              fe_values[vof_field].get_function_values(this->get_solution(),
+                                                       vof_q_values);
+              cell_vof = vof_q_values[0];
 
-                double neighbor_vof = vof_q_values[0];
+              // Handle overshoots
+              if (cell_vof > 1.0)
+                cell_vof = 1.0;
 
-                if (neighbor_vof>voleps && neighbor_vof<(1.0-voleps))
-                  at_interface=true;
+              if (cell_vof < 0.0)
+                cell_vof = 0.0;
 
-                if (abs(neighbor_vof-cell_vof)>=voleps)
-                  at_interface=true;
-              }
+              // Check if at interface
+              if (cell_vof > voleps && cell_vof < (1.0 - voleps))
+                {
+                  // Fractional volume
+                  marked_cells.insert(cell);
+                  cell->clear_coarsen_flag();
+                  cell->set_refine_flag();
+                }
             }
-          }
-
-          if (at_interface)
-          {
-            cell->clear_coarsen_flag ();
-            cell->set_refine_flag ();
-          }
         }
-      }
+      // Now mark for refinement all cells that are a neighbor of a cell that contains the interface
+
+      typename std::set<typename parallel::distributed::Triangulation<dim>::active_cell_iterator>::const_iterator mcells = marked_cells.begin(),
+                                                                                                                  endmc = marked_cells.end();
+      for (; mcells != endmc; mcells++)
+        {
+          typename parallel::distributed::Triangulation<dim>::active_cell_iterator mcell = *mcells;
+          for (unsigned int vertex_index = 0; vertex_index < GeometryInfo<dim>::vertices_per_cell; ++vertex_index)
+            {
+              std::set<typename Triangulation<dim>::active_cell_iterator> neighbor_cells = vertex_to_cells[mcell->vertex_index(
+                                                                                             vertex_index)];
+              typename std::set<typename Triangulation<dim>::active_cell_iterator>::const_iterator neighbor_cell = neighbor_cells.begin(),
+                                                                                                   end_neighbor_cell_index = neighbor_cells.end();
+              for (; neighbor_cell != end_neighbor_cell_index; neighbor_cell++)
+                {
+                  typename Triangulation<dim>::active_cell_iterator itr_tmp = *neighbor_cell;
+                  itr_tmp->clear_coarsen_flag();
+                  itr_tmp->set_refine_flag();
+                }
+            }
+        }
     }
 
     template <int dim>

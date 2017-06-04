@@ -2020,7 +2020,7 @@ namespace aspect
                     AssertThrow(false,ExcNotImplemented());
                 }
             }
- 
+
           if (parameters.vof_tracking_enabled)
             vof_handler->do_vof_update ();
 
@@ -2147,9 +2147,9 @@ namespace aspect
                         AssertThrow(false,ExcNotImplemented());
                     }
                 }
- 
-          if (parameters.vof_tracking_enabled)
-            vof_handler->do_vof_update ();
+
+              if (parameters.vof_tracking_enabled)
+                vof_handler->do_vof_update ();
 
               // for consistency we update the current linearization point only after we have solved
               // all fields, so that we use the same point in time for every field when solving
@@ -2254,7 +2254,7 @@ namespace aspect
                     AssertThrow(false,ExcNotImplemented());
                 }
             }
- 
+
           if (parameters.vof_tracking_enabled)
             vof_handler->do_vof_update ();
 
@@ -2360,7 +2360,7 @@ namespace aspect
                     AssertThrow(false,ExcNotImplemented());
                 }
             }
- 
+
           if (parameters.vof_tracking_enabled)
             vof_handler->do_vof_update ();
 
