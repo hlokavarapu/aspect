@@ -16,7 +16,7 @@ set Start time                             = 0
 # The end time is equivalent to 0.1 non-dim time.
 set End time                               = 12675495402.725
 set CFL number                             = 0.9
-set Output directory = VOF_Ra_1e5_B_0.9_AMR_2
+set Output directory                       = vof_dsf_amr
 
 # Then there are variables that describe the tolerance of
 # the linear solver as well as how the pressure should
@@ -203,7 +203,7 @@ end
 
 subsection Mesh refinement
   set Initial adaptive refinement        = 2
-  set Strategy                           = vof boundary
+  set Strategy                           = vof interface distance
   set Initial global refinement          = 0
   set Time steps between mesh refinement = 1
   set Coarsening fraction                = 0.05
