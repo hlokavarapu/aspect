@@ -39,7 +39,7 @@ namespace aspect
     void
     VoFInterfaceDistance<dim>::tag_additional_cells() const
     {
-      double distance = this->get_parameters().CFL_number * this->get_simulator().time_step *
+      double distance = this->get_parameters().CFL_number * this->get_timestep() *
                         this->get_parameters().adaptive_refinement_interval;
 
       const QMidpoint<dim> qMidC;
