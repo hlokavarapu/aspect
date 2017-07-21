@@ -16,12 +16,12 @@ namespace aspect
     {
 	public:
           void evaluate(const MaterialModel::MaterialModelInputs<dim> &in,
-                              MaterialModel::MaterialModelOutputs<dim> &out) const
+                              MaterialModel::MaterialModelOutputs<dim> &out) const  
         {
           for (unsigned int i=0; i < in.position.size(); ++i)
             {
               out.viscosities[i] = 1;
-              out.densities[i] = in.composition[0];
+              out.densities[i] = in.composition[0][i];
               out.compressibilities[i] = 0;
               out.specific_heat[i] = 0;
               out.thermal_expansion_coefficients[i] = 0;

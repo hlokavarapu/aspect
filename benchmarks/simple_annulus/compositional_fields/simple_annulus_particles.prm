@@ -127,7 +127,7 @@ end
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = visualization, SimpleAnnulus2Postprocessor, velocity statistics
+  set List of postprocessors = visualization, SimpleAnnulusPostprocessor, velocity statistics
   
 subsection Visualization
     set Output format                 = vtu

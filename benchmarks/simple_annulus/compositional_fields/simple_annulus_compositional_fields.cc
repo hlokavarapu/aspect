@@ -6,12 +6,12 @@ namespace aspect
   namespace InclusionBenchmark
   {
     ASPECT_REGISTER_MATERIAL_MODEL(SimpleAnnulusCompositionalMaterialModel,
-                                   "SimpleAnnulusMaterial",
+                                   "SimpleAnnulusCompositionalMaterial",
                                    "EGP and HVL benchmark material model.")
 
 
     ASPECT_REGISTER_POSTPROCESSOR(SimpleAnnulusPostprocessor,
-                                  "SimpleAnnulus2Postprocessor",
+                                  "SimpleAnnulusPostprocessor",
                                   "A postprocessor that compares the solution of the benchmarks from "
                                   "derived analytical solution with the one computed by ASPECT "
                                   "and reports the error. Specifically, it can also compute the errors for "
