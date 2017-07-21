@@ -49,7 +49,7 @@ namespace aspect
         vel[1] =  pos[0];
 
         (*pressure) = 0;
-
+	//pressure = function.value(...)
         total_stress[0] = 0.0;
         total_stress[1] = 0.0;
         total_stress[2] = 0.0;
