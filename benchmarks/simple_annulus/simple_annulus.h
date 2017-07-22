@@ -49,7 +49,7 @@ namespace aspect
         vel[1] =  pos[0];
 
         (*pressure) = 0;
-
+        //pressure = function.value(...)
         total_stress[0] = 0.0;
         total_stress[1] = 0.0;
         total_stress[2] = 0.0;
@@ -68,7 +68,7 @@ namespace aspect
       {
         public:
           FunctionStreamline (const double eta_B,
-                         const double background_density)
+                              const double background_density)
             :
             Function<dim>(),
             eta_B_(eta_B),
@@ -183,14 +183,14 @@ namespace aspect
             {
               eta_B = prm.get_double ("Viscosity jump");
               background_density = prm.get_double("Reference density");
-                /**
-                 * TODO: parse a function expression that is evaluated for the density function.
-                 */
+              /**
+               * TODO: parse a function expression that is evaluated for the density function.
+               */
             }
             prm.leave_subsection();
           }
           prm.leave_subsection();
-    
+
           // Declare dependencies on solution variables
           this->model_dependence.viscosity = MaterialModel::NonlinearDependence::none;
           this->model_dependence.density = MaterialModel::NonlinearDependence::none;
@@ -267,12 +267,12 @@ namespace aspect
               const SimpleAnnulusMaterialModel<dim> *
               material_model
                 = dynamic_cast<const SimpleAnnulusMaterialModel<dim> *>(&this->get_material_model());
-    
+
               /**
               * TODO: Unnecssary parameter arguments to constructor.
               **/
               ref_func.reset (new AnalyticSolutions::FunctionStreamline<dim>(material_model->get_eta_B(),
-                                                                        material_model->get_background_density()));
+                                                                             material_model->get_background_density()));
             }
           else
             {
@@ -281,16 +281,16 @@ namespace aspect
             }
 
           const QGauss<dim> quadrature_formula (this->get_fe().base_element(this->introspection().base_elements.velocities).degree+2);
-    
+
           Vector<float> cellwise_errors_u (this->get_triangulation().n_active_cells());
           Vector<float> cellwise_errors_p (this->get_triangulation().n_active_cells());
           Vector<float> cellwise_errors_ul2 (this->get_triangulation().n_active_cells());
           Vector<float> cellwise_errors_pl2 (this->get_triangulation().n_active_cells());
-    
+
           ComponentSelectFunction<dim> comp_u(std::pair<unsigned int, unsigned int>(0,dim),
                                               this->get_fe().n_components());
           ComponentSelectFunction<dim> comp_p(dim, this->get_fe().n_components());
-    
+
           VectorTools::integrate_difference (this->get_mapping(),this->get_dof_handler(),
                                              this->get_solution(),
                                              *ref_func,
@@ -324,13 +324,13 @@ namespace aspect
           const double p_l1 = Utilities::MPI::sum(cellwise_errors_p.l1_norm(),this->get_mpi_communicator());
           const double u_l2 = std::sqrt(Utilities::MPI::sum(cellwise_errors_ul2.norm_sqr(),this->get_mpi_communicator()));
           const double p_l2 = std::sqrt(Utilities::MPI::sum(cellwise_errors_pl2.norm_sqr(),this->get_mpi_communicator()));
-    
+
           std::ostringstream os;
           os << std::scientific << u_l1
              << ", " << p_l1
              << ", " << u_l2
              << ", " << p_l2;
-    
+
           return std::make_pair("Errors u_L1, p_L1, u_L2, p_L2:", os.str());
         }
     };

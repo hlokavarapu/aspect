@@ -1,12 +1,12 @@
-#include "simple_annulus.h"
+#include "simple_annulus_compositional_fields.h"
 
 // explicit instantiations
 namespace aspect
 {
   namespace InclusionBenchmark
   {
-    ASPECT_REGISTER_MATERIAL_MODEL(SimpleAnnulusMaterialModel,
-                                   "SimpleAnnulusMaterial",
+    ASPECT_REGISTER_MATERIAL_MODEL(SimpleAnnulusCompositionalMaterialModel,
+                                   "SimpleAnnulusCompositionalMaterial",
                                    "EGP and HVL benchmark material model.")
 
 
