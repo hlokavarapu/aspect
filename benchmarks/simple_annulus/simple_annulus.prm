@@ -71,11 +71,11 @@ end
 ############### Parameters describing the temperature field
 
 subsection Boundary temperature model
-  set Model name = box
+  set List of model names = box
 end
 
 
-subsection Initial conditions
+subsection Initial temperature model
   set Model name = function
   subsection Function
     set Function expression = 0
@@ -112,7 +112,7 @@ end
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = visualization, SimpleAnnulus2Postprocessor, velocity statistics
+  set List of postprocessors = visualization, SimpleAnnulusPostprocessor
   
   subsection Visualization
     set Output format                 = vtu
