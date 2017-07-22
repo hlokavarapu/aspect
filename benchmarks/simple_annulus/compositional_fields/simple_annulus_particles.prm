@@ -6,13 +6,13 @@ set Dimension                              = 2
 
 set Start time                             = 0
 
-set End time                               = 0
+set End time                               = 6.283185307179586
 
 set Output directory                       = output
 
-set Nonlinear solver scheme                = Stokes only
+set Nonlinear solver scheme                = IMPES
 
-set CFL number                             = 0.8
+set CFL number                             = 0.9
 
 set Linear solver tolerance                = 1e-14
 
