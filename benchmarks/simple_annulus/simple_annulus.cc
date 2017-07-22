@@ -7,7 +7,7 @@ namespace aspect
   {
     ASPECT_REGISTER_MATERIAL_MODEL(SimpleAnnulusMaterialModel,
                                    "SimpleAnnulusMaterial",
-                                   "EGP and HVL benchmark material model.")
+                                   "Material model for the simple annulus benchmark.")
 
 
     ASPECT_REGISTER_POSTPROCESSOR(SimpleAnnulusPostprocessor,

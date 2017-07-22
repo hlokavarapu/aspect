@@ -39,8 +39,7 @@ namespace aspect
 
       void analytic_solution(
         double pos[],
-        double vel[], double *pressure,
-        double total_stress[], double strain_rate[] )
+        double vel[], double *pressure)
       {
         /****************************************************************************************/
         /****************************************************************************************/
@@ -50,13 +49,6 @@ namespace aspect
 
         (*pressure) = 0;
         //pressure = function.value(...)
-        total_stress[0] = 0.0;
-        total_stress[1] = 0.0;
-        total_stress[2] = 0.0;
-
-        strain_rate[0] = 0;
-        strain_rate[1] = 0;
-        strain_rate[2] = 0;
       }
 
       /**
@@ -79,13 +71,10 @@ namespace aspect
                                      Vector< double >   &values) const
           {
             double pos[2]= {p(0),p(1)};
-            double total_stress[3], strain_rate[3];
 
-            // call the analytic function for the solution with a zero
-            // background density
             AnalyticSolutions::analytic_solution
             (pos,
-             &values[0], &values[2], total_stress, strain_rate );
+             &values[0], &values[2]);
           }
         private:
           double eta_B_, background_density;
