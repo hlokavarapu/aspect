@@ -14,9 +14,9 @@ namespace aspect
     template<int dim>
     class SimpleAnnulusCompositionalMaterialModel : public SimpleAnnulusMaterialModel<dim>
     {
-	public:
-          void evaluate(const MaterialModel::MaterialModelInputs<dim> &in,
-                              MaterialModel::MaterialModelOutputs<dim> &out) const  
+      public:
+        void evaluate(const MaterialModel::MaterialModelInputs<dim> &in,
+                      MaterialModel::MaterialModelOutputs<dim> &out) const
         {
           for (unsigned int i=0; i < in.position.size(); ++i)
             {
