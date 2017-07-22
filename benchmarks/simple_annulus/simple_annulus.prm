@@ -12,7 +12,7 @@ set Output directory                       = output
 
 set Nonlinear solver scheme                = Stokes only
 
-set CFL number                             = 0.8
+set CFL number                             = 0.9
 
 set Linear solver tolerance                = 1e-14
 
@@ -72,6 +72,11 @@ end
 
 subsection Boundary temperature model
   set List of model names = box
+
+  subsection Box
+    set Bottom temperature = 0
+    set Top temperature    = 0
+  end
 end
 
 
@@ -108,7 +113,6 @@ subsection Mesh refinement
   set Initial global refinement   = 4
 end
 
-
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
@@ -130,8 +134,3 @@ subsection Termination criteria
     set File name = end
   end
 end
-
-subsection Checkpointing
-  #set Steps between checkpoint = 5
-end
-
