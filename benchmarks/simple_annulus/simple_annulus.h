@@ -11,6 +11,8 @@
 #include <deal.II/numerics/error_estimator.h>
 #include <deal.II/numerics/vector_tools.h>
 
+#include <aspect/initial_composition/function.h>
+#include <deal.II/base/parsed_function.h>
 
 
 namespace aspect
@@ -34,12 +36,14 @@ namespace aspect
   {
     using namespace dealii;
 
+
     namespace AnalyticSolutions
     {
 
+      template <int dim>
       void analytic_solution(
         double pos[],
-        double vel[], double *pressure)
+        double vel[], double *pressure, std_cxx11::shared_ptr<Functions::ParsedFunction<dim> > pressure_function)
       {
         /****************************************************************************************/
         /****************************************************************************************/
@@ -47,8 +51,8 @@ namespace aspect
         vel[0] = -pos[1];
         vel[1] =  pos[0];
 
-        (*pressure) = 0;
-        //pressure = function.value(...)
+        //(*pressure) = 0;
+        (*pressure) = pressure_function->value(Point<dim>(pos[0], pos[1]));
       }
 
       /**
@@ -59,31 +63,32 @@ namespace aspect
       class FunctionStreamline : public Function<dim>
       {
         public:
-          FunctionStreamline (const double eta_B,
-                              const double background_density)
+          FunctionStreamline (std_cxx11::shared_ptr<Functions::ParsedFunction<dim>> pressure)
             :
             Function<dim>(),
-            eta_B_(eta_B),
-            background_density (background_density)
+            pressure_function (pressure)
           {}
 
-          virtual void vector_value (const Point< dim >   &p,
+          virtual void vector_value (const Point< dim > &p,
                                      Vector< double >   &values) const
           {
             double pos[2]= {p(0),p(1)};
 
-            AnalyticSolutions::analytic_solution
+            AnalyticSolutions::analytic_solution<dim>
             (pos,
-             &values[0], &values[2]);
+             &values[0], &values[2], pressure_function);
           }
         private:
-          double eta_B_, background_density;
+          std_cxx11::shared_ptr<Functions::ParsedFunction<dim> > pressure_function;
       };
     }
 
     template <int dim>
     class SimpleAnnulusMaterialModel : public MaterialModel::Interface<dim>
     {
+      private:
+        std_cxx11::shared_ptr<Functions::ParsedFunction<dim>>  density_function, pressure_function;
+
       public:
         /**
          * @name Physical parameters used in the basic equations
@@ -94,8 +99,9 @@ namespace aspect
         {
           for (unsigned int i=0; i < in.position.size(); ++i)
             {
+              out.densities[i] = density_function->value(in.position[i]);
+              std::ostringstream os1;
               out.viscosities[i] = 1;
-              out.densities[i] = 0;
               out.compressibilities[i] = 0;
               out.specific_heat[i] = 0;
               out.thermal_expansion_coefficients[i] = 0;
@@ -153,6 +159,26 @@ namespace aspect
                                  "it does not affect the flow pattern but it adds to the "
                                  "total pressure since it produces a nonzero adiabatic "
                                  "pressure if set to a nonzero value.");
+
+              prm.enter_subsection("Density");
+              {
+                prm.enter_subsection("Function");
+                {
+                  Functions::ParsedFunction<dim>::declare_parameters (prm, 1);
+                }
+                prm.leave_subsection();
+              }
+              prm.leave_subsection();
+
+              prm.enter_subsection("Pressure");
+              {
+                prm.enter_subsection("Function");
+                {
+                  Functions::ParsedFunction<dim>::declare_parameters (prm, 1);
+                }
+                prm.leave_subsection();
+              }
+              prm.leave_subsection();
             }
             prm.leave_subsection();
           }
@@ -172,9 +198,28 @@ namespace aspect
             {
               eta_B = prm.get_double ("Viscosity jump");
               background_density = prm.get_double("Reference density");
-              /**
-               * TODO: parse a function expression that is evaluated for the density function.
-               */
+
+              prm.enter_subsection("Density");
+              {
+                prm.enter_subsection("Function");
+                {
+                  density_function.reset(new Functions::ParsedFunction<dim>(1));
+                  density_function->parse_parameters(prm);
+                }
+                prm.leave_subsection();
+              }
+              prm.leave_subsection();
+
+              prm.enter_subsection("Pressure");
+              {
+                prm.enter_subsection("Function");
+                {
+                  pressure_function.reset(new Functions::ParsedFunction<dim>(1));
+                  pressure_function->parse_parameters(prm);
+                }
+                prm.leave_subsection();
+              }
+              prm.leave_subsection();
             }
             prm.leave_subsection();
           }
@@ -210,6 +255,12 @@ namespace aspect
          * Returns the background density of this model. See the
          * corresponding member variable of this class for more information.
          */
+
+        std_cxx11::shared_ptr<Functions::ParsedFunction<dim>>  get_pressure() const
+        {
+          return pressure_function;
+        }
+
         double get_background_density() const
         {
           return background_density;
@@ -257,11 +308,8 @@ namespace aspect
               material_model
                 = dynamic_cast<const SimpleAnnulusMaterialModel<dim> *>(&this->get_material_model());
 
-              /**
-              * TODO: Unnecssary parameter arguments to constructor.
-              **/
-              ref_func.reset (new AnalyticSolutions::FunctionStreamline<dim>(material_model->get_eta_B(),
-                                                                             material_model->get_background_density()));
+              material_model->get_pressure();
+              ref_func.reset (new AnalyticSolutions::FunctionStreamline<dim>(material_model->get_pressure()));
             }
           else
             {

@@ -54,7 +54,7 @@ subsection Material model
     subsection Density
 	subsection Function
 	  set Variable names = x, z
-          set Function expression = 0
+          set Function expression = sqrt(x^2 + z^2)
 	
 	end	
     end
@@ -62,8 +62,8 @@ subsection Material model
 	
       subsection Pressure
         subsection Function
-          set Variable names = x, z
-          set Function expression = 0
+          set Variable names = x, y
+          set Function expression = -(1/2)*(x^2+y^2) + 2
 
         end
     end
