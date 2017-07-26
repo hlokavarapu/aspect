@@ -1,4 +1,4 @@
-set Additional shared libraries            = ./libsimple_annulus.so
+set Additional shared libraries            = ./libsimple_annulus_compositional_fields.so
 
 ############### Global parameters
 
@@ -31,9 +31,10 @@ subsection Geometry model
 end
 
 subsection Model settings
-  set Prescribed velocity boundary indicators = 0: function, 1: function
+  set Prescribed velocity boundary indicators = inner: function, outer: function
+  set Zero velocity boundary indicators       = 
   set Tangential velocity boundary indicators = 
-  set Zero velocity boundary indicators       =
+  set Fixed temperature boundary indicators   = inner, outer
 end
 
 subsection Boundary velocity model
@@ -45,7 +46,7 @@ subsection Boundary velocity model
 end
 
 subsection Material model
-  set Model name = SimpleAnnulusMaterial
+  set Model name = SimpleAnnulusCompositionalMaterial
 
   subsection Simple annulus
     # Do not change these set of parameters! EGP && HL
@@ -54,8 +55,8 @@ subsection Material model
 
     subsection Density
       subsection Function
-        set Variable names = x, z
-        set Function expression = sqrt(x^2 + z^2)
+        set Variable names = x, y
+        set Function expression = sqrt(x^2 + y^2)
       end
     end
 
@@ -71,9 +72,6 @@ end
 
 subsection Gravity model
   set Model name = function
-  subsection Radial constant
-    set Magnitude = 1
-  end
 
   subsection Function
     set Variable names      = x,y
@@ -85,11 +83,9 @@ end
 ############### Parameters describing the temperature field
 
 subsection Boundary temperature model
-  set List of model names = box
-
-  subsection Box
-    set Bottom temperature = 0
-    set Top temperature    = 0
+  set List of model names = constant
+  subsection Constant
+    set Boundary indicator to temperature mappings = inner : 0, outer : 0
   end
 end
 
@@ -97,13 +93,13 @@ end
 subsection Initial temperature model
   set Model name = function
   subsection Function
+    set Coordinate system   = cartesian
     set Function expression = 0
   end
 end
 
 subsection Adiabatic conditions model
   set Model name = function
-
   subsection Function
     set Function constants  =
     set Function expression = 0; 0; 0
@@ -127,6 +123,28 @@ subsection Mesh refinement
   set Initial global refinement   = 4
 end
 
+############## Parameters related to the compositional fields
+
+subsection Compositional fields
+  set Number of fields = 2
+  set Names of fields = density_comp, density_comp2
+  set Compositional field methods = field, field
+  #set Number of fields = 1
+  #set Names of fields = density_comp
+  #set Compositional field methods = field
+end
+
+subsection Initial composition model
+  set Model name = function
+
+  subsection Function
+    set Variable names      = x, y
+    set Coordinate system   = cartesian
+    set Function expression = sqrt(x^2 + y^2);0
+    #set Function expression = 0
+  end
+end
+
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
@@ -136,7 +154,7 @@ subsection Postprocess
     set Output format                 = vtu
     set Number of grouped files       = 1
     set Time between graphical output = 0
-    set List of output variables = density, viscosity, partition, gravity
+    set List of output variables = density, viscosity, partition
   end
 end
 

@@ -51,6 +51,20 @@ subsection Material model
     # Do not change these set of parameters! EGP && HL
     set Viscosity jump = 1
     set Reference density = 1
+
+    subsection Density
+      subsection Function
+        set Variable names = x, y
+        set Function expression = sqrt(x^2 + y^2)
+      end
+    end
+
+    subsection Pressure
+      subsection Function
+        set Variable names = x, y
+        set Function expression = -(1/2)*(x^2+y^2) + 2
+      end
+    end
   end
 end
 
@@ -127,9 +141,9 @@ end
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = visualization, SimpleAnnulusPostprocessor, velocity statistics
+  set List of postprocessors = visualization, particles, SimpleAnnulusPostprocessor
   
-subsection Visualization
+  subsection Visualization
     set Output format                 = vtu
     set Number of grouped files       = 1
     set Time between graphical output = 0
@@ -154,8 +168,8 @@ subsection Visualization
 
     set List of particle properties = function
     subsection Function
-       set Variable names      = x,z
-       set Function expression = 0
+       set Variable names      = x,y
+       set Function expression = sqrt(x^2 + y^2)
     end
   end
 end
