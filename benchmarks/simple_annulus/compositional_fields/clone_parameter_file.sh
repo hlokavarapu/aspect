@@ -3,7 +3,7 @@
 #The various interpolation schemes and grid resolution tests.
 # Note that, one could add or delete to grid_resolution to run various models. 
 interpolation=('bilinear' 'cell_average')
-grid_resolution=('2', '3', '4', '5', '6')
+grid_resolution=('2' '3' '4' '5' '6')
 FEM_types=('Q1_P0' 'Q2_Q1' 'Q2_P-1' 'Q3_Q2' 'Q3_P-2')
 
 #These variables are user specific and will need to be appropriately changed:
@@ -16,7 +16,7 @@ param_temp_filename="simple_annulus_particles.prm"
 parameter_template_file=`echo ${PWD}/${param_temp_filename}`
 # Change this to the absolute path to compiled benchmark library. 
 # Make sure that each forward slash is delimted by a back slash. I.e. '\/'
-path_to_benchmark_library='./libsimple_annulus_compositional_fields.so'
+path_to_benchmark_library='.\/libsimple_annulus_compositional_fields.so'
 
 for FEM_type in ${FEM_types[@]}; do
   if [ ! -d $FEM_type ]; then
@@ -32,8 +32,8 @@ for FEM_type in ${FEM_types[@]}; do
       mkdir $interpolation_scheme
     fi
   
-    cd $interpolation_scheme
     second_level_dir=`echo $PWD`
+    cd $interpolation_scheme
 
     for grid_res in ${grid_resolution[@]}; do
       if [ ! -d $grid_res ]; then
@@ -46,7 +46,7 @@ for FEM_type in ${FEM_types[@]}; do
       cp ${parameter_template_file} ./${param_temp_filename}
   
       sed -i "s/set Additional shared libraries.*/set Additional shared libraries = ${path_to_benchmark_library}/" $param_temp_filename
-      sed -i "s/set Output directory.*/set Output directory = $((grid_res))x$((grid_res))_$((n_p_x))_output/" $param_temp_filename  
+      sed -i "s/set Output directory.*/set Output directory = $((grid_res))x$((grid_res))_output/" $param_temp_filename  
 
       sed -i "s/set Initial global refinement.*/set Initial global refinement = $((grid_res))/" $param_temp_filename      
                
