@@ -158,11 +158,12 @@ subsection Postprocess
     set Interpolation scheme = cell average
     set Maximum particles per cell = 36864
     set Update ghost particles = true
-
+    set Load balancing strategy = none 
     set Particle generator name = reference cell
+  
     subsection Generator
       subsection Reference cell
-        set Number of particles per cell per direction = 4
+        set Number of particles per cell per direction = 16
       end
     end
 
