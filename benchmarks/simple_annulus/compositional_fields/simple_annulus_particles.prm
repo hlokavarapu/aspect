@@ -141,7 +141,7 @@ end
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = visualization, SimpleAnnulusPostprocessor, velocity statistics
+  set List of postprocessors = visualization, particles, SimpleAnnulusPostprocessor
   
   subsection Visualization
     set Output format                 = vtu
@@ -168,8 +168,8 @@ subsection Postprocess
 
     set List of particle properties = function
     subsection Function
-       set Variable names      = x,z
-       set Function expression = 0
+       set Variable names      = x,y
+       set Function expression = sqrt(x^2 + y^2)
     end
   end
 end
