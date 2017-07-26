@@ -51,24 +51,20 @@ subsection Material model
     # Do not change these set of parameters! EGP && HL
     set Viscosity jump = 1
     set Reference density = 1
+
     subsection Density
-	subsection Function
-	  set Variable names = x, z
-          set Function expression = sqrt(x^2 + z^2)
-	
-	end	
+      subsection Function
+        set Variable names = x, z
+        set Function expression = sqrt(x^2 + z^2)
+      end
     end
 
-	
-      subsection Pressure
-        subsection Function
-          set Variable names = x, y
-          set Function expression = -(1/2)*(x^2+y^2) + 2
-
-        end
+    subsection Pressure
+      subsection Function
+        set Variable names = x, y
+        set Function expression = -(1/2)*(x^2+y^2) + 2
+      end
     end
-
-
   end
 end
 
