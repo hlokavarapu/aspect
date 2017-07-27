@@ -1,0 +1,193 @@
+set Additional shared libraries            = ./libtau_compositional_fields.so
+
+############### Global parameters
+
+set Dimension                              = 2
+
+set Start time                             = 0
+
+set End time                               = 32
+#set End time                               = 6.283185307179586
+
+set Output directory                       = output_3
+
+set Nonlinear solver scheme                = IMPES
+
+set CFL number                             = 0.9
+
+set Linear solver tolerance                = 1e-14
+
+set Use years in output instead of seconds = false
+
+#set Resume computation                     = true
+############### Parameters describing the model
+
+subsection Geometry model
+  set Model name = box
+
+  subsection Box
+    set X extent = 6.283185307179586
+    set X repetitions = 2
+    set Y extent = 3.141592653589793       # = D or b or h (in meters m)
+    set Y repetitions = 1
+  end
+end
+
+subsection Model settings
+  set Prescribed velocity boundary indicators = #0: function, 1: function, 2: function, 3: function
+  set Tangential velocity boundary indicators = 0,1,2,3
+  set Zero velocity boundary indicators       =
+end
+
+subsection Boundary velocity model
+  subsection Function
+    set Function constants  = pi=3.1415926
+    set Variable names      = x,y
+    #set Function expression = cos(x)*sin(y);-sin(x)*cos(y)
+    set Function expression = -sin(x)*cos(y);cos(x)*sin(y)
+  end
+end
+
+subsection Material model
+  set Model name = SimpleAnnulusCompositionalMaterial
+
+  subsection Simple annulus
+    # Do not change these set of parameters! EGP && HL
+    set Viscosity jump = 1
+    set Reference density = 1
+
+    subsection Density
+      subsection Function
+        set Variable names = x, y
+        set Function expression = 1
+      end
+    end
+
+    subsection Pressure
+      subsection Function
+        set Variable names = x, y
+        set Function expression = sin(x)*sin(y)
+      end
+    end
+  end
+end
+
+
+subsection Gravity model
+  set Model name = function
+  subsection Radial constant
+    set Magnitude = 1
+  end
+
+  subsection Function
+    set Variable names      = x,y
+    set Function expression = 3*sin(x)*cos(y);-cos(x)*sin(y)
+  end
+end
+
+
+############### Parameters describing the temperature field
+
+subsection Boundary temperature model
+  set Model name = box
+end
+
+
+subsection Initial temperature model
+  set Model name = function
+  subsection Function
+    set Function expression = 0
+  end
+end
+
+subsection Adiabatic conditions model
+  set Model name = function
+
+  subsection Function
+    set Function constants  =
+    set Function expression = 0; 0; 0
+    set Variable names      = depth
+  end
+
+end
+
+############### Parameters describing the discretization
+
+subsection Discretization
+  set Stokes velocity polynomial degree       = 2
+  set Use locally conservative discretization = true
+#  set Use discontinuous composition discretization = true
+end
+
+
+subsection Mesh refinement
+  set Coarsening fraction         = 0
+  set Initial adaptive refinement = 0
+  set Initial global refinement   = 5
+end
+
+subsection Compositional fields
+  set Number of fields = 0
+#  set Names of fields = density_comp, tmp
+#  set Compositional field methods = field, field
+#  set Mapped particle properties = density_comp:function[0]
+end
+
+subsection Initial composition model
+#  set Model name = function
+  subsection Function
+     set Variable names      = x,z
+     set Function expression = 1;1
+  end
+end
+
+
+############### Parameters describing what to do with the solution
+
+subsection Postprocess
+  set List of postprocessors = visualization, particles #, SimpleAnnulusPostprocessor
+  
+  subsection Visualization
+    set Output format                 = vtu
+    set Number of grouped files       = 1
+    set Time between graphical output = 0
+    set List of output variables      = density, viscosity, partition, gravity
+  end
+
+  subsection Particles
+    set Number of particles = 1024
+    set Time between data output = 0
+    set Data output format = vtu
+    set Integration scheme = rk2
+    set Interpolation scheme = cell average
+    set Maximum particles per cell = 36864
+    set Update ghost particles = true
+
+    set Particle generator name = reference cell
+    subsection Generator
+      subsection Reference cell
+        set Number of particles per cell per direction = 2
+      end
+    end
+
+    set List of particle properties = function
+    subsection Function
+       set Variable names      = x,y
+       set Function expression = 1
+    end
+  end
+end
+
+subsection Termination criteria
+  set Checkpoint on termination = true
+  set Termination criteria      = user request
+
+  subsection User request
+    set File name = end
+  end
+end
+
+subsection Checkpointing
+  #set Steps between checkpoint = 5
+end
+
