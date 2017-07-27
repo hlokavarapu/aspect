@@ -2,7 +2,7 @@
 
 #The various interpolation schemes and grid resolution tests.
 # Note that, one could add or delete to grid_resolution to run various models. 
-interpolation=('bilinear least squares' 'cell_average')
+interpolation=('bilinear' 'cell_average')
 grid_resolution=('2' '3' '4' '5' '6')
 FEM_types=('Q1_P0' 'Q2_Q1' 'Q2_P-1' 'Q3_Q2' 'Q3_P-2')
 
@@ -91,7 +91,7 @@ for i in {0..3}; do
     
         if [ $interpolation_scheme == 'cell_average' ]; then
           sed -i "s/set Interpolation scheme.*/set Interpolation scheme = cell average/" $param_temp_filename
-        elif [ $interpolation_scheme == 'bilinear least squares' ]; then
+        elif [ $interpolation_scheme == 'bilinear' ]; then
           sed -i "s/set Interpolation scheme.*/set Interpolation scheme = bilinear least squares/" $param_temp_filename
         fi
       

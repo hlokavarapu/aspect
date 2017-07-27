@@ -1,6 +1,6 @@
 #!/bin/bash
 
-interpolation=('bilinear least squares' 'cell_average')
+interpolation=('bilinear' 'cell_average')
 grid_resolution=('2' '3' '4' '5' '6')
 job_template_filename='job_template.sh'
 density_directory_names=('rho_0' 'rho_1' 'rho_r' 'rho_r^2')

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-interpolation=('bilinear least squares' 'cell_average')
+interpolation=('bilinear' 'cell_average')
 grid_resolution=('2' '3' '4' '5' '6')
 param_temp_filename='simple_annulus_particles.prm'
 job_temp_file='/home/hlevinso/local/code/aspect_new/aspect/benchmarks/simple_annulus/compositional_fields/job_template.sh'
@@ -29,9 +29,9 @@ for interpolation_scheme in ${interpolation[@]}; do
     echo $PWD
     cp $job_temp_file .
     
-    sed -i "s/SBATCH -J.*/SBATCH -J solkz_$((grid_res))x$((grid_res))/" $job_template_filename
-    sed -i "s/SBATCH -e.*/SBATCH -e solkz_$((grid_res))x$((grid_res)).err/" $job_template_filename 
-    sed -i "s/SBATCH -o.*/SBATCH -o solkz_$((grid_res))x$((grid_res)).out/" $job_template_filename 
+    sed -i "s/SBATCH -J.*/SBATCH -J simple_annulus_$((grid_res))x$((grid_res))/" $job_template_filename
+    sed -i "s/SBATCH -e.*/SBATCH -e simple_annulus_$((grid_res))x$((grid_res)).err/" $job_template_filename 
+    sed -i "s/SBATCH -o.*/SBATCH -o simple_annulus_$((grid_res))x$((grid_res)).out/" $job_template_filename 
     if [ $grid_res == '6' ]; then
       sed -i "s/SBATCH -N.*/SBATCH -N1/" $job_template_filename 
       sed -i "s/SBATCH -n.*/SBATCH -n8/" $job_template_filename 
