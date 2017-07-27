@@ -100,7 +100,6 @@ namespace aspect
           for (unsigned int i=0; i < in.position.size(); ++i)
             {
               out.densities[i] = density_function->value(in.position[i]);
-              std::ostringstream os1;
               out.viscosities[i] = 1;
               out.compressibilities[i] = 0;
               out.specific_heat[i] = 0;

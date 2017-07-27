@@ -2,13 +2,13 @@ set Additional shared libraries            = ./libtau.so
 
 ############### Global parameters
 
-set Dimension                              = 2
+set Dimension                              = 3
 
 set Start time                             = 0
 
 set End time                               = 0
 
-set Output directory                       = output
+set Output directory                       = output_2
 
 set Nonlinear solver scheme                = Stokes only
 
@@ -25,25 +25,27 @@ subsection Geometry model
   set Model name = box
 
   subsection Box
-    set X extent = 6.283185307179586
-    set X repetitions = 2
+    set X extent = 3.141592653589793       # = D or b or h (in meters m)
+    set X repetitions = 1
+#    set X extent = 6.283185307179586
     set Y extent = 3.141592653589793       # = D or b or h (in meters m)
     set Y repetitions = 1
+    set Z extent = 1.5707963267948966
+    set Z repetitions = 2
   end
 end
 
 subsection Model settings
-  set Prescribed velocity boundary indicators = 0: function, 1: function, 2: function, 3: function
-  set Tangential velocity boundary indicators = 
+  set Prescribed velocity boundary indicators = 0:function, 1:function, 2:function, 3:function, 4:function, 5:function
+  #set Tangential velocity boundary indicators = 0,1,2,3,4,5
   set Zero velocity boundary indicators       = 
 end
 
 subsection Boundary velocity model
   subsection Function
-    set Function constants  = pi=3.1415926
-    set Variable names      = x,y
-#    set Function expression = cos(x)*sin(y);-sin(x)*cos(y)
-    set Function expression = -sin(x)*cos(y);cos(x)*sin(y)
+    set Function constants  = pi=3.141592653589793
+    set Variable names      = x,y,z
+    set Function expression = sin(x)*cos(y)*cos(2*z);cos(x)*sin(y)*cos(2*z);-cos(x)*cos( y)*sin(2*z)
   end
 end
 
@@ -53,19 +55,19 @@ subsection Material model
   subsection Simple annulus
     # Do not change these set of parameters! EGP && HL
     set Viscosity jump = 1
-    set Reference density = 1
+    set Reference density = 0
 
     subsection Density
       subsection Function
-        set Variable names = x, z
-        set Function expression = 1
+        set Variable names = x,y,z
+        set Function expression = -18*cos(x)*cos(y)*sin(2*z))
       end
     end
 
     subsection Pressure
       subsection Function
-        set Variable names = x, y
-        set Function expression = sin(x)*sin(y)
+        set Variable names = x,y,z
+        set Function expression = 6*cos(x)*cos(y)*cos(2*z)
       end
     end
   end
@@ -73,14 +75,14 @@ end
 
 
 subsection Gravity model
-  set Model name = function
+  set Model name = vertical
   subsection Radial constant
     set Magnitude = 1
   end
 
   subsection Function
     set Variable names      = x,y
-    set Function expression = 3*sin(x)*cos(y);-cos(x)*sin(y) 
+    set Function expression = 0;0;-1
   end
 end
 
@@ -127,13 +129,13 @@ end
 subsection Mesh refinement
   set Coarsening fraction         = 0
   set Initial adaptive refinement = 0
-  set Initial global refinement   = 5
+  set Initial global refinement   = 4
 end
 
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = visualization, SimpleAnnulusPostprocessor
+  set List of postprocessors = visualization #, SimpleAnnulusPostprocessor
   
   subsection Visualization
     set Output format                 = vtu
