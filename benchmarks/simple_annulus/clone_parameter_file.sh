@@ -2,7 +2,7 @@
 
 #The various interpolation schemes and grid resolution tests.
 # Note that, one could add or delete to grid_resolution to run various models. 
-interpolation=('bilinear' 'cell_average')
+#interpolation=('bilinear' 'cell_average')
 grid_resolution=('2' '3' '4' '5' '6' '7')
 FEM_types=('Q1_P0' 'Q2_Q1' 'Q2_P-1' 'Q3_Q2' 'Q3_P-2')
 
@@ -15,12 +15,12 @@ density_directory_names=('rho_0' 'rho_1' 'rho_r' 'rho_r^2')
 # Assuming that setup of models will be done from the same working directory as the script is executed.
 top_level_dir=`echo $PWD`
 #The name of the template parameter file.
-param_temp_filename="simple_annulus_particles.prm"
+param_temp_filename="simple_annulus.prm"
 #Assuming that the parameter file is in the present working directory...
 parameter_template_file=`echo ${PWD}/${param_temp_filename}`
 # Change this to the absolute path to compiled benchmark library. 
 # Make sure that each forward slash is delimted by a back slash. I.e. '\/'
-path_to_benchmark_library='\/home\/hlevinso\/local\/code\/aspect_new\/aspect\/benchmarks\/simple_annulus\/compositional_fields\/libsimple_annulus_compositional_fields.so'
+path_to_benchmark_library='\/home\/hlevinso\/local\/code\/aspect_new\/aspect\/benchmarks\/simple_annulus\/libsimple_annulus.so'
 
 for i in {0..3}; do
   density_dir=${density_directory_names[$i]}
@@ -43,21 +43,13 @@ for i in {0..3}; do
     
     second_level_dir=`echo $PWD`
     cd $FEM_type
-    
-    for interpolation_scheme in ${interpolation[@]}; do
-      if [ ! -d $interpolation_scheme ]; then
-        mkdir $interpolation_scheme
-      fi
-    
-      third_level_dir=`echo $PWD`
-      cd $interpolation_scheme
   
       for grid_res in ${grid_resolution[@]}; do
         if [ ! -d $grid_res ]; then
           mkdir $grid_res 
         fi 
   
-        fourth_level_dir=`echo $PWD`
+        third_level_dir=`echo $PWD`
         cd $grid_res
   
         cp ${parameter_template_file} ./${param_temp_filename}
@@ -89,18 +81,18 @@ for i in {0..3}; do
           sed -i "s/set Use locally conservative discretization =.*/set Use locally conservative discretization = true/" $param_temp_filename
         fi
     
-        if [ $interpolation_scheme == 'cell_average' ]; then
-          sed -i "s/set Interpolation scheme.*/set Interpolation scheme = cell average/" $param_temp_filename
-        elif [ $interpolation_scheme == 'bilinear' ]; then
-          sed -i "s/set Interpolation scheme.*/set Interpolation scheme = bilinear least squares/" $param_temp_filename
-        fi
+       # if [ $interpolation_scheme == 'cell_average' ]; then
+       #   sed -i "s/set Interpolation scheme.*/set Interpolation scheme = cell average/" $param_temp_filename
+       # elif [ $interpolation_scheme == 'bilinear' ]; then
+       #   sed -i "s/set Interpolation scheme.*/set Interpolation scheme = bilinear least squares/" $param_temp_filename
+       # fi
       
           #Set density function expression for particles
-          sed -i "s/set Function expression = replace_me.*/set Function expression = ${density_functions[$i]}/" $param_temp_filename
+        #  sed -i "s/set Function expression = replace_me.*/set Function expression = ${density_functions[$i]}/" $param_temp_filename
 
          # Add subsection Material Model with correct density and pressure functions
           echo "subsection Material model" >> $param_temp_filename	
-	  echo " set Model name = SimpleAnnulusCompositionalMaterial" >> $param_temp_filename	       
+	  echo " set Model name = SimpleAnnulusMaterial" >> $param_temp_filename	       
           echo "subsection Simple annulus" >> $param_temp_filename
            echo "set Viscosity jump = 1" >> $param_temp_filename
 	 echo "set Reference density = 1" >> $param_temp_filename
@@ -123,9 +115,7 @@ for i in {0..3}; do
           echo "end" >> $param_temp_filename	
 
         # Generate 16 particles per cell
-        sed -i "s/set Number of particles per cell per direction.*/set Number of particles per cell per direction = 4/" $param_temp_filename
-        cd $fourth_level_dir
-      done 
+        #sed -i "s/set Number of particles per cell per direction.*/set Number of particles per cell per direction = 4/" $param_temp_filename
       cd $third_level_dir
     done
     cd $second_level_dir

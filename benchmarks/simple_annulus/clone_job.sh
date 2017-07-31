@@ -1,9 +1,9 @@
 #!/bin/bash
 
-interpolation=('bilinear' 'cell_average')
+#interpolation=('bilinear' 'cell_average')
 grid_resolution=('2' '3' '4' '5' '6' '7')
-param_temp_filename='simple_annulus_particles.prm'
-job_temp_file='/home/hlevinso/local/code/aspect_new/aspect/benchmarks/simple_annulus/compositional_fields/job_template.sh'
+param_temp_filename='simple_annulus.prm'
+job_temp_file='/home/hlevinso/local/code/aspect_new/aspect/benchmarks/simple_annulus/job_template.sh'
 job_template_filename='job_template.sh'
 aspect='/home/hlevinso/local/code/aspect_new/aspect/build/aspect'
 
@@ -22,8 +22,8 @@ for density_dir in ${density_directory_names[@]}; do
   for FEM_type in ${FEM_types[@]}; do
     cd $FEM_type
 
-for interpolation_scheme in ${interpolation[@]}; do
-  cd $interpolation_scheme
+#for interpolation_scheme in ${interpolation[@]}; do
+  #cd $interpolation_scheme
   for grid_res in ${grid_resolution[@]}; do
     cd $grid_res
     echo $PWD
@@ -57,8 +57,8 @@ for interpolation_scheme in ${interpolation[@]}; do
 
     cd ..
   done 
-  cd ..
-  done
+  #cd ..
+  #done
   cd ..
   done
   cd $top_level_dir
