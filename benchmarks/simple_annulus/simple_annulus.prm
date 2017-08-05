@@ -8,7 +8,7 @@ set Start time                             = 0
 
 set End time                               = 0
 
-set Output directory                       = output
+set Output directory                       = output_2
 
 set Nonlinear solver scheme                = Stokes only
 
@@ -18,6 +18,7 @@ set Linear solver tolerance                = 1e-14
 
 set Use years in output instead of seconds = false
 
+set Pressure normalization                 = surface
 ############### Parameters describing the model
 
 subsection Geometry model
@@ -40,7 +41,8 @@ subsection Boundary velocity model
   subsection Function
     set Function constants  = pi=3.1415926
     set Variable names      = x,y
-    set Function expression = -y;x
+    #set Function expression = -y*(x^2 + y^2)^(1/2);x*(x^2 + y^2)^(1/2)
+    set Function expression = y*(x^2 + y^2)^(1/2);-x*(x^2 + y^2)^(1/2)
   end
 end
 
@@ -54,15 +56,15 @@ subsection Material model
 
     subsection Density
       subsection Function
-        set Variable names = x, z
-        set Function expression = sqrt(x^2 + z^2)
+        set Variable names = x, y
+        set Function expression = (1/3)*(x^2 + y^2)^(3/2)
       end
     end
 
     subsection Pressure
       subsection Function
         set Variable names = x, y
-        set Function expression = -(1/2)*(x^2+y^2) + 2
+        set Function expression = (1/12)*(x^2 + y^2)^2 - 4/3
       end
     end
   end
@@ -76,8 +78,9 @@ subsection Gravity model
   end
 
   subsection Function
+#    set Coordinate system   = cartesian
     set Variable names      = x,y
-    set Function expression = -1*(1/(sqrt(x*x+y*y)))*x;-1*(1/(sqrt(x*x+y*y)))*y
+    set Function expression = (x/sqrt(x^2 + y^2)) + (12*y)/((x^2 + y^2)^2);(y/sqrt(x^2 + y^2)) - (12*x)/((x^2 + y^2)^2)
   end
 end
 
@@ -130,8 +133,26 @@ end
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = visualization, SimpleAnnulusPostprocessor
-  
+  set List of postprocessors = visualization, SimpleAnnulusPostprocessor #, particles
+ 
+  subsection Particles
+    set Particle generator name = reference cell
+    subsection Generator
+      subsection Reference cell
+        set Number of particles per cell per direction = 4
+      end
+    end
+
+    set List of particle properties = function
+
+    subsection Function
+#      set Coordinate system   = spherical
+      set Variable names      = r, phi
+      set Function expression = -cos(phi);-sin(phi)
+    end
+
+  end
+ 
   subsection Visualization
     set Output format                 = vtu
     set Number of grouped files       = 1
