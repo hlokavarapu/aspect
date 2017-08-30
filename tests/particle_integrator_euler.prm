@@ -6,6 +6,8 @@
 
 set Dimension                              = 2
 set End time                               = 70
+set CFL number                             = 0.1
+
 set Use years in output instead of seconds = false
 
 subsection Geometry model
@@ -82,11 +84,11 @@ end
 
 subsection Mesh refinement
   set Initial adaptive refinement        = 0
-  set Strategy                           = composition
+  #set Strategy                           = composition
   set Initial global refinement          = 4
   set Time steps between mesh refinement = 0
-  set Coarsening fraction                = 0.05
-  set Refinement fraction                = 0.3
+  set Coarsening fraction                = 0
+  set Refinement fraction                = 0
 end
 
 
@@ -102,6 +104,16 @@ subsection Postprocess
     set Data output format = vtu
     set List of particle properties = function, initial composition, initial position
     set Integration scheme = euler
+
+
+    set Particle generator name = reference cell
+
+    subsection Generator
+      subsection Reference cell
+        set Number of particles per cell per direction = 2
+      end
+    end
+
 
     subsection Function
       set Variable names      = x,z

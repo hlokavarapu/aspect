@@ -63,7 +63,8 @@ namespace aspect
            */
           virtual
           void
-          local_integrate_step(const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &begin_particle,
+          local_integrate_step(const typename DoFHandler<dim>::active_cell_iterator &cell,
+                               const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &begin_particle,
                                const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &end_particle,
                                const std::vector<Tensor<1,dim> > &old_velocities,
                                const std::vector<Tensor<1,dim> > &velocities,
@@ -79,6 +80,7 @@ namespace aspect
            * another integration step. The particle integration will continue
            * to start new integration steps until this function returns false.
            */
+
           virtual bool new_integration_step();
 
           /**

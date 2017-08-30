@@ -25,6 +25,7 @@
 #include <aspect/plugins.h>
 #include <aspect/global.h>
 
+#include <deal.II/dofs/dof_handler.h>
 #include <deal.II/base/parameter_handler.h>
 
 namespace aspect
@@ -72,11 +73,21 @@ namespace aspect
            */
           virtual
           void
-          local_integrate_step(const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &begin_particle,
+          local_integrate_step(const typename DoFHandler<dim>::active_cell_iterator &cell,
+                               const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &begin_particle,
                                const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &end_particle,
                                const std::vector<Tensor<1,dim> > &old_velocities,
                                const std::vector<Tensor<1,dim> > &velocities,
                                const double dt) = 0;
+
+//          virtual
+//          void
+//          local_integrate_ref_loc(const typename DoFHandler<dim>::active_cell_iterator &cell,
+//                                  const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &begin_particle,
+//                               const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &end_particle,
+//                               const std::vector<Tensor<1,dim> > &old_velocities,
+//                               const std::vector<Tensor<1,dim> > &velocities,
+//                               const double dt) = 0;
 
           /**
            * This function is called at the end of every integration step.

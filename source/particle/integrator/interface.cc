@@ -33,6 +33,15 @@ namespace aspect
       Interface<dim>::~Interface ()
       {}
 
+//      template<int dim>
+//      void Interface<dim>::local_integrate_ref_loc(const typename DoFHandler<dim>::active_cell_iterator &cell,
+//                                                   const typename std::multimap<std::pair<int, int>, aspect::Particle::Particle<dim, dim>>::iterator &begin_particle,
+//                                                   const typename std::multimap<std::pair<int, int>, aspect::Particle::Particle<dim, dim>>::iterator &end_particle,
+//                                                   const std::vector<Tensor<1, dim>> &old_velocities,
+//                                                   const std::vector<Tensor<1, dim>> &velocities,
+//                                                   const double dt)
+//      {}
+
       template <int dim>
       void
       Interface<dim>::declare_parameters (ParameterHandler &)

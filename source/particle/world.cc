@@ -23,6 +23,7 @@
 #include <aspect/utilities.h>
 #include <aspect/compat.h>
 #include <aspect/geometry_model/box.h>
+#include <aspect/particle/integrator/euler.h>
 
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/fe/fe_values.h>
@@ -1159,10 +1160,12 @@ namespace aspect
                                        const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &end_particle,
                                        std::vector<std::pair<types::LevelInd, Particle <dim> > > &particles_out_of_cell)
     {
+
       const unsigned int particles_in_cell = std::distance(begin_particle,end_particle);
 
       std::vector<Tensor<1,dim> >  velocity(particles_in_cell);
       std::vector<Tensor<1,dim> >  old_velocity(particles_in_cell);
+      std::vector<Tensor<1,dim> >  old_velocity_reference(particles_in_cell);
 
       // Below we manually evaluate the solution at all support points of the
       // current cell, and then use the shape functions to interpolate the
@@ -1190,7 +1193,6 @@ namespace aspect
                                             particles_in_cell
                                             :
                                             0), false);
-
       if (compute_fluid_velocity)
         {
           const unsigned int melt_property_index = property_manager->get_data_info()
@@ -1201,96 +1203,112 @@ namespace aspect
             if (it->second.get_properties()[melt_property_index] == 1.0)
               use_fluid_velocity[particle_index] = true;
         }
+      {
+        TimerOutput::Scope timer_section1(this->get_computing_timer(), "Particles: Advect - old_velocity and velocity");
 
-      for (unsigned int j=0; j<velocity_fe.dofs_per_cell; ++j)
-        {
-          Tensor<1,dim> velocity_at_support_point;
-          Tensor<1,dim> old_velocity_at_support_point;
+        for (unsigned int j = 0; j < velocity_fe.dofs_per_cell; ++j)
+          {
+            Tensor<1, dim> velocity_at_support_point;
+            Tensor<1, dim> old_velocity_at_support_point;
 
-          for (unsigned int dir=0; dir<dim; ++dir)
-            {
-              const unsigned int support_point_index
-                = this->get_fe().component_to_system_index(this->introspection()
-                                                           .component_indices.velocities[dir],j);
-
-              velocity_at_support_point[dir] = this->get_solution()[cell_dof_indices[support_point_index]];
-              old_velocity_at_support_point[dir] = this->get_old_solution()[cell_dof_indices[support_point_index]];
-            }
-
-          Tensor<1,dim> fluid_velocity_at_support_point;
-          Tensor<1,dim> old_fluid_velocity_at_support_point;
-
-          if (compute_fluid_velocity)
-            for (unsigned int dir=0; dir<dim; ++dir)
+            for (unsigned int dir = 0; dir < dim; ++dir)
               {
                 const unsigned int support_point_index
-                  = this->get_fe().component_to_system_index(fluid_component_index + dir,j);
+                  = this->get_fe().component_to_system_index(this->introspection()
+                                                             .component_indices.velocities[dir], j);
 
-                fluid_velocity_at_support_point[dir] = this->get_solution()[cell_dof_indices[support_point_index]];
-                old_fluid_velocity_at_support_point[dir] = this->get_old_solution()[cell_dof_indices[support_point_index]];
+                velocity_at_support_point[dir] = this->get_solution()[cell_dof_indices[support_point_index]];
+                old_velocity_at_support_point[dir] = this->get_old_solution()[cell_dof_indices[support_point_index]];
               }
 
-          typename std::multimap<types::LevelInd, Particle<dim> >::iterator it = begin_particle;
-          for (unsigned int particle_index = 0; it!=end_particle; ++it,++particle_index)
-            {
-              // melt FE uses the same FE so the shape value is the same
-              const double shape_value = velocity_fe.shape_value(j,it->second.get_reference_location());
+            Tensor<1, dim> fluid_velocity_at_support_point;
+            Tensor<1, dim> old_fluid_velocity_at_support_point;
 
-              if (compute_fluid_velocity && use_fluid_velocity[particle_index])
+            if (compute_fluid_velocity)
+              for (unsigned int dir = 0; dir < dim; ++dir)
                 {
-                  velocity[particle_index] += fluid_velocity_at_support_point * shape_value;
-                  old_velocity[particle_index] += old_fluid_velocity_at_support_point * shape_value;
-                }
-              else
-                {
-                  velocity[particle_index] += velocity_at_support_point * shape_value;
-                  old_velocity[particle_index] += old_velocity_at_support_point * shape_value;
-                }
-            }
-        }
+                  const unsigned int support_point_index
+                    = this->get_fe().component_to_system_index(fluid_component_index + dir, j);
 
-      integrator->local_integrate_step(begin_particle,
-                                       end_particle,
-                                       old_velocity,
-                                       velocity,
-                                       this->get_timestep());
-
-      // Now update the reference locations of the moved particles
-      for (typename std::multimap<types::LevelInd, Particle<dim> >::iterator it = begin_particle;
-           it!=end_particle;)
-        {
-          try
-            {
-              const Point<dim> p_unit = this->get_mapping().transform_real_to_unit_cell(cell, it->second.get_location());
-              if (GeometryInfo<dim>::is_inside_unit_cell(p_unit))
-                {
-                  it->second.set_reference_location(p_unit);
-                  ++it;
+                  fluid_velocity_at_support_point[dir] = this->get_solution()[cell_dof_indices[support_point_index]];
+                  old_fluid_velocity_at_support_point[dir] = this->get_old_solution()[cell_dof_indices[support_point_index]];
                 }
-              else
-                {
-                  // The particle has left the cell
-                  particles_out_of_cell.push_back(*it);
 
-                  // Remove the lost particle and continue with next particle.
-                  // Also make sure we do not invalidate the iterator we are increasing.
-                  const typename std::multimap<types::LevelInd, Particle<dim> >::iterator particle_to_delete = it;
-                  it++;
-                  particle_handler->get_particles().erase(particle_to_delete);
-                }
-            }
-          catch (typename Mapping<dim>::ExcTransformationFailed &)
-            {
-              // The particle has left the cell
-              particles_out_of_cell.push_back(*it);
+            typename std::multimap<types::LevelInd, Particle<dim> >::iterator it = begin_particle;
+            for (unsigned int particle_index = 0; it != end_particle; ++it, ++particle_index)
+              {
+                // melt FE uses the same FE so the shape value is the same
+                const double shape_value = velocity_fe.shape_value(j, it->second.get_reference_location());
 
-              // Remove the lost particle and continue with next particle.
-              // Also make sure we do not invalidate the iterator we are increasing.
-              const typename std::multimap<types::LevelInd, Particle<dim> >::iterator particle_to_delete = it;
-              it++;
-              particle_handler->get_particles().erase(particle_to_delete);
-            }
-        }
+                if (compute_fluid_velocity && use_fluid_velocity[particle_index])
+                  {
+                    velocity[particle_index] += fluid_velocity_at_support_point * shape_value;
+                    old_velocity[particle_index] += old_fluid_velocity_at_support_point * shape_value;
+                  }
+                else
+                  {
+                    velocity[particle_index] += velocity_at_support_point * shape_value;
+                    old_velocity[particle_index] += old_velocity_at_support_point * shape_value;
+//                        velocity_reference[particle_index] += this->get_mapping().transform_real_to_unit_cell(cell,
+//                                                                                                              Tensor<1,dim> velocity_at_support_point);
+                  }
+              }
+          }
+      }
+
+      {
+        TimerOutput::Scope timer_section_2(this->get_computing_timer(), "Particles: Advect - integrate_step");
+
+        integrator->local_integrate_step(cell,
+                                         begin_particle,
+                                         end_particle,
+                                         old_velocity,
+                                         velocity,
+                                         this->get_timestep());
+
+      }
+
+      {
+        TimerOutput::Scope timer_section_3(this->get_computing_timer(), "Particles: Advect - update reference locations");
+        // Now update the reference locations of the moved particles
+        for (typename std::multimap<types::LevelInd, Particle<dim> >::iterator it = begin_particle;
+             it != end_particle;)
+          {
+            try
+              {
+                this->get_mapping().transform_unit_to_real_cell(cell, Point<dim,double>(0.5));
+                const Point<dim> p_unit = this->get_mapping().transform_real_to_unit_cell(cell,
+                                                                                          it->second.get_location());
+                if (GeometryInfo<dim>::is_inside_unit_cell(p_unit))
+                  {
+                    it->second.set_reference_location(p_unit);
+                    ++it;
+                  }
+                else
+                  {
+                    // The particle has left the cell
+                    particles_out_of_cell.push_back(*it);
+
+                    // Remove the lost particle and continue with next particle.
+                    // Also make sure we do not invalidate the iterator we are increasing.
+                    const typename std::multimap<types::LevelInd, Particle<dim> >::iterator particle_to_delete = it;
+                    it++;
+                    particle_handler->get_particles().erase(particle_to_delete);
+                  }
+              }
+            catch (typename Mapping<dim>::ExcTransformationFailed &)
+              {
+                // The particle has left the cell
+                particles_out_of_cell.push_back(*it);
+
+                // Remove the lost particle and continue with next particle.
+                // Also make sure we do not invalidate the iterator we are increasing.
+                const typename std::multimap<types::LevelInd, Particle<dim> >::iterator particle_to_delete = it;
+                it++;
+                particle_handler->get_particles().erase(particle_to_delete);
+              }
+          }
+      }
     }
 
     template <int dim>
@@ -1398,7 +1416,7 @@ namespace aspect
 
       {
         // TODO: Change this loop over all cells to use the WorkStream interface
-        TimerOutput::Scope timer_section(this->get_computing_timer(), "Particles: Advect");
+        //TimerOutput::Scope timer_section(this->get_computing_timer(), "Particles: Advect");
 
         // Loop over all cells and advect the particles cell-wise
         typename DoFHandler<dim>::active_cell_iterator

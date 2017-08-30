@@ -34,7 +34,8 @@ namespace aspect
 
       template <int dim>
       void
-      RK2<dim>::local_integrate_step(const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &begin_particle,
+      RK2<dim>::local_integrate_step(const typename DoFHandler<dim>::active_cell_iterator &cell,
+                                     const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &begin_particle,
                                      const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &end_particle,
                                      const std::vector<Tensor<1,dim> > &old_velocities,
                                      const std::vector<Tensor<1,dim> > &velocities,

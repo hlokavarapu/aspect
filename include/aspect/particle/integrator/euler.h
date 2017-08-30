@@ -22,6 +22,7 @@
 #define _aspect_particle_integrator_euler_h
 
 #include <aspect/particle/integrator/interface.h>
+#include <aspect/simulator_access.h>
 
 namespace aspect
 {
@@ -38,7 +39,7 @@ namespace aspect
        * @ingroup ParticleIntegrators
        */
       template <int dim>
-      class Euler : public Interface<dim>
+      class Euler : public Interface<dim>, SimulatorAccess<dim>
       {
         public:
           /**
@@ -60,11 +61,13 @@ namespace aspect
            */
           virtual
           void
-          local_integrate_step(const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &begin_particle,
+          local_integrate_step(const typename DoFHandler<dim>::active_cell_iterator &cell,
+                               const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &begin_particle,
                                const typename std::multimap<types::LevelInd, Particle<dim> >::iterator &end_particle,
                                const std::vector<Tensor<1,dim> > &old_velocities,
                                const std::vector<Tensor<1,dim> > &velocities,
                                const double dt);
+
       };
 
     }
