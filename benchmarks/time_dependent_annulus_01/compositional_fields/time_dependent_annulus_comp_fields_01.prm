@@ -151,12 +151,15 @@ end
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = TimeDependentAnnulusPostprocessor, particles, visualization
+  # To visualize, append 'visualization' to list of postprocessors.
+  set List of postprocessors = TimeDependentAnnulusPostprocessor, particles
  
   subsection Particles
     set Time between data output = 0
-    set Data output format = vtu
+    # Set Data output format to value 'vtu'
+    set Data output format = none
     set Integration scheme = rk2
+    # Based on the computation, switch to 'cell average'
     set Interpolation scheme = bilinear least squares
     set List of particle properties = function
     set Update ghost particles = true

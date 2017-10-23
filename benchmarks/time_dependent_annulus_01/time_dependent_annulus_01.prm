@@ -141,7 +141,8 @@ end
 ############### Parameters describing what to do with the solution
 
 subsection Postprocess
-  set List of postprocessors = TimeDependentAnnulusPostprocessor, visualization
+  # To visualize, append 'visualization' to list of postprocessors.
+  set List of postprocessors = TimeDependentAnnulusPostprocessor
  
   subsection Visualization
     set Output format                 = vtu
