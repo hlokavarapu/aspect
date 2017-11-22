@@ -56,10 +56,8 @@ namespace aspect
         for (unsigned int i=0; i < dim; i++)
           vel[i] = velocity_function->value(Point<dim>(pos[0],pos[1]), i);
 
-        //(*pressure) = 0;
         (*pressure) = pressure_function->value(Point<dim>(pos[0], pos[1]));
 
-        //(*density) = 0;
         (*density) = density_function->value(Point<dim>(pos[0], pos[1]));
       }
 
@@ -380,14 +378,14 @@ namespace aspect
           Vector<float> cellwise_errors_p (this->get_triangulation().n_active_cells());
           Vector<float> cellwise_errors_ul2 (this->get_triangulation().n_active_cells());
           Vector<float> cellwise_errors_pl2 (this->get_triangulation().n_active_cells());
+          Vector<float> cellwise_errors_rho (this->get_triangulation().n_active_cells());
           Vector<float> cellwise_errors_rhol2 (this->get_triangulation().n_active_cells());
+          Vector<float> cellwise_errors_rholinf (this->get_triangulation().n_active_cells());
 
 
           ComponentSelectFunction<dim> comp_u(std::pair<unsigned int, unsigned int>(0,dim),
                                               this->get_fe().n_components());
           ComponentSelectFunction<dim> comp_p(dim, this->get_fe().n_components());
-//          std::cout << this->get_fe().n_components();
-          // Specify the compositional field that carries the density
           ComponentSelectFunction<dim> comp_rho(dim+2, this->get_fe().n_components());
 
           VectorTools::integrate_difference (this->get_mapping(),this->get_dof_handler(),
@@ -421,37 +419,46 @@ namespace aspect
           VectorTools::integrate_difference (this->get_mapping(),this->get_dof_handler(),
                                              this->get_solution(),
                                              *ref_func,
+                                             cellwise_errors_rho,
+                                             quadrature_formula,
+                                             VectorTools::L1_norm,
+                                             &comp_rho);
+          VectorTools::integrate_difference (this->get_mapping(),this->get_dof_handler(),
+                                             this->get_solution(),
+                                             *ref_func,
                                              cellwise_errors_rhol2,
                                              quadrature_formula,
                                              VectorTools::L2_norm,
                                              &comp_rho);
 
+          VectorTools::integrate_difference (this->get_mapping(),this->get_dof_handler(),
+                                             this->get_solution(),
+                                             *ref_func,
+                                             cellwise_errors_rholinf,
+                                             quadrature_formula,
+                                             VectorTools::Linfty_norm,
+                                             &comp_rho);
+
+
 
           const double u_l1 = Utilities::MPI::sum(cellwise_errors_u.l1_norm(),this->get_mpi_communicator());
           const double p_l1 = Utilities::MPI::sum(cellwise_errors_p.l1_norm(),this->get_mpi_communicator());
+          const double rho_l1 = Utilities::MPI::sum(cellwise_errors_rho.l1_norm(), this->get_mpi_communicator());
           const double u_l2 = std::sqrt(Utilities::MPI::sum(cellwise_errors_ul2.norm_sqr(),this->get_mpi_communicator()));
-          const double p_l2 = std::sqrt(Utilities::MPI::sum(cellwise_errors_pl2.norm_sqr(),this->get_mpi_communicator()));
-          const double rho_l2 = std::sqrt(Utilities::MPI::sum(cellwise_errors_rhol2.norm_sqr(),this->get_mpi_communicator()));
+          const double p_l2 = std::sqrt(Utilities::MPI::sum(cellwise_errors_pl2.norm_sqr(), this->get_mpi_communicator()));
+          const double rho_l2 = std::sqrt(Utilities::MPI::sum(cellwise_errors_rhol2.norm_sqr(), this->get_mpi_communicator()));
+          const double rho_linf = Utilities::MPI::max(cellwise_errors_rholinf.linfty_norm(), this->get_mpi_communicator());
 
-          std::ofstream rho;
-          rho.open("rho.log", std::ios_base::app);
-            for(Vector<float>::const_iterator itr_cellwise_errors = cellwise_errors_rhol2;
-              itr_cellwise_errors != cellwise_errors_rhol2.end();
-              itr_cellwise_errors++)
-            {
-              rho << *itr_cellwise_errors << std::endl;
-            }
-
-          rho.close();
-          
           std::ostringstream os;
           os << std::scientific << u_l1
              << ", " << p_l1
              << ", " << u_l2
              << ", " << p_l2
-             << ", " << rho_l2;
-
-          return std::make_pair("Errors u_L1, p_L1, u_L2, p_L2, rho_L2:", os.str());
+             << ", " << rho_l1
+             << ", " << rho_l2
+             << ", " << rho_linf;
+         
+          return std::make_pair("Errors u_L1, p_L1, u_L2, p_L2, rho_L1, rho_L2, rho_Linf:", os.str());
         }
     };
   }
