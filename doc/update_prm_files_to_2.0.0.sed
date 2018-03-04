@@ -17,6 +17,10 @@ s/subsection Compositional initial conditions/Initial composition model/g
 # Rename initial (temperature) conditions
 s/subsection Initial conditions/Initial temperature model/g
 
+# Rename adiabatic conditions plugin initial profile
+s/subsection Initial profile/subsection Compute profile/g
+s/set Model name = initial profile/set Model name = compute profile/g
+
 # Replace the 'model name' parameter by 'List of model names'
 # in all subsections that now use the new parameter.
 # Note that this command only works if the parameter is set
@@ -24,11 +28,11 @@ s/subsection Initial conditions/Initial temperature model/g
 # belongs to the opening subsection (i.e. if the parameter is set
 # after a subsection nested inside the 'Boundary temperature model'
 # subsection the following will simply do nothing).
-/subsection Boundary temperature model/,/\<end\>/ {
+/subsection Boundary temperature model/,/\bend\b/ {
      s/set Model name/set List of model names/g
 }
 
-/subsection Boundary composition model/,/\<end\>/ {
+/subsection Boundary composition model/,/\bend\b/ {
      s/set Model name/set List of model names/g
 }
 

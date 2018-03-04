@@ -232,7 +232,7 @@ namespace aspect
 
   template <int dim>
   double Simulator<dim>::assemble_and_solve_stokes (const bool compute_initial_residual,
-                                                    double *initial_residual)
+                                                    double *initial_nonlinear_residual)
   {
     // If the Stokes matrix depends on the solution, or the boundary conditions
     // for the Stokes system have changed rebuild the matrix and preconditioner
@@ -247,11 +247,11 @@ namespace aspect
 
     if (compute_initial_residual)
       {
-        Assert(initial_residual != NULL, ExcInternalError());
-        *initial_residual = compute_initial_stokes_residual();
+        Assert(initial_nonlinear_residual != NULL, ExcInternalError());
+        *initial_nonlinear_residual = compute_initial_stokes_residual();
       }
 
-    const double current_residual = solve_stokes();
+    const double current_nonlinear_residual = solve_stokes().first;
 
     current_linearization_point.block(introspection.block_indices.velocities)
       = solution.block(introspection.block_indices.velocities);
@@ -266,14 +266,14 @@ namespace aspect
         // and will therefore be updated as well.
         const unsigned int fluid_velocity_block = introspection.variable("fluid velocity").block_index;
         const unsigned int fluid_pressure_block = introspection.variable("fluid pressure").block_index;
-        current_linearization_point.block(fluid_velocity_block) = solution(fluid_velocity_block);
+        current_linearization_point.block(fluid_velocity_block) = solution.block(fluid_velocity_block);
         current_linearization_point.block(fluid_pressure_block) = solution.block(fluid_pressure_block);
       }
 
-    if ((initial_residual != NULL) && (*initial_residual > 0))
-      return current_residual / *initial_residual;
-
-    return 0.0;
+    if ((initial_nonlinear_residual != NULL) && (*initial_nonlinear_residual > 0))
+      return current_nonlinear_residual / *initial_nonlinear_residual;
+    else
+      return 0.0;
   }
 
 
@@ -307,18 +307,18 @@ namespace aspect
       parameters.max_nonlinear_iterations;
     do
       {
-        const double relative_stokes_residual =
+        const double relative_nonlinear_stokes_residual =
           assemble_and_solve_stokes(nonlinear_iteration == 0, &initial_stokes_residual);
 
         pcout << "      Relative nonlinear residual (Stokes system) after nonlinear iteration " << nonlinear_iteration+1
-              << ": " << relative_stokes_residual
+              << ": " << relative_nonlinear_stokes_residual
               << std::endl
               << std::endl;
 
         if (parameters.run_postprocessors_on_nonlinear_iterations)
           postprocess ();
 
-        if (relative_stokes_residual < parameters.nonlinear_tolerance)
+        if (relative_nonlinear_stokes_residual < parameters.nonlinear_tolerance)
           break;
 
         ++nonlinear_iteration;
@@ -353,14 +353,14 @@ namespace aspect
         const std::vector<double>  relative_composition_residual =
           assemble_and_solve_composition(nonlinear_iteration == 0, &initial_composition_residual);
 
-        const double relative_stokes_residual =
+        const double relative_nonlinear_stokes_residual =
           assemble_and_solve_stokes(nonlinear_iteration == 0, &initial_stokes_residual);
 
         // write the residual output in the same order as the solutions
         pcout << "      Relative nonlinear residuals (temperature, compositional fields, Stokes system): " << relative_temperature_residual;
         for (unsigned int c=0; c<introspection.n_compositional_fields; ++c)
           pcout << ", " << relative_composition_residual[c];
-        pcout << ", " << relative_stokes_residual;
+        pcout << ", " << relative_nonlinear_stokes_residual;
         pcout << std::endl;
 
         double max = 0.0;
@@ -379,7 +379,7 @@ namespace aspect
               max = std::max(relative_composition_residual[c],max);
           }
 
-        max = std::max(relative_stokes_residual, max);
+        max = std::max(relative_nonlinear_stokes_residual, max);
         max = std::max(relative_temperature_residual, max);
         pcout << "      Relative nonlinear residual (total system) after nonlinear iteration " << nonlinear_iteration+1
               << ": " << max
@@ -422,11 +422,11 @@ namespace aspect
 
     do
       {
-        const double relative_stokes_residual =
+        const double relative_nonlinear_stokes_residual =
           assemble_and_solve_stokes(nonlinear_iteration == 0, &initial_stokes_residual);
 
         pcout << "      Relative nonlinear residual (Stokes system) after nonlinear iteration " << nonlinear_iteration+1
-              << ": " << relative_stokes_residual
+              << ": " << relative_nonlinear_stokes_residual
               << std::endl
               << std::endl;
 
@@ -434,7 +434,7 @@ namespace aspect
           postprocess ();
 
         // if reached convergence, exit nonlinear iterations.
-        if (relative_stokes_residual < parameters.nonlinear_tolerance)
+        if (relative_nonlinear_stokes_residual < parameters.nonlinear_tolerance)
           break;
 
         ++nonlinear_iteration;
@@ -476,14 +476,15 @@ namespace aspect
       parameters.max_nonlinear_iterations;
 
     // Now iterate out the nonlinearities.
-    double stokes_residual = 0;
+    std::pair<double,double> stokes_residuals (numbers::signaling_nan<double>(),
+                                               numbers::signaling_nan<double>());
     for (nonlinear_iteration = 0; nonlinear_iteration < max_nonlinear_iterations; ++nonlinear_iteration)
       {
         assemble_and_solve_temperature();
         assemble_and_solve_composition();
 
-        if (use_picard == true && (residual/initial_residual <= parameters.nonlinear_switch_tolerance ||
-                                   nonlinear_iteration >= parameters.max_pre_newton_nonlinear_iterations))
+        if (use_picard == true && (residual/initial_residual <= newton_handler->parameters.nonlinear_switch_tolerance ||
+                                   nonlinear_iteration >= newton_handler->parameters.max_pre_newton_nonlinear_iterations))
           {
             use_picard = false;
             pcout << "   Switching from defect correction form of Picard to the Newton solver scheme." << std::endl;
@@ -494,12 +495,13 @@ namespace aspect
              * just set it so the newton_derivative_scaling_factor goes from
              * zero to one when switching on the Newton solver.
              */
-            if (!parameters.use_newton_residual_scaling_method)
+            if (!newton_handler->parameters.use_newton_residual_scaling_method)
               newton_residual_for_derivative_scaling_factor = 0;
           }
 
-        newton_handler->set_newton_derivative_scaling_factor(std::max(0.0,
-                                                                      (1.0-(newton_residual_for_derivative_scaling_factor/switch_initial_residual))));
+        newton_handler->parameters.newton_derivative_scaling_factor
+          = (std::max(0.0,
+                      (1.0-(newton_residual_for_derivative_scaling_factor/switch_initial_residual))));
 
 
         /**
@@ -569,23 +571,80 @@ namespace aspect
             pressure_residual = system_rhs.block(introspection.block_indices.pressure).l2_norm();
             residual = std::sqrt(velocity_residual * velocity_residual + pressure_residual * pressure_residual);
 
-            if (!use_picard)
+            if (!use_picard || newton_handler->parameters.use_Eisenstat_Walker_method_for_Picard_iterations)
               {
                 const bool EisenstatWalkerChoiceOne = true;
                 parameters.linear_stokes_solver_tolerance = compute_Eisenstat_Walker_linear_tolerance(EisenstatWalkerChoiceOne,
-                                                            parameters.maximum_linear_stokes_solver_tolerance,
+                                                            newton_handler->parameters.maximum_linear_stokes_solver_tolerance,
                                                             parameters.linear_stokes_solver_tolerance,
-                                                            stokes_residual,
+                                                            stokes_residuals.second,
                                                             residual,
                                                             residual_old);
 
-                pcout << "   The linear solver tolerance is set to " << parameters.linear_stokes_solver_tolerance << std::endl;
+                pcout << "   The linear solver tolerance is set to "
+                      << parameters.linear_stokes_solver_tolerance
+                      << ". ";
+                if (!use_picard)
+                  {
+                    pcout << "Stabilization Preconditioner is "
+                          << Newton::to_string(newton_handler->parameters.preconditioner_stabilization)
+                          << " and A block is "
+                          << Newton::to_string(newton_handler->parameters.velocity_block_stabilization)
+                          << ".";
+                  }
+                pcout << std::endl;
               }
           }
 
         build_stokes_preconditioner();
 
-        stokes_residual = solve_stokes();
+        if (newton_handler->parameters.use_Newton_failsafe == false)
+          {
+            stokes_residuals = solve_stokes();
+          }
+        else
+          {
+            try
+              {
+                stokes_residuals = solve_stokes();
+              }
+            catch (...)
+              {
+                // start the solve over again and try with a stabilized version
+                pcout << "Solve failed and catched, try again with stabilisation" << std::endl;
+                newton_handler->parameters.preconditioner_stabilization = Newton::Parameters::Stabilization::SPD;
+                newton_handler->parameters.velocity_block_stabilization = Newton::Parameters::Stabilization::SPD;
+                rebuild_stokes_matrix = rebuild_stokes_preconditioner = assemble_newton_stokes_matrix = true;
+
+                assemble_stokes_system();
+                /**
+                 * Eisenstat Walker method for determining the tolerance
+                 */
+                if (nonlinear_iteration > 1)
+                  {
+                    residual_old = residual;
+                    velocity_residual = system_rhs.block(introspection.block_indices.velocities).l2_norm();
+                    pressure_residual = system_rhs.block(introspection.block_indices.pressure).l2_norm();
+                    residual = std::sqrt(velocity_residual * velocity_residual + pressure_residual * pressure_residual);
+
+                    if (!use_picard)
+                      {
+                        const bool EisenstatWalkerChoiceOne = true;
+                        parameters.linear_stokes_solver_tolerance = compute_Eisenstat_Walker_linear_tolerance(EisenstatWalkerChoiceOne,
+                                                                    newton_handler->parameters.maximum_linear_stokes_solver_tolerance,
+                                                                    parameters.linear_stokes_solver_tolerance,
+                                                                    stokes_residuals.second,
+                                                                    residual,
+                                                                    residual_old);
+
+                        pcout << "   The linear solver tolerance is set to " << parameters.linear_stokes_solver_tolerance << std::endl;
+                      }
+                  }
+
+                build_stokes_preconditioner();
+                stokes_residuals = solve_stokes();
+              }
+          }
 
         velocity_residual = system_rhs.block(introspection.block_indices.velocities).l2_norm();
         pressure_residual = system_rhs.block(introspection.block_indices.pressure).l2_norm();
@@ -601,10 +660,10 @@ namespace aspect
             current_linearization_point.block(introspection.block_indices.velocities) = solution.block(introspection.block_indices.velocities);
             current_linearization_point.block(introspection.block_indices.pressure) = solution.block(introspection.block_indices.pressure);
 
-            residual = stokes_residual;
+            residual = stokes_residuals.first;
 
             pcout << "      Relative nonlinear residual (total Newton system) after nonlinear iteration " << nonlinear_iteration+1
-                  << ": " << stokes_residual/initial_residual << ", norm of the rhs: " << stokes_residual << std::endl;
+                  << ": " << stokes_residuals.first/initial_residual << ", norm of the rhs: " << stokes_residuals.first << std::endl;
 
           }
         else
@@ -659,13 +718,14 @@ namespace aspect
                 // Determine if the decrease is sufficient.
                 if (test_residual < (1.0 - alpha * lambda) * residual
                     ||
-                    line_search_iteration >= parameters.max_newton_line_search_iterations
+                    line_search_iteration >= newton_handler->parameters.max_newton_line_search_iterations
                     ||
                     use_picard)
                   {
                     pcout << "      Relative nonlinear residual (total Newton system) after nonlinear iteration " << nonlinear_iteration+1
                           << ": " << test_residual/initial_residual << ", norm of the rhs: " << test_residual
-                          << ", newton_derivative_scaling_factor: " << newton_handler->get_newton_derivative_scaling_factor() << std::endl;
+                          << ", newton_derivative_scaling_factor: " << newton_handler->parameters.newton_derivative_scaling_factor
+                          << std::endl;
                     residual = test_residual;
                     break;
                   }
@@ -684,12 +744,12 @@ namespace aspect
                   }
 
                 line_search_iteration++;
-                Assert(line_search_iteration <= parameters.max_newton_line_search_iterations,
+                Assert(line_search_iteration <= newton_handler->parameters.max_newton_line_search_iterations,
                        ExcMessage ("This tests the while condition. This condition should "
                                    "actually never be false, because the break statement "
                                    "above should have caught it."));
               }
-            while (line_search_iteration <= parameters.max_newton_line_search_iterations);
+            while (line_search_iteration <= newton_handler->parameters.max_newton_line_search_iterations);
             // The while condition should actually never be false, because the break statement above should have caught it.
           }
 
@@ -710,7 +770,7 @@ namespace aspect
              * on the improvement of the residual. This method was suggested
              * by Raid Hassani.
              */
-            if (parameters.use_newton_residual_scaling_method)
+            if (newton_handler->parameters.use_newton_residual_scaling_method)
               newton_residual_for_derivative_scaling_factor = test_residual;
             else
               newton_residual_for_derivative_scaling_factor = 0;

@@ -2406,7 +2406,7 @@ namespace aspect
     double compute_spd_factor(const double eta,
                               const SymmetricTensor<2,dim> &strain_rate,
                               const SymmetricTensor<2,dim> &dviscosities_dstrain_rate,
-                              const double safety_factor)
+                              const double SPD_safety_factor)
     {
       // if the strain rate is zero, or the derivative is zero, then
       // the exact choice of alpha factor does not matter because the
@@ -2420,16 +2420,12 @@ namespace aspect
       const double one_minus_part = 1 - (contract_a_b / norm_a_b);
       const double denom = one_minus_part * one_minus_part * norm_a_b;
 
-      if (denom == 0)
+      // the case denom == 0 (smallest eigenvalue is zero), should return one,
+      // and it does here, because C_safety * 2.0 * eta is always larger then zero.
+      if (denom <= SPD_safety_factor * 2.0 * eta)
         return 1.0;
       else
-        {
-          const double alpha = (2.0*eta)/denom;
-          if (alpha >= 1.0)
-            return 1.0;
-          else
-            return std::max(0.0,safety_factor*alpha);
-        }
+        return std::max(0.0, SPD_safety_factor * ((2.0 * eta) / denom));
     }
 
 
@@ -2536,6 +2532,20 @@ namespace aspect
     }
 
 
+    template <int dim>
+    SymmetricTensor<2,dim>
+    nth_basis_for_symmetric_tensors (const unsigned int k)
+    {
+      Assert((k < SymmetricTensor<2,dim>::n_independent_components),
+             ExcMessage("The component is larger then the amount of independent components in the matrix.") );
+
+      const TableIndices<2> indices_ij = SymmetricTensor<2,dim>::unrolled_to_component_indices (k);
+
+      Tensor<2,dim> result;
+      result[indices_ij] = 1;
+
+      return symmetrize(result);
+    }
 
 
 // Explicit instantiations
@@ -2621,6 +2631,9 @@ namespace aspect
 
     template std_cxx11::array<double,2> convert_point_to_array<2>(const Point<2> &point);
     template std_cxx11::array<double,3> convert_point_to_array<3>(const Point<3> &point);
+
+    template SymmetricTensor<2,2> nth_basis_for_symmetric_tensors (const unsigned int k);
+    template SymmetricTensor<2,3> nth_basis_for_symmetric_tensors (const unsigned int k);
 
   }
 }

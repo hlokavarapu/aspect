@@ -57,12 +57,129 @@ namespace aspect
     };
   }
 
+
+  namespace Newton
+  {
+    struct Parameters
+    {
+
+      /**
+       * This enum describes the type of stabilization is used
+       * for the Newton solver. None represents no stabilization,
+       * SPD represent that the resulting matrix is made Symmetric
+       * Positive Definite, symmetric represents that the matrix is
+       * only symmetrized, and PD represents that we do the same as
+       * what we do for SPD, but without the symmetrization.
+       */
+      enum Stabilization
+      {
+        none = 0,
+        symmetric = 1,
+        PD = 2,
+        SPD = symmetric | PD
+      };
+
+
+      /**
+       * A binary 'or' operator that concatenates a set of stabilization
+       * flags by returning an object that combines the bits set in each
+       * of the two arguments.
+       */
+      friend
+      Stabilization
+      operator| (const Stabilization a,
+                 const Stabilization b)
+      {
+        return static_cast<Stabilization>(
+                 static_cast<int>(a) | static_cast<int>(b));
+      }
+
+
+      /**
+       * A binary 'and' operator that takes the intersection of two sets
+       * of stabilization flags by returning an object that selects those bits
+       * that are set in both of the two arguments.
+       */
+      friend
+      Stabilization
+      operator& (const Stabilization a,
+                 const Stabilization b)
+      {
+        return static_cast<Stabilization>(
+                 static_cast<int>(a) & static_cast<int>(b));
+      }
+
+
+      /**
+       * Declare additional parameters that are needed for the Newton.
+       * solver.
+       */
+      static void declare_parameters (ParameterHandler &prm);
+
+      /**
+       * Parse additional parameters that are needed for the Newton.
+       * solver.
+       */
+      void parse_parameters (ParameterHandler &prm);
+
+      /**
+       * A scaling factor used for scaling the
+       * derivative part of the Newton Stokes solver in the assembly.
+       *
+       * The exact Newton matrix consists of the Stokes matrix plus a term
+       * that results from the linearization of the material coefficients.
+       * The scaling factor multiplies these additional terms. In a full
+       * Newton method, it would be equal to one, but it can be chosen
+       * smaller in cases where the resulting linear system has undesirable
+       * properties.
+       *
+       * If the scaling factor is zero, the resulting matrix is simply the
+       * Stokes matrix, and the resulting scheme is a defect correction
+       * (i.e., Picard iteration).
+       */
+      double              newton_derivative_scaling_factor;
+
+      Stabilization       preconditioner_stabilization;
+      Stabilization       velocity_block_stabilization;
+
+      /**
+       * Whether to use the Newton failsafe or not. If the failsafe is used, a failure
+       * of the linear solver is caught and we try to solve it again with both the
+       * preconditioner and the velocity block being stabilized with the SPD stabilization.
+       */
+      bool                use_Newton_failsafe;
+
+      /**
+       * The nonlinear tolerance at which to switch the
+       * nonlinear solver from defect correction Picard to
+       * Newton.
+       */
+      double              nonlinear_switch_tolerance;
+
+      bool                use_Eisenstat_Walker_method_for_Picard_iterations;
+      unsigned int        max_pre_newton_nonlinear_iterations;
+      unsigned int        max_newton_line_search_iterations;
+      bool                use_newton_residual_scaling_method;
+      double              maximum_linear_stokes_solver_tolerance;
+      double              SPD_safety_factor;
+    };
+
+
+    /**
+     * Get a std::string describing the stabilization type used for the
+     * preconditioner.
+     */
+    std::string
+    to_string(const Newton::Parameters::Stabilization preconditioner_stabilization);
+  }
+
+
+
   /**
-   * A Class which can declare and parse parameters and creates
-   * material model outputs for the Newton solver.
+   * A class that supports the functionality of the Newton solver.
    */
   template <int dim>
-  class NewtonHandler: public SimulatorAccess<dim>
+  class NewtonHandler : public SimulatorAccess<dim>
   {
     public:
       /**
@@ -80,42 +197,12 @@ namespace aspect
       static void create_material_model_outputs(MaterialModel::MaterialModelOutputs<dim> &output);
 
       /**
-       * Return the Newton derivative scaling factor used for scaling the
-       * derivative part of the Newton Stokes solver in the assembly.
-       *
-       * The exact Newton matrix consists of the Stokes matrix plus a term
-       * that results from the linearization of the material coefficients.
-       * The scaling factor multiplies these additional terms. In a full
-       * Newton method, it would be equal to one, but it can be chosen
-       * smaller in cases where the resulting linear system has undesirable
-       * properties.
-       *
-       * If the scaling factor is zero, the resulting matrix is simply the
-       * Stokes matrix, and the resulting scheme is a defect correction
-       * (i.e., Picard iteration).
+       * The object that stores the run-time parameters that control the Newton
+       * method.
        */
-      double get_newton_derivative_scaling_factor() const;
-
-      /**
-       * Set the Newton derivative scaling factor used for scaling the
-       * derivative part of the Newton Stokes solver in the assembly.
-       *
-       * See the get_newton_derivative_scaling_factor() function for an
-       * explanation of the purpose of this factor.
-       */
-      void set_newton_derivative_scaling_factor(const double newton_derivative_scaling_factor);
-
-
-    private:
-      /**
-       * A scaling factor for those terms of the Newton matrix that
-       * result from the linearization of the viscosity.
-       *
-       * See the get_newton_derivative_scaling_factor() function for an
-       * explanation of the purpose of this factor.
-       */
-      double newton_derivative_scaling_factor;
+      Newton::Parameters parameters;
   };
+
 
   namespace Assemblers
   {

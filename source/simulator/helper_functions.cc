@@ -21,6 +21,7 @@
 
 #include <aspect/simulator.h>
 #include <aspect/melt.h>
+#include <aspect/newton.h>
 #include <aspect/global.h>
 
 #include <aspect/geometry_model/interface.h>
@@ -602,12 +603,12 @@ namespace aspect
 
     if (new_time_step == std::numeric_limits<double>::max())
       {
-        // If the velocity is zero and we either do not compute the conduction
-        // timestep or do not have any conduction, then it is somewhat
-        // arbitrary what time step we should choose. In that case, do as if
-        // the velocity was one
-        new_time_step = (parameters.CFL_number /
-                         (parameters.temperature_degree * 1));
+        // In some models the velocity is zero, either because that is the prescribed
+        // Stokes solution, or just because there is no buoyancy and nothing is moving.
+        // If this is the case, and if we either do not compute the conduction time
+        // step or do not have any conduction, it is somewhat arbitrary what time step
+        // we should choose. In that case, set the time step to the 'Maximum time step'.
+        new_time_step = parameters.maximum_time_step;
       }
 
     // make sure that the timestep doesn't increase too fast
@@ -1232,9 +1233,11 @@ namespace aspect
                                                                      linearized_stokes_variables.block(1),
                                                                      system_rhs.block(0));
         const double residual_p = system_rhs.block(block_p).l2_norm();
-        return sqrt(residual_u*residual_u+residual_p*residual_p);
+        return std::sqrt(residual_u*residual_u+residual_p*residual_p);
       }
   }
+
+
 
   template <int dim>
   bool
@@ -1559,6 +1562,10 @@ namespace aspect
                            "but the material model you use does not support operator splitting "
                            "(it does not create ReactionRateOutputs, which are required for this "
                            "solver scheme)."));
+
+    // some heating models require the additional outputs
+    heating_model_manager.create_additional_material_model_outputs(out_C);
+    heating_model_manager.create_additional_material_model_outputs(out_T);
 
     // Make a loop first over all cells, than over all reaction time steps, and then over
     // all degrees of freedom in each element to compute the reactions. This is possible
@@ -1887,8 +1894,10 @@ namespace aspect
           }
         else
           {
-            new_linear_stokes_solver_tolerance = std::min(parameters.maximum_linear_stokes_solver_tolerance,
-                                                          std::max(0.9 * std::fabs(newton_residual*newton_residual) / (newton_residual_old*newton_residual_old),
+            new_linear_stokes_solver_tolerance = std::min(newton_handler->parameters.maximum_linear_stokes_solver_tolerance,
+                                                          std::max(0.9 * std::fabs(newton_residual*newton_residual)
+                                                                   /
+                                                                   (newton_residual_old*newton_residual_old),
                                                                    0.9*linear_stokes_solver_tolerance*linear_stokes_solver_tolerance));
           }
       }

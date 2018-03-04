@@ -17,7 +17,7 @@ s/FluidPressureBoundaryConditions/BoundaryFluidPressure/g
 s/fluid_pressure_boundary/boundary_fluid_pressure/g
 s/Fluid pressure boundary/Boundary fluid pressure/g
 s/FLUID_PRESSURE_BOUNDARY_CONDITIONS/BOUNDARY_FLUID_PRESSURE_MODEL/g
-s/\<\@ingroup BoundaryFluidPressure\>/\@ingroup BoundaryFluidPressures/g
+s/\b\@ingroup BoundaryFluidPressure\b/\@ingroup BoundaryFluidPressures/g
 
 # Rename traction boundary conditions
 s/traction_boundary_conditions_model/boundary_traction/g
@@ -70,3 +70,6 @@ s/struct AssemblerLists/class Manager/g
 s/AssemblerLists/Manager/g
 s/AssemblerBase/Interface/g
 s:assembly.h:simulator/assemblers/interface.h:g
+
+# Rename adiabatic conditions plugin initial profile includes
+s:#include <aspect/adiabatic_conditions/initial_profile.h>:#include <aspect/adiabatic_conditions/compute_profile.h>:g

@@ -989,7 +989,7 @@ namespace aspect
     double compute_spd_factor(const double eta,
                               const SymmetricTensor<2,dim> &strain_rate,
                               const SymmetricTensor<2,dim> &dviscosities_dstrain_rate,
-                              const double safety_factor);
+                              const double SPD_safety_factor);
 
     /**
      * Converts an array of size dim to a Point of size dim.
@@ -1060,6 +1060,15 @@ namespace aspect
      * entry in the list must match one of the allowed operations.
      */
     std::vector<Operator> create_model_operator_list(const std::vector<std::string> &operator_names);
+
+    /**
+     * A function that returns a SymmetricTensor, whose entries are zero, except for
+     * the k'th component, which is set to one. If k is not on the main diagonal the
+     * resulting tensor is symmetrized.
+     */
+    template <int dim>
+    SymmetricTensor<2,dim> nth_basis_for_symmetric_tensors (const unsigned int k);
+
   }
 }
 

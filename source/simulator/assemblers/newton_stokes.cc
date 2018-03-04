@@ -31,8 +31,13 @@ namespace aspect
     void
     NewtonInterface<dim>::create_additional_material_model_outputs(MaterialModel::MaterialModelOutputs<dim> &outputs) const
     {
+      if (this->get_newton_handler().parameters.newton_derivative_scaling_factor == 0)
+        return;
+
       NewtonHandler<dim>::create_material_model_outputs(outputs);
     }
+
+
 
     template <int dim>
     void
@@ -47,7 +52,7 @@ namespace aspect
       const FiniteElement<dim> &fe = this->get_fe();
       const unsigned int stokes_dofs_per_cell = data.local_dof_indices.size();
       const unsigned int n_q_points           = scratch.finite_element_values.n_quadrature_points;
-      const double derivative_scaling_factor = this->get_newton_handler().get_newton_derivative_scaling_factor();
+      const double derivative_scaling_factor = this->get_newton_handler().parameters.newton_derivative_scaling_factor;
 
       // First loop over all dofs and find those that are in the Stokes system
       // save the component (pressure and dim velocities) each belongs to.
@@ -104,69 +109,144 @@ namespace aspect
                 for (unsigned int j = 0; j < stokes_dofs_per_cell; ++j)
                   if (scratch.dof_component_indices[i] ==
                       scratch.dof_component_indices[j])
-                    data.local_matrix(i, j) += ((2.0 * eta * (scratch.grads_phi_u[i] * scratch.grads_phi_u[j]))
-                                                + one_over_eta * this->get_pressure_scaling() * this->get_pressure_scaling()
-                                                * (scratch.phi_p[i] * scratch.phi_p[j]))
+                    data.local_matrix(i, j) += (
+                                                 // top left block: for the current case with
+                                                 // derivative_scaling_factor==0 the top left block
+                                                 // of the system matrix only contains the usual
+                                                 // Stokes term. So approximate this block in the
+                                                 // same way as we do in the preconditioner when
+                                                 // we solve the regular Stokes problem, i.e.,
+                                                 // by replacing the symmetric gradient by the
+                                                 // regular gradient to make the block more sparse
+                                                 (2.0 * eta * (scratch.grads_phi_u[i] * scratch.grads_phi_u[j]))
+                                                 +
+                                                 // bottom right block: approximate the pressure
+                                                 // Schur complement by the pressure mass matrix.
+                                                 // if the derivative scaling factor is zero,
+                                                 // then we only use the viscosity in the top
+                                                 // left block, and so clearly the mass matrix
+                                                 // approximation in the bottom right needs to
+                                                 // only be scaled by 1/eta, without considering
+                                                 // the derivatives
+                                                 one_over_eta
+                                                 * this->get_pressure_scaling()
+                                                 * this->get_pressure_scaling()
+                                                 * (scratch.phi_p[i] * scratch.phi_p[j]))
                                                * JxW;
             }
           else
             {
-
-              const MaterialModel::MaterialModelDerivatives<dim> *derivatives = scratch.material_model_outputs.template get_additional_output<MaterialModel::MaterialModelDerivatives<dim> >();
-
-              AssertThrow(derivatives != NULL, ExcMessage ("Error: The newton method requires the derivatives"));
+              const MaterialModel::MaterialModelDerivatives<dim> *derivatives
+                = scratch.material_model_outputs.template get_additional_output<MaterialModel::MaterialModelDerivatives<dim> >();
+              AssertThrow(derivatives != NULL,
+                          ExcMessage ("Error: The newton method requires derivatives from the material model."));
 
               const SymmetricTensor<2,dim> viscosity_derivative_wrt_strain_rate = derivatives->viscosity_derivative_wrt_strain_rate[q];
               const SymmetricTensor<2,dim> strain_rate = scratch.material_model_inputs.strain_rate[q];
 
-              // todo: make this 0.9 into a global input parameter
-              double alpha = Utilities::compute_spd_factor<dim>(eta, strain_rate, viscosity_derivative_wrt_strain_rate, 0.9);
+              const typename Newton::Parameters::Stabilization
+              preconditioner_stabilization = this->get_newton_handler().parameters.preconditioner_stabilization;
 
-              for (unsigned int i = 0; i < stokes_dofs_per_cell; ++i)
-                for (unsigned int j = 0; j < stokes_dofs_per_cell; ++j)
-                  if (scratch.dof_component_indices[i] ==
-                      scratch.dof_component_indices[j])
-                    {
-                      data.local_matrix(i, j) += ((2.0 * eta * (scratch.grads_phi_u[i] * scratch.grads_phi_u[j]))
-                                                  + derivative_scaling_factor * alpha * (scratch.grads_phi_u[i] * (viscosity_derivative_wrt_strain_rate * scratch.grads_phi_u[j]) * strain_rate
-                                                                                         + scratch.grads_phi_u[j] * (viscosity_derivative_wrt_strain_rate * scratch.grads_phi_u[i]) * strain_rate)
-                                                  + one_over_eta * this->get_pressure_scaling()
-                                                  * this->get_pressure_scaling()
-                                                  * (scratch.phi_p[i] * scratch.phi_p[j]))
-                                                 * JxW;
-                    }
+              // use the spd factor when the stabilization is PD or SPD
+              const double alpha = (preconditioner_stabilization & Newton::Parameters::Stabilization::PD) != Newton::Parameters::Stabilization::none ?
+                                   Utilities::compute_spd_factor<dim>(eta, strain_rate, viscosity_derivative_wrt_strain_rate,
+                                                                      this->get_newton_handler().parameters.SPD_safety_factor)
+                                   :
+                                   1;
+
+              // symmetrize when the stabilization is symmetric or SPD
+              if ((preconditioner_stabilization & Newton::Parameters::Stabilization::symmetric) != Newton::Parameters::Stabilization::none)
+                {
+                  for (unsigned int i = 0; i < stokes_dofs_per_cell; ++i)
+                    for (unsigned int j = 0; j < stokes_dofs_per_cell; ++j)
+                      if (scratch.dof_component_indices[i] ==
+                          scratch.dof_component_indices[j])
+                        {
+                          data.local_matrix(i, j)
+                          += (
+                               // top left block: approximate J^{uu}
+                               (2.0 * eta * (scratch.grads_phi_u[i] * scratch.grads_phi_u[j]))
+                               + derivative_scaling_factor * alpha * (scratch.grads_phi_u[i] * (viscosity_derivative_wrt_strain_rate * scratch.grads_phi_u[j]) * strain_rate
+                                                                      +
+                                                                      scratch.grads_phi_u[j] * (viscosity_derivative_wrt_strain_rate * scratch.grads_phi_u[i]) * strain_rate)
+                               +
+                               // bottom right block: approximate the
+                               // pressure Schur complement by the
+                               // pressure mass matrix.  strictly
+                               // speaking, we probably ought to also
+                               // consider the derivatives deta/deps
+                               // here, but we leave this as a TODO
+                               one_over_eta
+                               * this->get_pressure_scaling()
+                               * this->get_pressure_scaling()
+                               * (scratch.phi_p[i] * scratch.phi_p[j])
+                             )
+                             * JxW;
+                        }
+                }
+              else
+                {
+                  for (unsigned int i = 0; i < stokes_dofs_per_cell; ++i)
+                    for (unsigned int j = 0; j < stokes_dofs_per_cell; ++j)
+                      if (scratch.dof_component_indices[i] ==
+                          scratch.dof_component_indices[j])
+                        {
+                          data.local_matrix(i, j)
+                          += (
+                               // top left block: approximate J^{uu}
+                               (2.0 * eta * (scratch.grads_phi_u[i] * scratch.grads_phi_u[j]))
+                               + derivative_scaling_factor * alpha * 2.0 * (scratch.grads_phi_u[i] * (viscosity_derivative_wrt_strain_rate * scratch.grads_phi_u[j]) * strain_rate)
+                               +
+                               // bottom right block: approximate the
+                               // pressure Schur complement by the
+                               // pressure mass matrix.  strictly
+                               // speaking, we probably ought to also
+                               // consider the derivatives deta/deps
+                               // here, but we leave this as a TODO
+                               one_over_eta
+                               * this->get_pressure_scaling()
+                               * this->get_pressure_scaling()
+                               * (scratch.phi_p[i] * scratch.phi_p[j])
+                             )
+                             * JxW;
+                        }
+                }
+
 
             }
         }
 #if DEBUG
       {
-        // regardless of whether we do or do not add the Newton
-        // linearization terms, we ought to test whether the top-left
-        // block of the matrix is Symmetric Positive Definite (SPD).
-        //
-        // the reason why this is not entirely obvious is described in
-        // the paper that discusses the Newton implementation
-        Vector<double> tmp (stokes_dofs_per_cell);
-        for (unsigned int sample = 0; sample < 100; ++sample)
+        if (this->get_newton_handler().parameters.preconditioner_stabilization == Newton::Parameters::Stabilization::SPD)
           {
-            // fill a vector with random numbers for the Stokes DoFs
-            for (unsigned int i=0; i<stokes_dofs_per_cell; ++i)
-              if (scratch.dof_component_indices[i] < dim)
-                tmp[i] = Utilities::generate_normal_random_number (0, 1);
-              else
-                tmp[i] = 0;
+            // regardless of whether we do or do not add the Newton
+            // linearization terms, we ought to test whether the top-left
+            // block of the matrix is Symmetric Positive Definite (SPD).
+            //
+            // the reason why this is not entirely obvious is described in
+            // the paper that discusses the Newton implementation
+            Vector<double> tmp (stokes_dofs_per_cell);
+            for (unsigned int sample = 0; sample < 100; ++sample)
+              {
+                // fill a vector with random numbers for the Stokes DoFs
+                for (unsigned int i=0; i<stokes_dofs_per_cell; ++i)
+                  if (scratch.dof_component_indices[i] < dim)
+                    tmp[i] = Utilities::generate_normal_random_number (0, 1);
+                  else
+                    tmp[i] = 0;
 
-            // then verify that the product tmp*(A*tmp) -- which by construction
-            // of the vector tmp only covers the top-left block of the matrix A
-            // -- is indeed positive (or nearly so)
-            Assert (data.local_matrix.matrix_norm_square(tmp)/(tmp*tmp)
-                    >=
-                    -1e-12*data.local_matrix.frobenius_norm(),
-                    ExcMessage ("The top left block of the local Newton-Stokes "
-                                "matrix is not positive definite but has an "
-                                "eigenvalue less than "
-                                + Utilities::to_string (data.local_matrix.matrix_norm_square(tmp)/(tmp*tmp))
-                                + " < 0. This should not happen."));
+                // then verify that the product tmp*(A*tmp) -- which by construction
+                // of the vector tmp only covers the top-left block of the matrix A
+                // -- is indeed positive (or nearly so)
+                Assert (data.local_matrix.matrix_norm_square(tmp)/(tmp*tmp)
+                        >=
+                        -1e-12*data.local_matrix.frobenius_norm(),
+                        ExcMessage ("The top left block of the local Newton-Stokes "
+                                    "matrix is not positive definite but has an "
+                                    "eigenvalue less than "
+                                    + Utilities::to_string (data.local_matrix.matrix_norm_square(tmp)/(tmp*tmp))
+                                    + " < 0. This should not happen."));
+              }
           }
       }
 #endif
@@ -187,7 +267,7 @@ namespace aspect
       const FiniteElement<dim> &fe = this->get_fe();
       const unsigned int stokes_dofs_per_cell = data.local_dof_indices.size();
       const unsigned int n_q_points    = scratch.finite_element_values.n_quadrature_points;
-      const double derivative_scaling_factor = this->get_newton_handler().get_newton_derivative_scaling_factor();
+      const double derivative_scaling_factor = this->get_newton_handler().parameters.newton_derivative_scaling_factor;
 
       for (unsigned int q=0; q<n_q_points; ++q)
         {
@@ -276,23 +356,47 @@ namespace aspect
 
                   const SymmetricTensor<2,dim> viscosity_derivative_wrt_strain_rate = derivatives->viscosity_derivative_wrt_strain_rate[q];
                   const double viscosity_derivative_wrt_pressure = derivatives->viscosity_derivative_wrt_pressure[q];
+                  typename Newton::Parameters::Stabilization velocity_block_stabilization = this->get_newton_handler().parameters.velocity_block_stabilization;
 
-                  // todo: make this 0.9 into a global input parameter
-                  const double alpha  = Utilities::compute_spd_factor<dim>(eta, strain_rate, viscosity_derivative_wrt_strain_rate, 0.9);
+                  // use the spd factor when the stabilization is PD or SPD
+                  const double alpha =  (velocity_block_stabilization & Newton::Parameters::Stabilization::PD) != Newton::Parameters::Stabilization::none ?
+                                        Utilities::compute_spd_factor<dim>(eta, strain_rate, viscosity_derivative_wrt_strain_rate,
+                                                                           this->get_newton_handler().parameters.SPD_safety_factor)
+                                        :
+                                        1;
 
-                  for (unsigned int i=0; i<stokes_dofs_per_cell; ++i)
-                    for (unsigned int j=0; j<stokes_dofs_per_cell; ++j)
-                      {
-                        data.local_matrix(i,j) += ( derivative_scaling_factor * alpha * (scratch.grads_phi_u[i] * (viscosity_derivative_wrt_strain_rate * scratch.grads_phi_u[j]) * strain_rate
-                                                                                         + scratch.grads_phi_u[j] * (viscosity_derivative_wrt_strain_rate * scratch.grads_phi_u[i]) * strain_rate)
-                                                    + derivative_scaling_factor * this->get_pressure_scaling() * scratch.grads_phi_u[i] * 2.0 * viscosity_derivative_wrt_pressure * scratch.phi_p[j] * strain_rate )
-                                                  * JxW;
+                  // symmetrize when the stabilization is symmetric or SPD
+                  if ((velocity_block_stabilization & Newton::Parameters::Stabilization::symmetric) != Newton::Parameters::Stabilization::none)
+                    {
+                      for (unsigned int i=0; i<stokes_dofs_per_cell; ++i)
+                        for (unsigned int j=0; j<stokes_dofs_per_cell; ++j)
+                          {
+                            data.local_matrix(i,j) += ( derivative_scaling_factor * alpha * (scratch.grads_phi_u[i] * (viscosity_derivative_wrt_strain_rate * scratch.grads_phi_u[j]) * strain_rate
+                                                                                             + scratch.grads_phi_u[j] * (viscosity_derivative_wrt_strain_rate * scratch.grads_phi_u[i]) * strain_rate)
+                                                        + derivative_scaling_factor * this->get_pressure_scaling() * scratch.grads_phi_u[i] * 2.0 * viscosity_derivative_wrt_pressure * scratch.phi_p[j] * strain_rate )
+                                                      * JxW;
 
-                        Assert(dealii::numbers::is_finite(data.local_matrix(i,j)),
-                               ExcMessage ("Error: Assembly matrix is not finite." +
-                                           Utilities::to_string(data.local_matrix(i,j)) +
-                                           " = " + Utilities::to_string(eta)));
-                      }
+                            Assert(dealii::numbers::is_finite(data.local_matrix(i,j)),
+                                   ExcMessage ("Error: Assembly matrix is not finite." +
+                                               Utilities::to_string(data.local_matrix(i,j)) +
+                                               " = " + Utilities::to_string(eta)));
+                          }
+                    }
+                  else
+                    {
+                      for (unsigned int i=0; i<stokes_dofs_per_cell; ++i)
+                        for (unsigned int j=0; j<stokes_dofs_per_cell; ++j)
+                          {
+                            data.local_matrix(i,j) += ( derivative_scaling_factor * alpha * 2.0 * (scratch.grads_phi_u[i] * (viscosity_derivative_wrt_strain_rate * scratch.grads_phi_u[j]) * strain_rate)
+                                                        + derivative_scaling_factor * this->get_pressure_scaling() * scratch.grads_phi_u[i] * 2.0 * viscosity_derivative_wrt_pressure * scratch.phi_p[j] * strain_rate )
+                                                      * JxW;
+
+                            Assert(dealii::numbers::is_finite(data.local_matrix(i,j)),
+                                   ExcMessage ("Error: Assembly matrix is not finite." +
+                                               Utilities::to_string(data.local_matrix(i,j)) +
+                                               " = " + Utilities::to_string(eta)));
+                          }
+                    }
                 }
             }
         }
@@ -300,33 +404,36 @@ namespace aspect
 #if DEBUG
       if (scratch.rebuild_newton_stokes_matrix)
         {
-          // regardless of whether we do or do not add the Newton
-          // linearization terms, we ought to test whether the top-left
-          // block of the matrix is Symmetric Positive Definite (SPD).
-          //
-          // the reason why this is not entirely obvious is described in
-          // the paper that discusses the Newton implementation
-          Vector<double> tmp (stokes_dofs_per_cell);
-          for (unsigned int sample = 0; sample < 100; ++sample)
+          if (this->get_newton_handler().parameters.velocity_block_stabilization == Newton::Parameters::Stabilization::SPD)
             {
-              // fill a vector with random numbers for the Stokes DoFs
-              for (unsigned int i=0; i<stokes_dofs_per_cell; ++i)
-                if (scratch.dof_component_indices[i] < dim)
-                  tmp[i] = Utilities::generate_normal_random_number (0, 1);
-                else
-                  tmp[i] = 0;
+              // regardless of whether we do or do not add the Newton
+              // linearization terms, we ought to test whether the top-left
+              // block of the matrix is Symmetric Positive Definite (SPD).
+              //
+              // the reason why this is not entirely obvious is described in
+              // the paper that discusses the Newton implementation
+              Vector<double> tmp (stokes_dofs_per_cell);
+              for (unsigned int sample = 0; sample < 100; ++sample)
+                {
+                  // fill a vector with random numbers for the Stokes DoFs
+                  for (unsigned int i=0; i<stokes_dofs_per_cell; ++i)
+                    if (scratch.dof_component_indices[i] < dim)
+                      tmp[i] = Utilities::generate_normal_random_number (0, 1);
+                    else
+                      tmp[i] = 0;
 
-              // then verify that the product tmp*(A*tmp) -- which by construction
-              // of the vector tmp only covers the top-left block of the matrix A
-              // -- is indeed positive (or nearly so)
-              Assert (data.local_matrix.matrix_norm_square(tmp)/(tmp*tmp)
-                      >=
-                      -1e-12*data.local_matrix.frobenius_norm(),
-                      ExcMessage ("The top left block of the local Newton-Stokes "
-                                  "matrix is not positive definite but has an "
-                                  "eigenvalue less than "
-                                  + Utilities::to_string (data.local_matrix.matrix_norm_square(tmp)/(tmp*tmp))
-                                  + " < 0. This should not happen."));
+                  // then verify that the product tmp*(A*tmp) -- which by construction
+                  // of the vector tmp only covers the top-left block of the matrix A
+                  // -- is indeed positive (or nearly so)
+                  Assert (data.local_matrix.matrix_norm_square(tmp)/(tmp*tmp)
+                          >=
+                          -1e-12*data.local_matrix.frobenius_norm(),
+                          ExcMessage ("The top left block of the local Newton-Stokes "
+                                      "matrix is not positive definite but has an "
+                                      "eigenvalue less than "
+                                      + Utilities::to_string (data.local_matrix.matrix_norm_square(tmp)/(tmp*tmp))
+                                      + " < 0. This should not happen."));
+                }
             }
         }
 #endif
@@ -351,7 +458,7 @@ namespace aspect
       const FiniteElement<dim> &fe = this->get_fe();
       const unsigned int stokes_dofs_per_cell = data.local_dof_indices.size();
       const unsigned int n_q_points = scratch.finite_element_values.n_quadrature_points;
-      const double derivative_scaling_factor = this->get_newton_handler().get_newton_derivative_scaling_factor();
+      const double derivative_scaling_factor = this->get_newton_handler().parameters.newton_derivative_scaling_factor;
 
       for (unsigned int q=0; q<n_q_points; ++q)
         {

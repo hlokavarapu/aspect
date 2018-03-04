@@ -572,9 +572,17 @@ namespace aspect
 
       /**
        * Assemble and solve the Stokes equation.
-       * This function returns the residual after solving
+       * This function returns the nonlinear residual after solving
        * and can optionally compute and store an initial
-       * residual before solving the equation.
+       * residual before solving the equation in the second argument
+       * if the first argument is set to @p true.
+       *
+       * The returned nonlinear residual is normalized by the initial
+       * residual, i.e., it is the nonlinear residual computed by
+       * solve_stokes() divided by the initial residual as either
+       * already stored in the second argument, or as computed
+       * at the top of the function.
+       *
        *
        * This function is implemented in
        * <code>source/simulator/solver_schemes.cc</code>.
@@ -609,18 +617,76 @@ namespace aspect
       void interpolate_particle_properties (const AdvectionField &advection_field);
 
       /**
-       * Solve the Stokes linear system. Return the initial nonlinear
-       * residual, i.e., if the linear system to be solved is $Ax=b$, then
-       * return $\|Ax_0-b\|$ where $x_0$ is the initial guess for the solution
-       * variable and is taken from the current_linearization_point member
-       * variable. For the purpose of this function, this residual is computed
-       * only the velocity and pressure equations (i.e., for the 2x2 block
-       * system involving the velocity and pressure variables).
+       * Solve the Stokes linear system.
+       *
+       * The function returns two pieces of information as a pair of doubles:
+       * - The initial nonlinear residual, i.e., if the linear system to be
+       *   solved is $Ax_{k+1}=b$, then we use $\|Ax_k-b\|$ where $x_k$ is the
+       *   initial guess for the solution variable and is taken from
+       *   the @p current_linearization_point member variable. For the
+       *   purpose of this function, this residual is computed
+       *   only from the velocity and pressure equations (i.e., for the 2x2 block
+       *   system involving the velocity and pressure variables). A rationale
+       *   for why this number is computed is given below.
+       * - The final linear residual, i.e., if the linear system to be
+       *   solved is $Ax_{k+1}=b$, then we use $\|Ax_{k+1}-b\|$ where $x_{k+1}$
+       *   is the solution just computed. If we use a direct solver to compute
+       *   the solution of the linear system, then this linear residual is of
+       *   course zero (or at least quite close to it) and the function just
+       *   returns a zero value without even attempting to compute the actual
+       *   value. On the other hand, if the function uses an iterative solver,
+       *   then the value of the final linear residual is related to the
+       *   tolerance with which we solve the linear system and generally
+       *   indicates how accurately or inaccurately the linear system has been
+       *   solved.
+       *
+       * The two values are used in nonlinear solver schemes to assess how
+       * accurate the solution was before the current solve (for the first
+       * element of the returned pair) and how accurately the next iteration
+       * will have to be solved (for the second element of the pair) when using
+       * the Eisenstat-Walker method.
+       *
+       * @note If this function is called from a nonlinear solver -- e.g., the
+       * iterated Stokes, or iterated IMPES solvers --, then the
+       * @p current_linearization_point is the solution of the previous
+       * iteration (or the solution extrapolated from the previous time
+       * steps, if this is the first nonlinear iteration). Let us call
+       * this solution $x_k$ as above, where $x$ is a two-component
+       * block vector that consists of velocity and pressure. This function
+       * then assumes that we have already built the system matrix $A_k=A(x_k)$
+       * and $F_k=F(x_k)$, both linearized around the previous solution. The
+       * function solves the linear system $A_k x_{k+1} = F_k$ for the
+       * solution $x_{k+1}$. If the linear system were solved exactly, then
+       * that would imply that the <i>linear residual</i>
+       * $\|A_k x_{k+1} - F_k\|$ were zero, or at least small. In other words,
+       * its size does not tell us anything about how accurately we have
+       * solved the nonlinear system. On the other hand, the <i>nonlinear
+       * residual</i> $\|A_k x_k - F_k\|$ tells us something about how
+       * accurately the previous guess $x_k$ already solved the nonlinear
+       * system. Consequently, this is what this function returns. (In some
+       * sense, this is not really what we are interested in: it tells us
+       * how accurate the solution <i>already</i> was, and if it was already
+       * pretty accurate, then we may not want to actually solve for
+       * $x_{k+1}$. But, this would require that this function receives a
+       * tolerance so that it can bail out early without actually solving
+       * for $x_{k+1}$ if the tolerance is already reached. This function does
+       * not actually do that -- in some sense, one may argue that if we have
+       * already built the matrix and right hand side, we may as well solve
+       * with them, whether or not the solution was already good. If it
+       * happens to have been good already, then it will be even better after
+       * the solve. If it was not good enough yet, then we have to solve
+       * anyway.) In contrast to all of this, if we are using a Newton
+       * solver, then $x_{k+1}$ is actually the Newton <i>update</i>
+       * vector, for which we have no initial guess other than the zero
+       * vector. In this case, the function simply returns $\|F_k\|$ as the
+       * first element of the pair, where $F_k=F(x_k)$ is the residual
+       * vector for the previous solution $x_k$.
        *
        * This function is implemented in
        * <code>source/simulator/solver.cc</code>.
        */
-      double solve_stokes ();
+      std::pair<double,double>
+      solve_stokes ();
 
       /**
        * This function is called at the end of every time step. It runs all
@@ -1356,10 +1422,10 @@ namespace aspect
       void output_statistics();
 
       /**
-       * This routine computes the initial Stokes residual that is needed as a
-       * convergence criterion in models with the iterated IMPES solver. We
-       * calculate it in the same way as the tolerance for the linear solver,
-       * using the norm of the pressure RHS for the pressure part and a
+       * This routine computes the initial (nonlinear) Stokes residual that is
+       * needed as a convergence criterion in models with the iterated IMPES
+       * solver. We calculate it in the same way as the tolerance for the linear
+       * solver, using the norm of the pressure RHS for the pressure part and a
        * residual with zero velocity for the velocity part to get the part of
        * the RHS not balanced by the static pressure.
        *
