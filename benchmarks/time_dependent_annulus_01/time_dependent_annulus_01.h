@@ -45,10 +45,8 @@ namespace aspect
         double pos[],
         double vel[],
         double *pressure,
-        double *density,
         std_cxx11::shared_ptr<Functions::ParsedFunction<dim> > pressure_function,
-        std_cxx11::shared_ptr<Functions::ParsedFunction<dim> > velocity_function,
-        std_cxx11::shared_ptr<Functions::ParsedFunction<dim> > density_function)
+        std_cxx11::shared_ptr<Functions::ParsedFunction<dim> > velocity_function)
       {
         /****************************************************************************************/
         /****************************************************************************************/
@@ -57,26 +55,21 @@ namespace aspect
           vel[i] = velocity_function->value(Point<dim>(pos[0],pos[1]), i);
 
         (*pressure) = pressure_function->value(Point<dim>(pos[0], pos[1]));
-
-        (*density) = density_function->value(Point<dim>(pos[0], pos[1]));
       }
 
       /**
-       * The exact solution for the benchmark, given
-       * density $\rho$.
+       * The exact solution for the benchmark.
        */
       template <int dim>
       class FunctionStreamline : public Function<dim>
       {
         public:
           FunctionStreamline (std_cxx11::shared_ptr<Functions::ParsedFunction<dim>> pressure,
-                              std_cxx11::shared_ptr<Functions::ParsedFunction<dim> > velocity,
-                              std_cxx11::shared_ptr<Functions::ParsedFunction<dim> > density)
+                              std_cxx11::shared_ptr<Functions::ParsedFunction<dim> > velocity)
             :
             Function<dim>(),
             pressure_function (pressure),
-            velocity_function (velocity),
-            density_function (density)
+            velocity_function (velocity)
           {}
 
           virtual void vector_value (const Point< dim > &p,
@@ -86,12 +79,12 @@ namespace aspect
 
             AnalyticSolutions::analytic_solution<dim>
             (pos,
-             &values[0], &values[2], &values[4], pressure_function, velocity_function, density_function);
+             &values[0], &values[2], pressure_function, velocity_function);
           }
-        private:
+
+      protected:
           std_cxx11::shared_ptr<Functions::ParsedFunction<dim> > pressure_function;
           std_cxx11::shared_ptr<Functions::ParsedFunction<dim> > velocity_function;
-          std_cxx11::shared_ptr<Functions::ParsedFunction<dim> > density_function;
       };
     }
 
@@ -171,7 +164,7 @@ namespace aspect
                                  "total pressure since it produces a nonzero adiabatic "
                                  "pressure if set to a nonzero value.");
 
-              prm.enter_subsection("Density");
+              prm.enter_subsection("Analytical density");
               {
                 prm.enter_subsection("Function");
                 {
@@ -181,7 +174,7 @@ namespace aspect
               }
               prm.leave_subsection();
 
-              prm.enter_subsection("Pressure");
+              prm.enter_subsection("Analytical pressure");
               {
                 prm.enter_subsection("Function");
                 {
@@ -221,7 +214,7 @@ namespace aspect
               eta_B = prm.get_double ("Viscosity jump");
               background_density = prm.get_double("Reference density");
 
-              prm.enter_subsection("Density");
+              prm.enter_subsection("Analytical density");
               {
                 prm.enter_subsection("Function");
                 {
@@ -232,7 +225,7 @@ namespace aspect
               }
               prm.leave_subsection();
 
-              prm.enter_subsection("Pressure");
+              prm.enter_subsection("Analytical pressure");
               {
                 prm.enter_subsection("Function");
                 {
@@ -364,12 +357,12 @@ namespace aspect
               material_model
                 = dynamic_cast<const TimeDependentAnnulusMaterialModel<dim> *>(&this->get_material_model());
 
-              ref_func.reset (new AnalyticSolutions::FunctionStreamline<dim>(material_model->get_pressure(), material_model->get_velocity(), material_model->get_density()));
+              ref_func.reset (new AnalyticSolutions::FunctionStreamline<dim>(material_model->get_pressure(), material_model->get_velocity()));
             }
           else
             {
               AssertThrow(false,
-                          ExcMessage("Postprocessor DuretzEtAl only works with the material model SolCx, SolKz, and Inclusion."));
+                          ExcMessage("Postprocessor TimeDependentAnnulusPostprocessor only works with the material model TimeDependentAnnulusMaterialModel."));
             }
 
           const QGauss<dim> quadrature_formula (this->get_fe().base_element(this->introspection().base_elements.velocities).degree+2);
@@ -378,15 +371,11 @@ namespace aspect
           Vector<float> cellwise_errors_p (this->get_triangulation().n_active_cells());
           Vector<float> cellwise_errors_ul2 (this->get_triangulation().n_active_cells());
           Vector<float> cellwise_errors_pl2 (this->get_triangulation().n_active_cells());
-          Vector<float> cellwise_errors_rho (this->get_triangulation().n_active_cells());
-          Vector<float> cellwise_errors_rhol2 (this->get_triangulation().n_active_cells());
-          Vector<float> cellwise_errors_rholinf (this->get_triangulation().n_active_cells());
 
 
           ComponentSelectFunction<dim> comp_u(std::pair<unsigned int, unsigned int>(0,dim),
                                               this->get_fe().n_components());
           ComponentSelectFunction<dim> comp_p(dim, this->get_fe().n_components());
-          ComponentSelectFunction<dim> comp_rho(dim+2, this->get_fe().n_components());
 
           VectorTools::integrate_difference (this->get_mapping(),this->get_dof_handler(),
                                              this->get_solution(),
@@ -416,49 +405,19 @@ namespace aspect
                                              quadrature_formula,
                                              VectorTools::L2_norm,
                                              &comp_p);
-          VectorTools::integrate_difference (this->get_mapping(),this->get_dof_handler(),
-                                             this->get_solution(),
-                                             *ref_func,
-                                             cellwise_errors_rho,
-                                             quadrature_formula,
-                                             VectorTools::L1_norm,
-                                             &comp_rho);
-          VectorTools::integrate_difference (this->get_mapping(),this->get_dof_handler(),
-                                             this->get_solution(),
-                                             *ref_func,
-                                             cellwise_errors_rhol2,
-                                             quadrature_formula,
-                                             VectorTools::L2_norm,
-                                             &comp_rho);
-
-          VectorTools::integrate_difference (this->get_mapping(),this->get_dof_handler(),
-                                             this->get_solution(),
-                                             *ref_func,
-                                             cellwise_errors_rholinf,
-                                             quadrature_formula,
-                                             VectorTools::Linfty_norm,
-                                             &comp_rho);
-
-
 
           const double u_l1 = Utilities::MPI::sum(cellwise_errors_u.l1_norm(),this->get_mpi_communicator());
           const double p_l1 = Utilities::MPI::sum(cellwise_errors_p.l1_norm(),this->get_mpi_communicator());
-          const double rho_l1 = Utilities::MPI::sum(cellwise_errors_rho.l1_norm(), this->get_mpi_communicator());
           const double u_l2 = std::sqrt(Utilities::MPI::sum(cellwise_errors_ul2.norm_sqr(),this->get_mpi_communicator()));
           const double p_l2 = std::sqrt(Utilities::MPI::sum(cellwise_errors_pl2.norm_sqr(), this->get_mpi_communicator()));
-          const double rho_l2 = std::sqrt(Utilities::MPI::sum(cellwise_errors_rhol2.norm_sqr(), this->get_mpi_communicator()));
-          const double rho_linf = Utilities::MPI::max(cellwise_errors_rholinf.linfty_norm(), this->get_mpi_communicator());
 
           std::ostringstream os;
           os << std::scientific << u_l1
              << ", " << p_l1
              << ", " << u_l2
-             << ", " << p_l2
-             << ", " << rho_l1
-             << ", " << rho_l2
-             << ", " << rho_linf;
+             << ", " << p_l2;
          
-          return std::make_pair("Errors u_L1, p_L1, u_L2, p_L2, rho_L1, rho_L2, rho_Linf:", os.str());
+          return std::make_pair("Errors u_L1, p_L1, u_L2, p_L2:", os.str());
         }
     };
   }

@@ -55,14 +55,14 @@ subsection Material model
     set Viscosity jump = 1
     set Reference density = 1
 
-    subsection Density
+    subsection Analytical density
       subsection Function
         set Variable names = x, y
         set Function expression = ((sqrt(x^2 + y^2))^3)/3
       end
     end
 
-    subsection Pressure
+    subsection Analytical pressure
       subsection Function
         set Variable names = x, y
         set Function expression = -(((x^2 + y^2)^2)/12) + 4/3
@@ -159,7 +159,7 @@ end
 
 subsection Postprocess
   # To visualize, append 'visualization' to list of postprocessors.
-  set List of postprocessors = TimeDependentAnnulusPostprocessor, particles
+  set List of postprocessors = TimeDependentAnnulusCompPostprocessor, particles
  
   subsection Particles
     set Time between data output = 0

@@ -10,8 +10,8 @@ namespace aspect
                                    "Material model for the time dependent annulus 01 benchmark.")
 
 
-    ASPECT_REGISTER_POSTPROCESSOR(TimeDependentAnnulusPostprocessor,
-                                  "TimeDependentAnnulusPostprocessor",
+    ASPECT_REGISTER_POSTPROCESSOR(TimeDependentAnnulusCompPostprocessor,
+                                  "TimeDependentAnnulusCompPostprocessor",
                                   "A postprocessor that compares the solution of the benchmarks from "
                                   "derived analytical solution with the one computed by ASPECT "
                                   "and reports the error. Specifically, it can also compute the errors for "
