@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2016 - 2017 by the authors of the ASPECT code.
+  Copyright (C) 2016 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -207,9 +207,9 @@ namespace aspect
   namespace Assemblers
   {
     /**
-      * A base class for the definition of assemblers that implement the
-      * linear system terms for the NewtonStokes solver scheme.
-      */
+     * A base class for the definition of assemblers that implement the linear
+     * system terms for the NewtonStokes solver scheme.
+     */
     template <int dim>
     class NewtonInterface : public aspect::Assemblers::Interface<dim>,
       public SimulatorAccess<dim>

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -31,13 +31,12 @@ namespace aspect
       std::pair<std::string, Vector<float> *>
       DynamicTopography<dim>::execute() const
       {
-        Postprocess::DynamicTopography<dim> *dynamic_topography =
-          this->template find_postprocessor<Postprocess::DynamicTopography<dim> >();
-        AssertThrow(dynamic_topography != NULL,
-                    ExcMessage("Could not find the DynamicTopography postprocessor."));
+        const Postprocess::DynamicTopography<dim> &dynamic_topography =
+          this->get_postprocess_manager().template get_matching_postprocessor<Postprocess::DynamicTopography<dim> >();
+
         std::pair<std::string, Vector<float> *>
         return_value ("dynamic_topography",
-                      new Vector<float>(dynamic_topography->cellwise_topography()));
+                      new Vector<float>(dynamic_topography.cellwise_topography()));
 
         return return_value;
       }

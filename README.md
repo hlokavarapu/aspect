@@ -34,6 +34,9 @@ output of ASPECT can also be found in the ASPECT
 [manual](http://www.math.clemson.edu/~heister/manual.pdf). This manual also
 discusses the structure of the source code.
 
+For getting started, you can also watch our online 
+[tutorial](https://geodynamics.org/cig/events/calendar/2016-cig-all-hands-meeting/aspect-tutorial/tutorial/).
+
 
 
 Contributing to ASPECT
@@ -53,8 +56,9 @@ More information
 ----------------
 
 For more information see:
- - The official website at http://aspect.geodynamics.org
+ - The official website at https://aspect.geodynamics.org
  - The current [manual](http://www.math.clemson.edu/~heister/manual.pdf)
+ - [How to cite ASPECT](https://aspect.geodynamics.org/cite.html)
  - For questions on the source code of ASPECT, portability, installation, etc., use the [aspect-devel](http://lists.geodynamics.org/cgi-bin/mailman/listinfo/aspect-devel) mailing list. This mailing list is where the ASPECT users and developers all hang out.
  - ASPECT is primarily based on the deal.II library. If you have particular questions about deal.II, contact the [deal.II discussion groups](https://www.dealii.org/mail.html).
  - In case of more general questions about mantle convection, you can contact the [CIG mantle convection mailing lists](http://lists.geodynamics.org/cgi-bin/mailman/listinfo/cig-MC).

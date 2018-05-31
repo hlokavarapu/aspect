@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2015 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -79,7 +79,8 @@ namespace aspect
           enum Kind
           {
             solid_density,
-            fluid_density
+            fluid_density,
+            average_density
           };
         };
 

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2017 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -130,6 +130,7 @@ namespace aspect
             const double average = std::pow (prod, 1./N);
             for (unsigned int i=0; i<N; ++i)
               values_out[i] = average;
+            break;
           }
           case pick_largest:
           {

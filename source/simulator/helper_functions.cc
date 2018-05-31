@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2017 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -922,7 +922,8 @@ namespace aspect
                       ExcInternalError());
 
               // then adjust its value
-              distributed_vector(local_dof_indices[first_pressure_dof]) += pressure_adjustment;
+              distributed_vector(local_dof_indices[first_pressure_dof]) = vector(local_dof_indices[first_pressure_dof])
+                                                                          + pressure_adjustment;
             }
         distributed_vector.compress(VectorOperation::insert);
       }
@@ -1000,10 +1001,8 @@ namespace aspect
         // of freedom on each cell.
         Assert (dynamic_cast<const FE_DGP<dim>*>(&finite_element.base_element(introspection.base_elements.pressure)) != 0,
                 ExcInternalError());
-        const unsigned int pressure_component = (parameters.include_melt_transport ?
-                                                 introspection.variable("fluid pressure").first_component_index
-                                                 : introspection.component_indices.pressure);
         Assert(!parameters.include_melt_transport, ExcNotImplemented());
+        const unsigned int pressure_component = introspection.component_indices.pressure;
         std::vector<types::global_dof_index> local_dof_indices (finite_element.dofs_per_cell);
         typename DoFHandler<dim>::active_cell_iterator
         cell = dof_handler.begin_active(),
@@ -1022,10 +1021,11 @@ namespace aspect
                       ExcInternalError());
 
               // then adjust its value
-              vector (local_dof_indices[first_pressure_dof]) -= pressure_adjustment;
+              vector (local_dof_indices[first_pressure_dof]) = relevant_vector(local_dof_indices[first_pressure_dof])
+                                                               - pressure_adjustment;
             }
 
-        vector.compress(VectorOperation::add);
+        vector.compress(VectorOperation::insert);
       }
   }
 
@@ -1439,8 +1439,8 @@ namespace aspect
                 || max_solution_local > max_solution_exact_global)
               {
                 // Compute the cell area and cell solution average
-                double local_area = 0;
-                double local_solution_average = 0;
+                double local_area = 0.0;
+                double local_solution_average = 0.0;
                 for (unsigned int q = 0; q < n_q_points_0; ++q)
                   {
                     local_area += fe_values_0.JxW(q);
@@ -1455,12 +1455,18 @@ namespace aspect
                  * exact global maximum/minimum values. Meanwhile, the new solution's cell average
                  * equals to the old solution's cell average.
                  */
-                double theta = std::min<double>
-                               (1, abs((max_solution_exact_global-local_solution_average)
-                                       /(max_solution_local-local_solution_average)));
-                theta = std::min<double>
-                        (theta, abs((min_solution_exact_global-local_solution_average)
-                                    /(min_solution_local-local_solution_average)));
+                double theta = 1.0;
+                if (std::abs(max_solution_local-local_solution_average) > std::numeric_limits<double>::min())
+                  {
+                    theta = std::min(theta, std::abs((max_solution_exact_global-local_solution_average)
+                                                     / (max_solution_local-local_solution_average)));
+                  }
+                if (std::abs(min_solution_local-local_solution_average) > std::numeric_limits<double>::min())
+                  {
+                    theta = std::min(theta, std::abs((min_solution_exact_global-local_solution_average)
+                                                     / (min_solution_local-local_solution_average)));
+                  }
+
                 /* Modify the advection degrees of freedom of the numerical solution.
                  * note that we are using DG elements, so every DoF on a locally owned cell is locally owned;
                  * this means that we do not need to check whether the 'distributed_solution' vector actually
@@ -1695,6 +1701,8 @@ namespace aspect
         distributed_vector.block(block_c) = old_old_solution.block(block_c);
         distributed_vector.block(block_c) +=  distributed_reaction_vector.block(block_c);
         old_old_solution.block(block_c) = distributed_vector.block(block_c);
+
+        operator_split_reaction_vector.block(block_c) = distributed_reaction_vector.block(block_c);
       }
 
     const unsigned int block_T = introspection.block_indices.temperature;
@@ -1714,6 +1722,7 @@ namespace aspect
     distributed_vector.block(block_T) +=  distributed_reaction_vector.block(block_T);
     old_old_solution.block(block_T) = distributed_vector.block(block_T);
 
+    operator_split_reaction_vector.block(block_T) = distributed_reaction_vector.block(block_T);
     current_linearization_point = old_solution;
   }
 
@@ -1808,6 +1817,233 @@ namespace aspect
                                "but the adiabatic heating plugin does not report to simplify this term. "
                                "Please check the consistency of your input file."));
       }
+  }
+
+
+
+  namespace
+  {
+    /**
+     * Return whether t is an element of the given container object.
+     */
+    template <typename Container>
+    bool is_element (const typename Container::value_type &t,
+                     const Container                      &container)
+    {
+      for (typename Container::const_iterator p = container.begin();
+           p != container.end();
+           ++p)
+        if (*p == t)
+          return true;
+
+      return false;
+    }
+  }
+
+
+
+  template <int dim>
+  void
+  Simulator<dim>::check_consistency_of_boundary_conditions() const
+  {
+    // make sure velocity and traction boundary indicators don't appear in multiple lists
+    std::set<types::boundary_id> boundary_indicator_lists[6]
+      = { boundary_velocity_manager.get_zero_boundary_velocity_indicators(),
+          boundary_velocity_manager.get_tangential_boundary_velocity_indicators(),
+          parameters.free_surface_boundary_indicators,
+          std::set<types::boundary_id>()   // to be prescribed velocity and traction boundary indicators
+        };
+
+    // sets of the boundary indicators only (no selectors and values)
+    std::set<types::boundary_id> velocity_bi;
+    std::set<types::boundary_id> traction_bi;
+
+    for (std::map<types::boundary_id, std::pair<std::string,std::vector<std::string> > >::const_iterator
+         p = boundary_velocity_manager.get_active_boundary_velocity_names().begin();
+         p != boundary_velocity_manager.get_active_boundary_velocity_names().end();
+         ++p)
+      velocity_bi.insert(p->first);
+
+    for (std::map<types::boundary_id,std::pair<std::string, std::string> >::const_iterator
+         r = parameters.prescribed_traction_boundary_indicators.begin();
+         r != parameters.prescribed_traction_boundary_indicators.end();
+         ++r)
+      traction_bi.insert(r->first);
+
+    // are there any indicators that occur in both the prescribed velocity and traction list?
+    std::set<types::boundary_id> intersection;
+    std::set_intersection (velocity_bi.begin(),
+                           velocity_bi.end(),
+                           traction_bi.begin(),
+                           traction_bi.end(),
+                           std::inserter(intersection, intersection.end()));
+
+    // if so, do they have different selectors?
+    if (!intersection.empty())
+      {
+        for (std::set<types::boundary_id>::const_iterator
+             it = intersection.begin();
+             it != intersection.end();
+             ++it)
+          {
+            const std::map<types::boundary_id, std::pair<std::string,std::vector<std::string> > >::const_iterator
+            boundary_velocity_names = boundary_velocity_manager.get_active_boundary_velocity_names().find(*it);
+            Assert(boundary_velocity_names != boundary_velocity_manager.get_active_boundary_velocity_names().end(),
+                   ExcInternalError());
+
+            std::set<char> velocity_selector;
+            std::set<char> traction_selector;
+
+            for (std::string::const_iterator
+                 it_selector  = boundary_velocity_names->second.first.begin();
+                 it_selector != boundary_velocity_names->second.first.end();
+                 ++it_selector)
+              velocity_selector.insert(*it_selector);
+
+            for (std::string::const_iterator
+                 it_selector  = parameters.prescribed_traction_boundary_indicators.find(*it)->second.first.begin();
+                 it_selector != parameters.prescribed_traction_boundary_indicators.find(*it)->second.first.end();
+                 ++it_selector)
+              traction_selector.insert(*it_selector);
+
+            // if there are no selectors specified, throw exception
+            AssertThrow(!velocity_selector.empty() || !traction_selector.empty(),
+                        ExcMessage ("Boundary indicator <"
+                                    +
+                                    Utilities::int_to_string(*it)
+                                    +
+                                    "> with symbolic name <"
+                                    +
+                                    geometry_model->translate_id_to_symbol_name (*it)
+                                    +
+                                    "> is listed as having both "
+                                    "velocity and traction boundary conditions in the input file."));
+
+            std::set<char> intersection_selector;
+            std::set_intersection (velocity_selector.begin(),
+                                   velocity_selector.end(),
+                                   traction_selector.begin(),
+                                   traction_selector.end(),
+                                   std::inserter(intersection_selector, intersection_selector.end()));
+
+            // if the same selectors are specified, throw exception
+            AssertThrow(intersection_selector.empty(),
+                        ExcMessage ("Selectors of boundary indicator <"
+                                    +
+                                    Utilities::int_to_string(*it)
+                                    +
+                                    "> with symbolic name <"
+                                    +
+                                    geometry_model->translate_id_to_symbol_name (*it)
+                                    +
+                                    "> are listed as having both "
+                                    "velocity and traction boundary conditions in the input file."));
+          }
+      }
+
+
+    // remove correct boundary indicators that occur in both the velocity and the traction set
+    // but have different selectors
+    std::set<types::boundary_id> union_set;
+    std::set_union (velocity_bi.begin(),
+                    velocity_bi.end(),
+                    traction_bi.begin(),
+                    traction_bi.end(),
+                    std::inserter(union_set, union_set.end()));
+
+    // assign the prescribed boundary indicator list to the boundary_indicator_lists
+    boundary_indicator_lists[3] = union_set;
+
+    // for each combination of boundary indicator lists, make sure that the
+    // intersection is empty
+    for (unsigned int i=0; i<sizeof(boundary_indicator_lists)/sizeof(boundary_indicator_lists[0]); ++i)
+      for (unsigned int j=i+1; j<sizeof(boundary_indicator_lists)/sizeof(boundary_indicator_lists[0]); ++j)
+        {
+          std::set<types::boundary_id> intersection;
+          std::set_intersection (boundary_indicator_lists[i].begin(),
+                                 boundary_indicator_lists[i].end(),
+                                 boundary_indicator_lists[j].begin(),
+                                 boundary_indicator_lists[j].end(),
+                                 std::inserter(intersection, intersection.end()));
+
+          // if the same indicators are specified for different boundary conditions, throw exception
+          AssertThrow (intersection.empty(),
+                       ExcMessage ("Boundary indicator <"
+                                   +
+                                   Utilities::int_to_string(*intersection.begin())
+                                   +
+                                   "> with symbolic name <"
+                                   +
+                                   geometry_model->translate_id_to_symbol_name (*intersection.begin())
+                                   +
+                                   "> is listed as having more "
+                                   "than one type of velocity or traction boundary condition in the input file."));
+        }
+
+    // Check that the periodic boundaries do not have other boundary conditions set
+    typedef std::set< std::pair< std::pair< types::boundary_id, types::boundary_id>, unsigned int> >
+    periodic_boundary_set;
+    periodic_boundary_set pbs = geometry_model->get_periodic_boundary_pairs();
+
+    for (periodic_boundary_set::iterator p = pbs.begin(); p != pbs.end(); ++p)
+      {
+        // Throw error if we are trying to use the same boundary for more than one boundary condition
+        AssertThrow( is_element( (*p).first.first, boundary_temperature_manager.get_fixed_temperature_boundary_indicators() ) == false &&
+                     is_element( (*p).first.second, boundary_temperature_manager.get_fixed_temperature_boundary_indicators() ) == false &&
+                     is_element( (*p).first.first, boundary_composition_manager.get_fixed_composition_boundary_indicators() ) == false &&
+                     is_element( (*p).first.second, boundary_composition_manager.get_fixed_composition_boundary_indicators() ) == false &&
+                     is_element( (*p).first.first, boundary_indicator_lists[0] ) == false && // zero velocity
+                     is_element( (*p).first.second, boundary_indicator_lists[0] ) == false && // zero velocity
+                     is_element( (*p).first.first, boundary_indicator_lists[1] ) == false && // tangential velocity
+                     is_element( (*p).first.second, boundary_indicator_lists[1] ) == false && // tangential velocity
+                     is_element( (*p).first.first, boundary_indicator_lists[2] ) == false && // free surface
+                     is_element( (*p).first.second, boundary_indicator_lists[2] ) == false && // free surface
+                     is_element( (*p).first.first, boundary_indicator_lists[3] ) == false && // prescribed traction or velocity
+                     is_element( (*p).first.second, boundary_indicator_lists[3] ) == false,  // prescribed traction or velocity
+                     ExcMessage("Periodic boundaries must not have boundary conditions set."));
+      }
+
+    const std::set<types::boundary_id> all_boundary_indicators
+      = geometry_model->get_used_boundary_indicators();
+    if (parameters.nonlinear_solver != NonlinearSolver::single_Advection_no_Stokes)
+      {
+        // next make sure that all listed indicators are actually used by
+        // this geometry
+        for (unsigned int i=0; i<sizeof(boundary_indicator_lists)/sizeof(boundary_indicator_lists[0]); ++i)
+          for (typename std::set<types::boundary_id>::const_iterator
+               p = boundary_indicator_lists[i].begin();
+               p != boundary_indicator_lists[i].end(); ++p)
+            AssertThrow (all_boundary_indicators.find (*p)
+                         != all_boundary_indicators.end(),
+                         ExcMessage ("One of the boundary indicators listed in the input file "
+                                     "is not used by the geometry model."));
+      }
+    else
+      {
+        // next make sure that there are no listed indicators
+        for (unsigned  int i = 0; i<sizeof(boundary_indicator_lists)/sizeof(boundary_indicator_lists[0]); ++i)
+          AssertThrow (boundary_indicator_lists[i].empty(),
+                       ExcMessage ("With the solver scheme `single Advection, no Stokes', "
+                                   "one cannot set boundary conditions for velocity."));
+      }
+
+
+    // now do the same for the fixed temperature indicators and the
+    // compositional indicators
+    for (typename std::set<types::boundary_id>::const_iterator
+         p = boundary_temperature_manager.get_fixed_temperature_boundary_indicators().begin();
+         p != boundary_temperature_manager.get_fixed_temperature_boundary_indicators().end(); ++p)
+      AssertThrow (all_boundary_indicators.find (*p)
+                   != all_boundary_indicators.end(),
+                   ExcMessage ("One of the fixed boundary temperature indicators listed in the input file "
+                               "is not used by the geometry model."));
+    for (typename std::set<types::boundary_id>::const_iterator
+         p = boundary_composition_manager.get_fixed_composition_boundary_indicators().begin();
+         p != boundary_composition_manager.get_fixed_composition_boundary_indicators().end(); ++p)
+      AssertThrow (all_boundary_indicators.find (*p)
+                   != all_boundary_indicators.end(),
+                   ExcMessage ("One of the fixed boundary composition indicators listed in the input file "
+                               "is not used by the geometry model."));
   }
 
 
@@ -1929,6 +2165,7 @@ namespace aspect
   template void Simulator<dim>::apply_limiter_to_dg_solutions(const AdvectionField &advection_field); \
   template void Simulator<dim>::compute_reactions(); \
   template void Simulator<dim>::check_consistency_of_formulation(); \
+  template void Simulator<dim>::check_consistency_of_boundary_conditions() const; \
   template double Simulator<dim>::compute_initial_newton_residual(const LinearAlgebra::BlockVector &linearized_stokes_initial_guess); \
   template double Simulator<dim>::compute_Eisenstat_Walker_linear_tolerance(const bool EisenstatWalkerChoiceOne, \
                                                                             const double maximum_linear_stokes_solver_tolerance, \

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -58,6 +58,11 @@ namespace aspect
             EllipsoidalChunkGeometry();
 
             /**
+             * Copy constructor
+             */
+            EllipsoidalChunkGeometry(const EllipsoidalChunkGeometry &other);
+
+            /**
              * An initialization function necessary to make sure that the
              * manifold has access to the topography plugins.
              */
@@ -102,6 +107,14 @@ namespace aspect
             Point<3>
             push_forward(const Point<3> &chart_point) const;
 
+#if DEAL_II_VERSION_GTE(9,0,0)
+            /**
+             * Return a copy of this manifold.
+             */
+            virtual
+            std::unique_ptr<Manifold<dim,3> >
+            clone() const;
+#endif
 
           private:
             /**
@@ -138,8 +151,8 @@ namespace aspect
         };
 
         /**
-        * Initialize function
-        */
+         * Initialize function
+         */
         virtual
         void
         initialize ();
@@ -225,6 +238,31 @@ namespace aspect
         */
         virtual std::map<std::string,types::boundary_id>
         get_symbolic_boundary_names_map() const;
+
+        /*
+         * Returns what the natural coordinate system for this geometry model is,
+         * which for a Ellipsoidal chunk is Ellisoidal.
+         */
+        virtual
+        aspect::Utilities::Coordinates::CoordinateSystem natural_coordinate_system() const;
+
+        /**
+         * Takes the Cartesian points (x,z or x,y,z) and returns standardized
+         * coordinates which are most 'natural' to the geometry model. For a
+         * ellispoidal chunk this is (radius, longitude) in 2d and (radius,
+         * longitude, latitude) in 3d. Note that internally the coordinates are
+         * stored in longitude, latitude, depth.
+         */
+        virtual
+        std_cxx11::array<double,dim> cartesian_to_natural_coordinates(const Point<dim> &position) const;
+
+        /**
+         * Undoes the action of cartesian_to_natural_coordinates, and turns the
+         * coordinate system which is most 'natural' to the geometry model into
+         * Cartesian coordinates.
+         */
+        virtual
+        Point<dim> natural_to_cartesian_coordinates(const std_cxx11::array<double,dim> &position) const;
 
         /**
          * Declare the parameters this class takes through input files.

@@ -17,7 +17,7 @@ set Start time                             = 0
 set End time                               = 2e5
 set Use years in output instead of seconds = true
 set Adiabatic surface temperature          = 1000.2 
-set Nonlinear solver scheme                = iterated IMPES
+set Nonlinear solver scheme                = iterated Advection and Stokes
 set Max nonlinear iterations               = 100  
 set CFL number                             = 1.0
 set Maximum time step                      = 1e5
@@ -50,11 +50,15 @@ subsection Geometry model
 end
 
 
-subsection Model settings
-  set Fixed temperature boundary indicators   = 
-  set Zero velocity boundary indicators       = 
+# The parameters below this comment were created by the update script
+# as replacement for the old 'Model settings' subsection. They can be
+# safely merged with any existing subsections with the same name.
+
+subsection Boundary velocity model
   set Tangential velocity boundary indicators = 0, 1, 2, 3
-  set Prescribed velocity boundary indicators = 
+end
+
+subsection Melt settings
   set Include melt transport = true
 end
 
@@ -112,6 +116,7 @@ subsection Material model
     set Exponential melt weakening factor = 0.0
     set Melt extraction depth         = 0.0
     set Melting time scale for operator splitting = 1.111111111e3
+    set Freezing rate                 = 9e-4
 
     # simplifiy the melting model so that porosity depends on temperature linearly
     set A1 = 726.85   # this is in °C --> 1000 K

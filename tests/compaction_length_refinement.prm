@@ -8,7 +8,7 @@
 # along the y axis. 
 
 set Adiabatic surface temperature          = 1600               # default: 0
-set Nonlinear solver scheme                = iterated IMPES
+set Nonlinear solver scheme                = iterated Advection and Stokes
 set Max nonlinear iterations               = 20
 
 # The number of space dimensions you want to run this program in.
@@ -105,13 +105,16 @@ subsection Boundary fluid pressure model
   end
 end
 
-subsection Model settings
+# The parameters below this comment were created by the update script
+# as replacement for the old 'Model settings' subsection. They can be
+# safely merged with any existing subsections with the same name.
+
+subsection Boundary velocity model
   set Tangential velocity boundary indicators = 0,1,2,3
-  set Include melt transport                  = true
 end
 
 subsection Melt settings
-  set Melt transport threshold                = 0
+  set Include melt transport                  = true
 end
 
 

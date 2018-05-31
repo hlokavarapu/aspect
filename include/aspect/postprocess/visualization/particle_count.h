@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2016 by the authors of the ASPECT code.
+  Copyright (C) 2016 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -67,6 +67,13 @@ namespace aspect
           std::pair<std::string, Vector<float> *>
           execute () const;
 
+          /**
+           * Let the postprocessor manager know about the other postprocessors
+           * this one depends on. Specifically, the particles postprocessor.
+           */
+          virtual
+          std::list<std::string>
+          required_other_postprocessors() const;
       };
     }
   }

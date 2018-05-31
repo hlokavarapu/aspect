@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2014 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2014 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -34,6 +34,11 @@ namespace aspect
     class Sphere : public Interface<dim>, public SimulatorAccess<dim>
     {
       public:
+        /**
+         * Constructor.
+         */
+        Sphere();
+
         /**
          * Generate a coarse mesh for the geometry described by this class.
          */
@@ -107,6 +112,13 @@ namespace aspect
         virtual
         bool
         has_curved_elements() const;
+
+        /*
+         * Returns what the natural coordinate system for this geometry model is,
+         * which for a sphere is Spherical.
+         */
+        virtual
+        aspect::Utilities::Coordinates::CoordinateSystem natural_coordinate_system() const;
 
         /**
          * Return whether the given point lies within the domain specified

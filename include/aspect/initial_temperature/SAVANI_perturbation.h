@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -127,7 +127,7 @@ namespace aspect
          * The maximum order the users specify, which is only valid when
          * "lower_max_order" is set to true.
          */
-        int max_order;
+        unsigned int max_order;
 
         /**
          * This parameter gives the reference temperature, which will be

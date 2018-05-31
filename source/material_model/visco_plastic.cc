@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2017 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -23,6 +23,7 @@
 #include <deal.II/fe/fe_values.h>
 #include <deal.II/base/signaling_nan.h>
 #include <aspect/newton.h>
+#include <aspect/adiabatic_conditions/interface.h>
 
 namespace aspect
 {
@@ -508,8 +509,17 @@ namespace aspect
           out.thermal_expansion_coefficients[i] = thermal_expansivity;
           // Specific heat at the given positions.
           out.specific_heat[i] = heat_capacity;
-          // Thermal conductivity at the given positions.
-          out.thermal_conductivities[i] = thermal_diffusivity * heat_capacity * density;
+          // Thermal conductivity at the given positions. If the temperature equation uses
+          // the reference density profile formulation, use the reference density to
+          // calculate thermal conductivity. Otherwise, use the real density. If the adiabatic
+          // conditions are not yet initialized, the real density will still be used.
+          if (this->get_parameters().formulation_temperature_equation ==
+              Parameters<dim>::Formulation::TemperatureEquation::reference_density_profile &&
+              this->get_adiabatic_conditions().is_initialized())
+            out.thermal_conductivities[i] = thermal_diffusivity * heat_capacity *
+                                            this->get_adiabatic_conditions().density(in.position[i]);
+          else
+            out.thermal_conductivities[i] = thermal_diffusivity * heat_capacity * density;
           // Compressibility at the given positions.
           // The compressibility is given as
           // $\frac 1\rho \frac{\partial\rho}{\partial p}$.
@@ -527,7 +537,7 @@ namespace aspect
           // which represents the second invariant of the strain tensor
           double edot_ii = 0.;
           double e_ii = 0.;
-          if  (use_strain_weakening == true && use_finite_strain_tensor == false && this->get_timestep_number() > 0)
+          if  (in.strain_rate.size() > 0 && use_strain_weakening == true && use_finite_strain_tensor == false && this->get_timestep_number() > 0)
             {
               edot_ii = std::max(sqrt(std::fabs(second_invariant(deviator(strain_rate)))),min_strain_rate);
               e_ii = edot_ii*this->get_timestep();
@@ -745,7 +755,7 @@ namespace aspect
                              "List of viscosity prefactors, $A$, for background material and compositional fields, "
                              "for a total of N+1 values, where N is the number of compositional fields. "
                              "If only one value is given, then all use the same value. "
-                             "Units: $Pa^{-1} m^{1/m_{diffusion}} s^{-1}$");
+                             "Units: $Pa^{-1} m^{m_\\text{diffusion}} s^{-1}$");
           prm.declare_entry ("Stress exponents for diffusion creep", "1",
                              Patterns::List(Patterns::Double(0)),
                              "List of stress exponents, $n_\\text{diffusion}$, for background material and compositional fields, "
@@ -755,7 +765,7 @@ namespace aspect
                              Patterns::List(Patterns::Double(0)),
                              "List of grain size exponents, $m_\\text{diffusion}$, for background material and compositional fields, "
                              "for a total of N+1 values, where N is the number of compositional fields. "
-                             "If only one value is given, then all use the same value.  Units: None");
+                             "If only one value is given, then all use the same value. Units: None");
           prm.declare_entry ("Activation energies for diffusion creep", "375e3",
                              Patterns::List(Patterns::Double(0)),
                              "List of activation energies, $E_a$, for background material and compositional fields, "
@@ -773,7 +783,7 @@ namespace aspect
                              "List of viscosity prefactors, $A$, for background material and compositional fields, "
                              "for a total of N+1 values, where N is the number of compositional fields. "
                              "If only one value is given, then all use the same value. "
-                             "Units: $Pa^{-n_\\text{dislocation}} m^{n_\\text{dislocation}/m_\\text{dislocation}} s^{-1}$");
+                             "Units: $Pa^{-n_\\text{dislocation}} s^{-1}$");
           prm.declare_entry ("Stress exponents for dislocation creep", "3.5",
                              Patterns::List(Patterns::Double(0)),
                              "List of stress exponents, $n_\\text{dislocation}$, for background material and compositional fields, "
@@ -1012,8 +1022,16 @@ namespace aspect
                                    "$V$ is activation volume, $P$ is pressure, $R$ is the gas "
                                    "exponent and $T$ is temperature. "
                                    "This form of the viscosity equation is commonly used in "
-                                   "geodynamic simulations.  See, for example, Billen and Hirth "
-                                   "(2007), G3, 8, Q08012."
+                                   "geodynamic simulations. See, for example, Billen and Hirth "
+                                   "(2007), G3, 8, Q08012. Significantly, other studies may use "
+                                   "slightly different forms of the viscosity equation leading to "
+                                   "variations in how specific terms are defined or combined. For "
+                                   "example, the grain size exponent should always be positive in "
+                                   "the diffusion viscosity equation used here, while other studies "
+                                   "place the grain size term in the denominator and invert the sign "
+                                   "of the grain size exponent. When examining previous work, one "
+                                   "should carefully check how the viscous prefactor and grain size "
+                                   "terms are defined. "
                                    "\n\n "
                                    "One may select to use the diffusion ($v_\\text{diff}$; $n=1$, $m!=0$), "
                                    "dislocation ($v_\\text{disl}$, $n>1$, $m=0$) or composite "

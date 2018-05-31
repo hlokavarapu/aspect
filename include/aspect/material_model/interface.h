@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2017 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -303,11 +303,15 @@ namespace aspect
          * points. This allows for evaluating properties at the cell vertices
          * and interpolating to the quadrature points, or to query the cell for
          * material ids, neighbors, or other information that is not available
-         * solely from the locations. Note that not all calling functions can set
-         * this reference. In these cases it will be a cell constructed with a
-         * default constructor, so make sure that your material model either fails
-         * with a proper error message or provide an alternative calculation for
-         * these cases.
+         * solely from the locations. Note that not all calling functions will
+         * set this cell iterator. In these cases it will be an invalid iterator
+         * constructed using the default constructor, so make sure that your
+         * material model either fails
+         * with a proper error message, or provides an alternative calculation for
+         * these cases. You can detect this with
+         * @code
+         * if (in.current_cell.state() == IteratorState::valid)
+         * @endcode
          */
         typename DoFHandler<dim>::active_cell_iterator current_cell;
 
@@ -351,20 +355,6 @@ namespace aspect
        * Viscosity $\eta$ values at the given positions.
        */
       std::vector<double> viscosities;
-
-      /**
-       * Stress-strain "director" tensors at the given positions. This
-       * variable can be used to implement exotic rheologies such as
-       * anisotropic viscosity.
-       *
-       * @note The strain rate term in equation (1) of the manual will be
-       * multiplied by this tensor *and* the viscosity scalar ($\eta$), as
-       * described in the manual section titled "Constitutive laws". This
-       * variable is assigned the rank-four identity tensor by default.
-       * This leaves the isotropic constitutive law unchanged if the material
-       * model does not explicitly assign a value.
-       */
-      std::vector<SymmetricTensor<4,dim> > stress_strain_directors;
 
       /**
        * Density values at the given positions.
@@ -776,14 +766,14 @@ namespace aspect
 
         /**
          * Force value for the conservation of mass equation (second Stokes
-        * equation) in each quadrature point.
-        */
+         * equation) in each quadrature point.
+         */
         std::vector<double> rhs_p;
 
         /**
-        * Force for the compaction pressure equation (when using melt
-        * transport) in each quadrature point.
-        */
+         * Force for the compaction pressure equation (when using melt
+         * transport) in each quadrature point.
+         */
         std::vector<double> rhs_melt_pc;
     };
 

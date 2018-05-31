@@ -55,22 +55,6 @@ For more information, see the section in the manual that discusses the general m
 
 
 {\it Possible values:} A floating point number $v$ such that $0 \leq v \leq \text{MAX\_DOUBLE}$
-\item {\it Parameter name:} {\tt Composition solver tolerance}
-\phantomsection\label{parameters:Composition solver tolerance}
-
-
-\index[prmindex]{Composition solver tolerance}
-\index[prmindexfull]{Composition solver tolerance}
-{\it Value:} 1e-12
-
-
-{\it Default:} 1e-12
-
-
-{\it Description:} The relative tolerance up to which the linear system for the composition system gets solved. See `linear solver tolerance' for more details.
-
-
-{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
 \item {\it Parameter name:} {\tt Dimension}
 \phantomsection\label{parameters:Dimension}
 
@@ -103,56 +87,6 @@ For more information, see the section in the manual that discusses the general m
 
 
 {\it Possible values:} A floating point number $v$ such that $-\text{MAX\_DOUBLE} \leq v \leq \text{MAX\_DOUBLE}$
-\item {\it Parameter name:} {\tt Linear solver A block tolerance}
-\phantomsection\label{parameters:Linear solver A block tolerance}
-
-
-\index[prmindex]{Linear solver A block tolerance}
-\index[prmindexfull]{Linear solver A block tolerance}
-{\it Value:} 1e-2
-
-
-{\it Default:} 1e-2
-
-
-{\it Description:} A relative tolerance up to which the approximate inverse of the $A$ block of the Stokes system is computed. This approximate $A$ is used in the preconditioning used in the GMRES solver. The exact definition of this block preconditioner for the Stokes equation can be found in \cite{KHB12}.
-
-
-{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
-\item {\it Parameter name:} {\tt Linear solver S block tolerance}
-\phantomsection\label{parameters:Linear solver S block tolerance}
-
-
-\index[prmindex]{Linear solver S block tolerance}
-\index[prmindexfull]{Linear solver S block tolerance}
-{\it Value:} 1e-6
-
-
-{\it Default:} 1e-6
-
-
-{\it Description:} A relative tolerance up to which the approximate inverse of the $S$ block (i.e., the Schur complement matrix $S = BA^{-1}B^{T}$) of the Stokes system is computed. This approximate inverse of the $S$ block is used in the preconditioning used in the GMRES solver. The exact definition of this block preconditioner for the Stokes equation can be found in \cite{KHB12}.
-
-
-{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
-\item {\it Parameter name:} {\tt Linear solver tolerance}
-\phantomsection\label{parameters:Linear solver tolerance}
-
-
-\index[prmindex]{Linear solver tolerance}
-\index[prmindexfull]{Linear solver tolerance}
-{\it Value:} 1e-7
-
-
-{\it Default:} 1e-7
-
-
-{\it Description:} A relative tolerance up to which the linear Stokes systems in each time or nonlinear step should be solved. The absolute tolerance will then be $\| M x_0 - F \| \cdot \text{tol}$, where $x_0 = (0,p_0)$ is the initial guess of the pressure, $M$ is the system matrix, F is the right-hand side, and tol is the parameter specified here. We include the initial guess of the pressure to remove the dependency of the tolerance on the static pressure. A given tolerance value of 1 would mean that a zero solution vector is an acceptable solution since in that case the norm of the residual of the linear system equals the norm of the right hand side. A given tolerance of 0 would mean that the linear system has to be solved exactly, since this is the only way to obtain a zero residual.
-
-In practice, you should choose the value of this parameter to be so that if you make it smaller the results of your simulation do not change any more (qualitatively) whereas if you make it larger, they do. For most cases, the default value should be sufficient. In fact, a tolerance of 1e-4 might be accurate enough.
-
-
-{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
 \item {\it Parameter name:} {\tt Max nonlinear iterations}
 \phantomsection\label{parameters:Max nonlinear iterations}
 
@@ -185,22 +119,6 @@ In practice, you should choose the value of this parameter to be so that if you 
 
 
 {\it Possible values:} An integer $n$ such that $0\leq n \leq 2147483647$
-\item {\it Parameter name:} {\tt Maximum number of expensive Stokes solver steps}
-\phantomsection\label{parameters:Maximum number of expensive Stokes solver steps}
-
-
-\index[prmindex]{Maximum number of expensive Stokes solver steps}
-\index[prmindexfull]{Maximum number of expensive Stokes solver steps}
-{\it Value:} 1000
-
-
-{\it Default:} 1000
-
-
-{\it Description:} This sets the maximum number of iterations used in the expensive Stokes solver. If this value is set too low for the size of the problem, the Stokes solver will not converge and return an error message pointing out that the user didn't allow a sufficiently large number of iterations for the iterative solver to converge.
-
-
-{\it Possible values:} An integer $n$ such that $0\leq n \leq 2147483647$
 \item {\it Parameter name:} {\tt Maximum relative increase in time step}
 \phantomsection\label{parameters:Maximum relative increase in time step}
 
@@ -213,7 +131,7 @@ In practice, you should choose the value of this parameter to be so that if you 
 {\it Default:} 2147483647
 
 
-{\it Description:} Set a percentage with which the the time step is limited to increase. Generally the time step based on the CFL number should be sufficient, but for complicated models which may suddenly drastically change behavoir, it may be usefull to limit the increase in the timestep, without limiting the time step size of the whole simulation to a particular number if this value is $50$, then that means that the time step can at most increase by 50\% from one time step to the next, or by a factor of 1.5.
+{\it Description:} Set a percentage with which the the time step is limited to increase. Generally the time step based on the CFL number should be sufficient, but for complicated models which may suddenly drastically change behavior, it may be useful to limit the increase in the time step, without limiting the time step size of the whole simulation to a particular number. For example, if this parameter is set to $50$, then that means that the time step can at most increase by 50\% from one time step to the next, or by a factor of 1.5. Units: \%
 
 
 {\it Possible values:} A floating point number $v$ such that $0 \leq v \leq \text{MAX\_DOUBLE}$
@@ -239,16 +157,16 @@ In practice, you should choose the value of this parameter to be so that if you 
 
 \index[prmindex]{Nonlinear solver scheme}
 \index[prmindexfull]{Nonlinear solver scheme}
-{\it Value:} IMPES
+{\it Value:} single Advection, single Stokes
 
 
-{\it Default:} IMPES
+{\it Default:} single Advection, single Stokes
 
 
-{\it Description:} The kind of scheme used to resolve the nonlinearity in the system. 'IMPES' is the classical IMplicit Pressure Explicit Saturation scheme in which ones solves the temperatures and Stokes equations exactly once per time step, one after the other. The `iterated IMPES' scheme iterates this decoupled approach by alternating the solution of the temperature and Stokes systems. The `iterated Stokes' scheme solves the temperature equation once at the beginning of each time step and then iterates out the solution of the Stokes equation. The 'Stokes only' scheme only solves the Stokes system and ignores compositions and the temperature equation (careful, the material model must not depend on the temperature; mostly useful for Stokes benchmarks). The 'Advection only' scheme only solves the temperature and other advection systems and instead of solving for the Stokes system, a prescribed velocity and pressure is used.
+{\it Description:} The kind of scheme used to resolve the nonlinearity in the system. `single Advection, single Stokes' means that no nonlinear iterations are done, and the temperature, compositional fields and Stokes equations are solved exactly once per time step, one after the other. The `iterated Advection and Stokes' scheme iterates this decoupled approach by alternating the solution of the temperature, composition and Stokes systems. The `single Advection, iterated Stokes' scheme solves the temperature and composition equation once at the beginning of each time step and then iterates out the solution of the Stokes equation. The `no Advection, iterated Stokes' scheme only solves the Stokes system, iterating out the solution, and ignores compositions and the temperature equation (careful, the material model must not depend on the temperature or composition; this is mostly useful for Stokes benchmarks). The `single Advection, no Stokes' scheme only solves the temperature and other advection systems once, and instead of solving for the Stokes system, a prescribed velocity and pressure is used. The `iterated Advection and Newton Stokes' scheme iterates by alternating the solution of the temperature, composition and Stokes equations, using Picard iterations for the temperature and composition, and Newton iterations for the Stokes system. The `IMPES' scheme is deprecated and only allowed for reasons of backwards compatibility. It is the same as `single Advection, single Stokes' .The `iterated IMPES' scheme is deprecated and only allowed for reasons of backwards compatibility. It is the same as `iterated Advection and Stokes'. The `iterated Stokes' scheme is deprecated and only allowed for reasons of backwards compatibility. It is the same as `single Advection, iterated Stokes'. The `Stokes only' scheme is deprecated and only allowed for reasons of backwards compatibility. It is the same as `no Advection, iterated Stokes'. The `Advection only' scheme is deprecated and only allowed for reasons of backwards compatibility. It is the same as `single Advection, no Stokes'. The `Newton Stokes' scheme is deprecated and only allowed for reasons of backwards compatibility. It is the same as `iterated Advection and Newton Stokes'.
 
 
-{\it Possible values:} Any one of IMPES, iterated IMPES, iterated Stokes, Newton Stokes, Stokes only, Advection only
+{\it Possible values:} Any one of single Advection, single Stokes, iterated Advection and Stokes, single Advection, iterated Stokes, no Advection, iterated Stokes, iterated Advection and Newton Stokes, single Advection, no Stokes, IMPES, iterated IMPES, iterated Stokes, Newton Stokes, Stokes only, Advection only
 \item {\it Parameter name:} {\tt Nonlinear solver tolerance}
 \phantomsection\label{parameters:Nonlinear solver tolerance}
 
@@ -261,26 +179,10 @@ In practice, you should choose the value of this parameter to be so that if you 
 {\it Default:} 1e-5
 
 
-{\it Description:} A relative tolerance up to which the nonlinear solver will iterate. This parameter is only relevant if Nonlinear solver scheme is set to `iterated Stokes' or `iterated IMPES'.
+{\it Description:} A relative tolerance up to which the nonlinear solver will iterate. This parameter is only relevant if the `Nonlinear solver scheme' does nonlinear iterations, in other words, if it is set to something other than `single Advection, single Stokes' or `single Advection, no Stokes'.
 
 
 {\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
-\item {\it Parameter name:} {\tt Number of cheap Stokes solver steps}
-\phantomsection\label{parameters:Number of cheap Stokes solver steps}
-
-
-\index[prmindex]{Number of cheap Stokes solver steps}
-\index[prmindexfull]{Number of cheap Stokes solver steps}
-{\it Value:} 200
-
-
-{\it Default:} 200
-
-
-{\it Description:} As explained in the paper that describes ASPECT (Kronbichler, Heister, and Bangerth, 2012, see \cite{KHB12}) we first try to solve the Stokes system in every time step using a GMRES iteration with a poor but cheap preconditioner. By default, we try whether we can converge the GMRES solver in 200 such iterations before deciding that we need a better preconditioner. This is sufficient for simple problems with variable viscosity and we never need the second phase with the more expensive preconditioner. On the other hand, for more complex problems, and in particular for problems with strongly nonlinear viscosity, the 200 cheap iterations don't actually do very much good and one might skip this part right away. In that case, this parameter can be set to zero, i.e., we immediately start with the better but more expensive preconditioner.
-
-
-{\it Possible values:} An integer $n$ such that $0\leq n \leq 2147483647$
 \item {\it Parameter name:} {\tt Output directory}
 \phantomsection\label{parameters:Output directory}
 
@@ -365,22 +267,6 @@ For more information, see the section in the manual that discusses the general m
 
 
 {\it Possible values:} A floating point number $v$ such that $-\text{MAX\_DOUBLE} \leq v \leq \text{MAX\_DOUBLE}$
-\item {\it Parameter name:} {\tt Temperature solver tolerance}
-\phantomsection\label{parameters:Temperature solver tolerance}
-
-
-\index[prmindex]{Temperature solver tolerance}
-\index[prmindexfull]{Temperature solver tolerance}
-{\it Value:} 1e-12
-
-
-{\it Default:} 1e-12
-
-
-{\it Description:} The relative tolerance up to which the linear system for the temperature system gets solved. See `linear solver tolerance' for more details.
-
-
-{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
 \item {\it Parameter name:} {\tt Timing output frequency}
 \phantomsection\label{parameters:Timing output frequency}
 
@@ -410,22 +296,6 @@ For more information, see the section in the manual that discusses the general m
 
 
 {\it Description:} Mantle convection simulations are often focused on convection dominated systems. However, these codes can also be used to investigate systems where heat conduction plays a dominant role. This parameter indicates whether the simulator should also use heat conduction in determining the length of each time step.
-
-
-{\it Possible values:} A boolean value (true or false)
-\item {\it Parameter name:} {\tt Use direct solver for Stokes system}
-\phantomsection\label{parameters:Use direct solver for Stokes system}
-
-
-\index[prmindex]{Use direct solver for Stokes system}
-\index[prmindexfull]{Use direct solver for Stokes system}
-{\it Value:} true
-
-
-{\it Default:} false
-
-
-{\it Description:} If set to true the linear system for the Stokes equation will be solved using Trilinos klu, otherwise an iterative Schur complement solver is used. The direct solver is only efficient for small problems.
 
 
 {\it Possible values:} A boolean value (true or false)
@@ -772,6 +642,26 @@ A typical example would be to set this runtime parameter to `pi=3.1415926536' an
 \label{parameters:Boundary_20composition_20model}
 
 \begin{itemize}
+\item {\it Parameter name:} {\tt Fixed composition boundary indicators}
+\phantomsection\label{parameters:Boundary composition model/Fixed composition boundary indicators}
+
+
+\index[prmindex]{Fixed composition boundary indicators}
+\index[prmindexfull]{Boundary composition model!Fixed composition boundary indicators}
+{\it Value:} 
+
+
+{\it Default:} 
+
+
+{\it Description:} A comma separated list of names denoting those boundaries on which the composition is fixed and described by the boundary composition object selected in its own section of this input file. All boundary indicators used by the geometry but not explicitly listed here will end up with no-flux (insulating) boundary conditions.
+
+The names of the boundaries listed here can either be numbers (in which case they correspond to the numerical boundary indicators assigned by the geometry object), or they can correspond to any of the symbolic names the geometry object may have provided for each part of the boundary. You may want to compare this with the documentation of the geometry model you use in your model.
+
+This parameter only describes which boundaries have a fixed composition, but not what composition should hold on these boundaries. The latter piece of information needs to be implemented in a plugin in the BoundaryComposition group, unless an existing implementation in this group already provides what you want.
+
+
+{\it Possible values:} A list of 0 to 4294967295 elements where each element is [Any string]
 \item {\it Parameter name:} {\tt List of model names}
 \phantomsection\label{parameters:Boundary composition model/List of model names}
 
@@ -1352,14 +1242,36 @@ If the function you are describing represents a vector-valued function with mult
 
 `fluid density' prescribes the gradient of the fluid pressure as fluid density times gravity and causes melt to flow in with the same velocity as inflowing solid material, or no melt flowing in or out if the solid velocity normal to the boundary is zero.
 
+'average density' prescribes the gradient of the fluid pressure as the averaged fluid and solid density times gravity (which is a better approximation for the lithostatic pressure than just the solid density) and leads to approximately the same pressure in the melt as in the solid, so that fluid is only flowing in or out due to differences in dynamic pressure.
 
-{\it Possible values:} Any one of solid density, fluid density
+
+{\it Possible values:} Any one of solid density, fluid density, average density
 \end{itemize}
 
 \subsection{Parameters in section \tt Boundary temperature model}
 \label{parameters:Boundary_20temperature_20model}
 
 \begin{itemize}
+\item {\it Parameter name:} {\tt Fixed temperature boundary indicators}
+\phantomsection\label{parameters:Boundary temperature model/Fixed temperature boundary indicators}
+
+
+\index[prmindex]{Fixed temperature boundary indicators}
+\index[prmindexfull]{Boundary temperature model!Fixed temperature boundary indicators}
+{\it Value:} 
+
+
+{\it Default:} 
+
+
+{\it Description:} A comma separated list of names denoting those boundaries on which the temperature is fixed and described by the boundary temperature object selected in its own section of this input file. All boundary indicators used by the geometry but not explicitly listed here will end up with no-flux (insulating) boundary conditions.
+
+The names of the boundaries listed here can either be numbers (in which case they correspond to the numerical boundary indicators assigned by the geometry object), or they can correspond to any of the symbolic names the geometry object may have provided for each part of the boundary. You may want to compare this with the documentation of the geometry model you use in your model.
+
+This parameter only describes which boundaries have a fixed temperature, but not what temperature should hold on these boundaries. The latter piece of information needs to be implemented in a plugin in the BoundaryTemperature group, unless an existing implementation in this group already provides what you want.
+
+
+{\it Possible values:} A list of 0 to 4294967295 elements where each element is [Any string]
 \item {\it Parameter name:} {\tt List of model names}
 \phantomsection\label{parameters:Boundary temperature model/List of model names}
 
@@ -2467,6 +2379,28 @@ If the function you are describing represents a vector-valued function with mult
 \subsection{Parameters in section \tt Boundary traction model}
 \label{parameters:Boundary_20traction_20model}
 
+\begin{itemize}
+\item {\it Parameter name:} {\tt Prescribed traction boundary indicators}
+\phantomsection\label{parameters:Boundary traction model/Prescribed traction boundary indicators}
+
+
+\index[prmindex]{Prescribed traction boundary indicators}
+\index[prmindexfull]{Boundary traction model!Prescribed traction boundary indicators}
+{\it Value:} 
+
+
+{\it Default:} 
+
+
+{\it Description:} A comma separated list denoting those boundaries on which a traction force is prescribed, i.e., where known external forces act, resulting in an unknown velocity. This is often used to model ``open'' boundaries where we only know the pressure. This pressure then produces a force that is normal to the boundary and proportional to the pressure.
+
+The format of valid entries for this parameter is that of a map given as ``key1 [selector]: value1, key2 [selector]: value2, key3: value3, ...'' where each key must be a valid boundary indicator (which is either an integer or the symbolic name the geometry model in use may have provided for this part of the boundary) and each value must be one of the currently implemented boundary traction models. ``selector'' is an optional string given as a subset of the letters `xyz' that allows you to apply the boundary conditions only to the components listed. As an example, '1 y: function' applies the type `function' to the y component on boundary 1. Without a selector it will affect all components of the traction.
+
+
+{\it Possible values:} A key-value map of 0 to 4294967295 elements  where each key is [Any string] and each value is [Any one of ascii data, function, initial lithostatic pressure, zero traction]
+\end{itemize}
+
+
 
 \subsection{Parameters in section \tt Boundary traction model/Ascii data model}
 \label{parameters:Boundary_20traction_20model/Ascii_20data_20model}
@@ -2700,6 +2634,80 @@ If the function you are describing represents a vector-valued function with mult
 
 \subsection{Parameters in section \tt Boundary velocity model}
 \label{parameters:Boundary_20velocity_20model}
+
+\begin{itemize}
+\item {\it Parameter name:} {\tt Prescribed velocity boundary indicators}
+\phantomsection\label{parameters:Boundary velocity model/Prescribed velocity boundary indicators}
+
+
+\index[prmindex]{Prescribed velocity boundary indicators}
+\index[prmindexfull]{Boundary velocity model!Prescribed velocity boundary indicators}
+{\it Value:} 
+
+
+{\it Default:} 
+
+
+{\it Description:} A comma separated list denoting those boundaries on which the velocity is prescribed, i.e., where unknown external forces act to prescribe a particular velocity. This is often used to prescribe a velocity that equals that of overlying plates.
+
+The format of valid entries for this parameter is that of a map given as ``key1 [selector]: value1, key2 [selector]: value2, key3: value3, ...'' where each key must be a valid boundary indicator (which is either an integer or the symbolic name the geometry model in use may have provided for this part of the boundary) and each value must be one of the currently implemented boundary velocity models. ``selector'' is an optional string given as a subset of the letters `xyz' that allows you to apply the boundary conditions only to the components listed. As an example, '1 y: function' applies the type `function' to the y component on boundary 1. Without a selector it will affect all components of the velocity.
+
+Note that the no-slip boundary condition is a special case of the current one where the prescribed velocity happens to be zero. It can thus be implemented by indicating that a particular boundary is part of the ones selected using the current parameter and using ``zero velocity'' as the boundary values. Alternatively, you can simply list the part of the boundary on which the velocity is to be zero with the parameter ``Zero velocity boundary indicator'' in the current parameter section.
+
+Note that when ``Use years in output instead of seconds'' is set to true, velocity should be given in m/yr. The following boundary velocity models are available:
+
+`ascii data': Implementation of a model in which the boundary velocity is derived from files containing data in ascii format. Note the required format of the input data: The first lines may contain any number of comments if they begin with '\#', but one of these lines needs to contain the number of grid points in each dimension as for example '\# POINTS: 3 3'. The order of the data columns has to be `x', `velocity${}_x$', `velocity${}_y$' in a 2d model or `x', `y', `velocity${}_x$', `velocity${}_y$', `velocity${}_z$' in a 3d model. Note that the data in the input files need to be sorted in a specific order: the first coordinate needs to ascend first, followed by the second in order to assign the correct data to the prescribed coordinates.If you use a spherical model, then the velocities will still be handled as Cartesian, however the assumed grid changes. `x' will be replaced by the radial distance of the point to the bottom of the model, `y' by the azimuth angle and `z' by the polar angle measured positive from the north pole. The grid will be assumed to be a latitude-longitude grid. Note that the order of spherical coordinates is `r', `phi', `theta' and not `r', `theta', `phi', since this allows for dimension independent expressions. No matter which geometry model is chosen, the unit of the velocities is assumed to be m/s or m/yr depending on the 'Use years in output instead of seconds' flag.
+
+`function': Implementation of a model in which the boundary velocity is given in terms of an explicit formula that is elaborated in the parameters in section ``Boundary velocity model|Function''. The format of these functions follows the syntax understood by the muparser library, see Section~\ref{sec:muparser-format}.
+
+The formula you describe in the mentioned section is a semicolon separated list of velocities for each of the $d$ components of the velocity vector. These $d$ formulas are interpreted as having units m/s, unless the global input parameter ``Use years in output instead of seconds'' is set, in which case we interpret the formula expressions as having units m/year.
+
+Likewise, since the symbol $t$ indicating time may appear in the formulas for the prescribed velocities, it is interpreted as having units seconds unless the global parameter above has been set.
+
+`gplates': Implementation of a model in which the boundary velocity is derived from files that are generated by the GPlates program.
+
+`zero velocity': Implementation of a model in which the boundary velocity is zero. This is commonly referred to as a ``stick boundary condition'', indicating that the material ``sticks'' to the material on the other side of the boundary.
+
+
+{\it Possible values:} A key-value map of 0 to 4294967295 elements  where each key is [Any string] and each value is [Any one of ascii data, function, gplates, zero velocity]
+\item {\it Parameter name:} {\tt Tangential velocity boundary indicators}
+\phantomsection\label{parameters:Boundary velocity model/Tangential velocity boundary indicators}
+
+
+\index[prmindex]{Tangential velocity boundary indicators}
+\index[prmindexfull]{Boundary velocity model!Tangential velocity boundary indicators}
+{\it Value:} 
+
+
+{\it Default:} 
+
+
+{\it Description:} A comma separated list of names denoting those boundaries on which the velocity is tangential and unrestrained, i.e., free-slip where no external forces act to prescribe a particular tangential velocity (although there is a force that requires the flow to be tangential).
+
+The names of the boundaries listed here can either by numbers (in which case they correspond to the numerical boundary indicators assigned by the geometry object), or they can correspond to any of the symbolic names the geometry object may have provided for each part of the boundary. You may want to compare this with the documentation of the geometry model you use in your model.
+
+
+{\it Possible values:} A list of 0 to 4294967295 elements where each element is [Any string]
+\item {\it Parameter name:} {\tt Zero velocity boundary indicators}
+\phantomsection\label{parameters:Boundary velocity model/Zero velocity boundary indicators}
+
+
+\index[prmindex]{Zero velocity boundary indicators}
+\index[prmindexfull]{Boundary velocity model!Zero velocity boundary indicators}
+{\it Value:} 
+
+
+{\it Default:} 
+
+
+{\it Description:} A comma separated list of names denoting those boundaries on which the velocity is zero.
+
+The names of the boundaries listed here can either by numbers (in which case they correspond to the numerical boundary indicators assigned by the geometry object), or they can correspond to any of the symbolic names the geometry object may have provided for each part of the boundary. You may want to compare this with the documentation of the geometry model you use in your model.
+
+
+{\it Possible values:} A list of 0 to 4294967295 elements where each element is [Any string]
+\end{itemize}
+
 
 
 \subsection{Parameters in section \tt Boundary velocity model/Ascii data model}
@@ -3502,6 +3510,22 @@ For an in-depth discussion of these issues and a quantitative evaluation of the 
 \label{parameters:Formulation}
 
 \begin{itemize}
+\item {\it Parameter name:} {\tt Enable additional Stokes RHS}
+\phantomsection\label{parameters:Formulation/Enable additional Stokes RHS}
+
+
+\index[prmindex]{Enable additional Stokes RHS}
+\index[prmindexfull]{Formulation!Enable additional Stokes RHS}
+{\it Value:} false
+
+
+{\it Default:} false
+
+
+{\it Description:} Whether to ask the material model for additional terms for the right-hand side of the Stokes equation. This feature is likely only used when implementing force vectors for manufactured solution problems and requires filling additional outputs of type AdditionalMaterialOutputsStokesRHS.
+
+
+{\it Possible values:} A boolean value (true or false)
 \item {\it Parameter name:} {\tt Formulation}
 \phantomsection\label{parameters:Formulation/Formulation}
 
@@ -3579,6 +3603,24 @@ For an in-depth discussion of these issues and a quantitative evaluation of the 
 {\it Description:} A comma separated list of names denoting those boundaries where there the mesh is allowed to move tangential to the boundary. All tangential mesh movements along those boundaries that have tangential material velocity boundary conditions are allowed by default, this parameters allows to generate mesh movements along other boundaries that are open, or have prescribed material velocities or tractions.
 
 The names of the boundaries listed here can either be numbers (in which case they correspond to the numerical boundary indicators assigned by the geometry object), or they can correspond to any of the symbolic names the geometry object may have provided for each part of the boundary. You may want to compare this with the documentation of the geometry model you use in your model.
+
+
+{\it Possible values:} A list of 0 to 4294967295 elements where each element is [Any string]
+\item {\it Parameter name:} {\tt Free surface boundary indicators}
+\phantomsection\label{parameters:Free surface/Free surface boundary indicators}
+
+
+\index[prmindex]{Free surface boundary indicators}
+\index[prmindexfull]{Free surface!Free surface boundary indicators}
+{\it Value:} 
+
+
+{\it Default:} 
+
+
+{\it Description:} A comma separated list of names denoting those boundaries where there is a free surface. Set to nothing to disable all free surface computations.
+
+The names of the boundaries listed here can either by numbers (in which case they correspond to the numerical boundary indicators assigned by the geometry object), or they can correspond to any of the symbolic names the geometry object may have provided for each part of the boundary. You may want to compare this with the documentation of the geometry model you use in your model.
 
 
 {\it Possible values:} A list of 0 to 4294967295 elements where each element is [Any string]
@@ -4684,9 +4726,9 @@ In either case, this parameter is ignored unless the opening angle of the domain
 
 `radial constant': A gravity model in which the gravity has a constant magnitude and the direction is radial (pointing inward if the value is positive). The magnitude is read from the parameter file in subsection 'Radial constant'.
 
-`radial earth-like': A gravity model in which the gravity direction is radially inward and with a magnitude that matches that of the earth at the core-mantle boundary as well as at the surface and in between is physically correct under the assumption of a constant density.
+`radial earth-like': This plugin has been removed due to its misleading name. The included profile was hard-coded and was less earth-like than the `ascii data' plugin, which uses the profile of the Preliminary Reference Earth Model (PREM). Use `ascii data' instead of `radial earth-like'.
 
-`radial linear': A gravity model which is radial (pointing inward if the gravity is positive) and the magnitude decreases linearly with depth down to zero at the maximal depth the geometry returns, as you would get with a constant density spherical domain. (Note that this would be for a full sphere, not a spherical shell.) The magnitude of gravity at the surface is read from the input file in a section ``Gravity model/Radial linear''.
+`radial linear': A gravity model which is radial (pointing inward if the gravity is positive) and the magnitude changes linearly with depth. The magnitude of gravity at the surface and bottom is read from the input file in a section ``Gravity model/Radial linear''.
 
 `vertical': A gravity model in which the gravity direction is vertical (pointing downward for positive values) and at a constant magnitude by default equal to one.
 
@@ -4834,6 +4876,22 @@ If the function you are describing represents a vector-valued function with mult
 \label{parameters:Gravity_20model/Radial_20linear}
 
 \begin{itemize}
+\item {\it Parameter name:} {\tt Magnitude at bottom}
+\phantomsection\label{parameters:Gravity model/Radial linear/Magnitude at bottom}
+
+
+\index[prmindex]{Magnitude at bottom}
+\index[prmindexfull]{Gravity model!Radial linear!Magnitude at bottom}
+{\it Value:} 10.7
+
+
+{\it Default:} 10.7
+
+
+{\it Description:} Magnitude of the radial gravity vector at the bottom of the domain. `Bottom' means themaximum depth in the chosen geometry, and for example represents the core-mantle boundary in the case of the `spherical shell' geometry model, and the center in the case of the `sphere' geometry model. Units: $m/s^2$
+
+
+{\it Possible values:} A floating point number $v$ such that $-\text{MAX\_DOUBLE} \leq v \leq \text{MAX\_DOUBLE}$
 \item {\it Parameter name:} {\tt Magnitude at surface}
 \phantomsection\label{parameters:Gravity model/Radial linear/Magnitude at surface}
 
@@ -4927,55 +4985,6 @@ The formula is interpreted as having units W/kg.
 
 
 {\it Possible values:} A comma-separated list of any of adiabatic heating, adiabatic heating of melt, compositional heating, constant heating, function, latent heat, latent heat melt, radioactive decay, shear heating, shear heating with melt
-\item {\it Parameter name:} {\tt Model name}
-\phantomsection\label{parameters:Heating model/Model name}
-
-
-\index[prmindex]{Model name}
-\index[prmindexfull]{Heating model!Model name}
-{\it Value:} unspecified
-
-
-{\it Default:} unspecified
-
-
-{\it Description:} Select one of the following models:
-
-Warning: This is the old formulation of specifying heating models and shouldn't be used. Please use 'List of model names' instead.
-
-`adiabatic heating': Implementation of a standard and a simplified model of adiabatic heating.
-
-`adiabatic heating of melt': Implementation of a standard and a simplified model of adiabatic heating of melt. The full model implements the heating term 
-$\alpha T (-\phi \mathbf u_s \cdot \nabla p) + \alpha T (\phi \mathbf u_f \cdot 
-abla p)$.
-For full adiabatic heating, this has to be used in combination with the heating model `adiabatic heating' to also include adiabatic heating for the solid part, and the full heating term is then $\alpha T ((1-\phi) \mathbf u_s \cdot \nabla p) + \alpha T (\phi \mathbf u_f \cdot \nabla p)$.
-
-`compositional heating': Implementation of a model in which magnitude of internal heat production is determined from fixed values assigned to each compositional field. These values are interpreted as having units $W/m^3$.
-
-`constant heating': Implementation of a model in which the heating rate is constant.
-
-`function': Implementation of a model in which the heating rate is given in terms of an explicit formula that is elaborated in the parameters in section ``Heating model|Function''. The format of these functions follows the syntax understood by the muparser library, see Section~\ref{sec:muparser-format}.
-
-The formula is interpreted as having units W/kg.
-
-Since the symbol $t$ indicating time may appear in the formulas for the heating rate, it is interpreted as having units seconds unless the global parameter ``Use years in output instead of seconds'' is set.
-
-`latent heat': Implementation of a standard model for latent heat.
-
-`latent heat melt': Implementation of a standard model for latent heat of melting. This assumes that there is a compositional field called porosity, and it uses the reaction term of this field (the fraction of material that melted in the current time step) multiplied by a constant entropy change for melting all of the material as source term of the heating model.
-If there is no field called porosity, the heating terms are 0.
-
-`radioactive decay': Implementation of a model in which the internal heating rate is radioactive decaying in the following rule:
-\[(\text{initial concentration})\cdot 0.5^{\text{time}/(\text{half life})}\]
-The crust and mantle can have different concentrations, and the crust can be defined either by depth or by a certain compositional field.
-The formula is interpreted as having units W/kg.
-
-`shear heating': Implementation of a standard model for shear heating. Adds the term: $  2 \eta \left( \varepsilon - \frac{1}{3} \text{tr} \varepsilon \mathbf 1 \right) : \left( \varepsilon - \frac{1}{3} \text{tr} \varepsilon \mathbf 1 \right)$ to the right-hand side of the temperature equation.
-
-`shear heating with melt': Implementation of a standard model for shear heating of migrating melt, including bulk (compression) heating $\xi \left( \nabla \cdot \mathbf u_s \right)^2 $ and heating due to melt segregation $\frac{\eta_f \phi^2}{k} \left( \mathbf u_f - \mathbf u_s \right)^2 $. For full shear heating, this has to be used in combination with the heating model shear heating to also include shear heating for the solid part.
-
-
-{\it Possible values:} Any one of adiabatic heating, adiabatic heating of melt, compositional heating, constant heating, function, latent heat, latent heat melt, radioactive decay, shear heating, shear heating with melt, unspecified
 \end{itemize}
 
 
@@ -5540,14 +5549,12 @@ The following initial temperature models are available:
 
 `polar box': An initial temperature field in which the temperature is perturbed slightly from an otherwise constant value equal to one. The perturbation is such that there are two poles on opposing corners of the box. 
 
-`solidus': This is a temperature initial condition that starts the model close to solidus, it also contains a user defined lithosphere thickness and with perturbations  in both lithosphere thickness and temperature based on spherical harmonic functions. It was used as the initial condition of early Mars after the freezing of the magma ocean, using the solidus from Parmentier et al., Melt-solid segregation, Fractional magma ocean solidification, and implications for long term planetary evolution. Luna and Planetary Science, 2007.
-
 `spherical gaussian perturbation': An initial temperature field in which the temperature is perturbed by a single Gaussian added to an otherwise spherically symmetric state. Additional parameters are read from the parameter file in subsection 'Spherical gaussian perturbation'.
 
 `spherical hexagonal perturbation': An initial temperature field in which the temperature is perturbed following an $N$-fold pattern in a specified direction from an otherwise spherically symmetric state. The class's name comes from previous versions when the only option was $N=6$.
 
 
-{\it Possible values:} A comma-separated list of any of S40RTS perturbation, SAVANI perturbation, adiabatic, adiabatic boundary, ascii data, function, harmonic perturbation, inclusion shape perturbation, mandelbox, perturbed box, polar box, solidus, spherical gaussian perturbation, spherical hexagonal perturbation
+{\it Possible values:} A comma-separated list of any of S40RTS perturbation, SAVANI perturbation, adiabatic, adiabatic boundary, ascii data, function, harmonic perturbation, inclusion shape perturbation, mandelbox, perturbed box, polar box, spherical gaussian perturbation, spherical hexagonal perturbation
 \item {\it Parameter name:} {\tt List of model operators}
 \phantomsection\label{parameters:Initial temperature model/List of model operators}
 
@@ -5600,8 +5607,6 @@ The following initial temperature models are available:
 
 `polar box': An initial temperature field in which the temperature is perturbed slightly from an otherwise constant value equal to one. The perturbation is such that there are two poles on opposing corners of the box. 
 
-`solidus': This is a temperature initial condition that starts the model close to solidus, it also contains a user defined lithosphere thickness and with perturbations  in both lithosphere thickness and temperature based on spherical harmonic functions. It was used as the initial condition of early Mars after the freezing of the magma ocean, using the solidus from Parmentier et al., Melt-solid segregation, Fractional magma ocean solidification, and implications for long term planetary evolution. Luna and Planetary Science, 2007.
-
 `spherical gaussian perturbation': An initial temperature field in which the temperature is perturbed by a single Gaussian added to an otherwise spherically symmetric state. Additional parameters are read from the parameter file in subsection 'Spherical gaussian perturbation'.
 
 `spherical hexagonal perturbation': An initial temperature field in which the temperature is perturbed following an $N$-fold pattern in a specified direction from an otherwise spherically symmetric state. The class's name comes from previous versions when the only option was $N=6$.
@@ -5609,7 +5614,7 @@ The following initial temperature models are available:
 \textbf{Warning}: This parameter provides an old and deprecated way of specifying initial temperature models and shouldn't be used. Please use 'List of model names' instead.
 
 
-{\it Possible values:} Any one of S40RTS perturbation, SAVANI perturbation, adiabatic, adiabatic boundary, ascii data, function, harmonic perturbation, inclusion shape perturbation, mandelbox, perturbed box, polar box, solidus, spherical gaussian perturbation, spherical hexagonal perturbation, unspecified
+{\it Possible values:} Any one of S40RTS perturbation, SAVANI perturbation, adiabatic, adiabatic boundary, ascii data, function, harmonic perturbation, inclusion shape perturbation, mandelbox, perturbed box, polar box, spherical gaussian perturbation, spherical hexagonal perturbation, unspecified
 \end{itemize}
 
 
@@ -6544,144 +6549,6 @@ If the function you are describing represents a vector-valued function with mult
 {\it Possible values:} A floating point number $v$ such that $0 \leq v \leq \text{MAX\_DOUBLE}$
 \end{itemize}
 
-\subsection{Parameters in section \tt Initial temperature model/Solidus}
-\label{parameters:Initial_20temperature_20model/Solidus}
-
-\begin{itemize}
-\item {\it Parameter name:} {\tt Lithosphere thickness}
-\phantomsection\label{parameters:Initial temperature model/Solidus/Lithosphere thickness}
-
-
-\index[prmindex]{Lithosphere thickness}
-\index[prmindexfull]{Initial temperature model!Solidus!Lithosphere thickness}
-{\it Value:} 0
-
-
-{\it Default:} 0
-
-
-{\it Description:} The thickness of lithosphere thickness. Units: m
-
-
-{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq \text{MAX\_DOUBLE}$
-\item {\it Parameter name:} {\tt Supersolidus}
-\phantomsection\label{parameters:Initial temperature model/Solidus/Supersolidus}
-
-
-\index[prmindex]{Supersolidus}
-\index[prmindexfull]{Initial temperature model!Solidus!Supersolidus}
-{\it Value:} 0e0
-
-
-{\it Default:} 0e0
-
-
-{\it Description:} The difference from solidus, use this number to generate initial conditions that close to solidus instead of exactly at solidus. Use small negative number in this parameter to prevent large melting generation at the beginning.   Units: K 
-
-
-{\it Possible values:} A floating point number $v$ such that $-\text{MAX\_DOUBLE} \leq v \leq \text{MAX\_DOUBLE}$
-\end{itemize}
-
-
-
-\subsection{Parameters in section \tt Initial temperature model/Solidus/Data}
-\label{parameters:Initial_20temperature_20model/Solidus/Data}
-
-\begin{itemize}
-\item {\it Parameter name:} {\tt Solidus filename}
-\phantomsection\label{parameters:Initial temperature model/Solidus/Data/Solidus filename}
-
-
-\index[prmindex]{Solidus filename}
-\index[prmindexfull]{Initial temperature model!Solidus!Data/Solidus filename}
-{\it Value:} 
-
-
-{\it Default:} 
-
-
-{\it Description:} The solidus data filename. It is a function of radius or pressure in the following format: 
-Line 1:  Header 
-Line 2:  Unit of temperature (C/K)        Unit of pressure (GPa/kbar) or radius (km/m) 
-Line 3~: Column of solidus temperature    Column of radius/pressure 
-See data/initial-temperature/solidus.Mars as an example.
-
-In order to facilitate placing input files in locations relative to the ASPECT source directory, the file name may also include the special text '\$ASPECT\_SOURCE\_DIR' which will be interpreted as the path in which the ASPECT source files were located when ASPECT was compiled. This interpretation allows, for example, to reference files located in the `data/' subdirectory of ASPECT.
-
-
-{\it Possible values:} Any string
-\end{itemize}
-
-\subsection{Parameters in section \tt Initial temperature model/Solidus/Perturbation}
-\label{parameters:Initial_20temperature_20model/Solidus/Perturbation}
-
-\begin{itemize}
-\item {\it Parameter name:} {\tt Lateral wave number one}
-\phantomsection\label{parameters:Initial temperature model/Solidus/Perturbation/Lateral wave number one}
-
-
-\index[prmindex]{Lateral wave number one}
-\index[prmindexfull]{Initial temperature model!Solidus!Perturbation/Lateral wave number one}
-{\it Value:} 3
-
-
-{\it Default:} 3
-
-
-{\it Description:} Doubled first lateral wave number of the harmonic perturbation. Equals the spherical harmonic degree in 3D spherical shells. In all other cases one equals half of a sine period over the model domain. This allows for single up-/downswings. Negative numbers reverse the sign of the perturbation but are not allowed for the spherical harmonic case.
-
-
-{\it Possible values:} An integer $n$ such that $-2147483648\leq n \leq 2147483647$
-\item {\it Parameter name:} {\tt Lateral wave number two}
-\phantomsection\label{parameters:Initial temperature model/Solidus/Perturbation/Lateral wave number two}
-
-
-\index[prmindex]{Lateral wave number two}
-\index[prmindexfull]{Initial temperature model!Solidus!Perturbation/Lateral wave number two}
-{\it Value:} 2
-
-
-{\it Default:} 2
-
-
-{\it Description:} Doubled second lateral wave number of the harmonic perturbation. Equals the spherical harmonic order in 3D spherical shells. In all other cases one equals half of a sine period over the model domain. This allows for single up-/downswings. Negative numbers reverse the sign of the perturbation.
-
-
-{\it Possible values:} An integer $n$ such that $-2147483648\leq n \leq 2147483647$
-\item {\it Parameter name:} {\tt Lithosphere thickness amplitude}
-\phantomsection\label{parameters:Initial temperature model/Solidus/Perturbation/Lithosphere thickness amplitude}
-
-
-\index[prmindex]{Lithosphere thickness amplitude}
-\index[prmindexfull]{Initial temperature model!Solidus!Perturbation/Lithosphere thickness amplitude}
-{\it Value:} 0e0
-
-
-{\it Default:} 0e0
-
-
-{\it Description:} The amplitude of the initial lithosphere thickness perturbation in (m)
-
-
-{\it Possible values:} A floating point number $v$ such that $-\text{MAX\_DOUBLE} \leq v \leq \text{MAX\_DOUBLE}$
-\item {\it Parameter name:} {\tt Temperature amplitude}
-\phantomsection\label{parameters:Initial temperature model/Solidus/Perturbation/Temperature amplitude}
-
-
-\index[prmindex]{Temperature amplitude}
-\index[prmindexfull]{Initial temperature model!Solidus!Perturbation/Temperature amplitude}
-{\it Value:} 0e0
-
-
-{\it Default:} 0e0
-
-
-{\it Description:} The amplitude of the initial spherical temperature perturbation in (K)
-
-
-{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq \text{MAX\_DOUBLE}$
-\end{itemize}
-
 \subsection{Parameters in section \tt Initial temperature model/Spherical gaussian perturbation}
 \label{parameters:Initial_20temperature_20model/Spherical_20gaussian_20perturbation}
 
@@ -6899,13 +6766,15 @@ Viscosity is interpolated from this file using linear interpolation. ``None'': n
 
 ``List:'': read a comma-separated list of depth values corresponding to the maximum depths of layers having constant depth-dependence $\eta(z)$. The layers must be specified in order of increasing depth, and the last layer in the list must have a depth greater than or equal to the maximal depth of the model. The list of layer depths is specified as ``Material model/Depth dependent model/Depth list'' and the corresponding list of layer viscosities is specified as ``Material model/Depth dependent model/Viscosity list''
 
-`diffusion dislocation':  An implementation of a viscous rheology including diffusion and dislocation creep. Compositional fields can each be assigned individual activation energies, reference densities, thermal expansivities, and stress exponents. The effective viscosity is defined as 
+`diffusion dislocation': An implementation of a viscous rheology including diffusion and dislocation creep. Compositional fields can each be assigned individual activation energies, reference densities, thermal expansivities, and stress exponents. The effective viscosity is defined as 
 
- \[\eta_\text{eff} = \left(\frac{1}{\eta_\text{eff}^\text{diff}}+ \frac{1}{\eta_\text{eff}^\text{dis}}\right)^{-1}\] where \[\eta_\text{i} = 0.5 A^{-\frac{1}{n_i}} d^\frac{m_i}{n_i} \dot{\varepsilon_i}^{\frac{1-n_i}{n_i}} \exp\left(\frac{E_i^* + PV_i^*}{n_iRT}\right)\] 
+\[\eta_\text{eff} = \left(\frac{1}{\eta_\text{eff}^\text{diff}}+ \frac{1}{\eta_\text{eff}^\text{dis}}\right)^{-1}\] where \[\eta_\text{i} = 0.5 A^{-\frac{1}{n_i}} d^\frac{m_i}{n_i} \dot{\varepsilon_i}^{\frac{1-n_i}{n_i}} \exp\left(\frac{E_i^* + PV_i^*}{n_iRT}\right)\] 
 
- where $d$ is grain size, $i$ corresponds to diffusion or dislocation creep, $\dot{\varepsilon}$ is the square root of the second invariant of the strain rate tensor, $R$ is the gas constant, $T$ is temperature,  and $P$ is pressure. $A_i$ are prefactors, $n_i$ and $m_i$ are stress and grain size exponents $E_i$ are the activation energies and $V_i$ are the activation volumes. 
+where $d$ is grain size, $i$ corresponds to diffusion or dislocation creep, $\dot{\varepsilon}$ is the square root of the second invariant of the strain rate tensor, $R$ is the gas constant, $T$ is temperature, and $P$ is pressure. $A_i$ are prefactors, $n_i$ and $m_i$ are stress and grain size exponents $E_i$ are the activation energies and $V_i$ are the activation volumes. 
 
- The ratio of diffusion to dislocation strain rate is found by Newton's method, iterating to find the stress which satisfies the above equations. The value for the components of this formula and additional parameters are read from the parameter file in subsection 'Material model/DiffusionDislocation'.
+This form of the viscosity equation is commonly used in geodynamic simulatons See, for example, Billen and Hirth (2007), G3, 8, Q08012. Significantly, other studies may use slightly different forms of the viscosity equation leading to variations in how specific terms are defined or combined. For example, the grain size exponent should always be positive in the diffusion viscosity equation used here, while other studies place the grain size term in the denominator and invert the sign of the grain size exponent. When examining previous work, one should carefully check how the viscous prefactor and grain size terms are defined.  
+
+The ratio of diffusion to dislocation strain rate is found by Newton's method, iterating to find the stress which satisfies the above equations. The value for the components of this formula and additional parameters are read from the parameter file in subsection 'Material model/DiffusionDislocation'.
 
 `drucker prager': A material model that has constant values for all coefficients but the density and viscosity. The defaults for all coefficients are chosen to be similar to what is believed to be correct for Earth's mantle. All of the values that define this model are read from a section ``Material model/Drucker Prager'' in the input file, see Section~\ref{parameters:Material_20model/Drucker_20Prager}. Note that the model does not take into account any dependencies of material properties on compositional fields. 
 
@@ -6973,7 +6842,7 @@ This model uses the following equations for the density: \begin{align}  \rho(p,T
 
 `visco plastic': An implementation of a visco-plastic rheology with options for selecting dislocation creep, diffusion creep or composite viscous flow laws.  Plasticity limits viscous stresses through a Drucker Prager yield criterion. The model is incompressible. Note that this material model is based heavily on the DiffusionDislocation (Bob Myhill) and DruckerPrager (Anne Glerum) material models. 
 
- The viscosity for dislocation or diffusion creep is defined as \[v = \frac 12 A^{-\frac{1}{n}} d^{\frac{m}{n}} \dot{\varepsilon}_{ii}^{\frac{1-n}{n}} \exp\left(\frac{E + PV}{nRT}\right)\] where $A$ is the prefactor, $n$ is the stress exponent, $\dot{\varepsilon}_{ii}$ is the square root of the deviatoric strain rate tensor second invariant, $d$ is grain size, $m$ is the grain size exponent, $E$ is activation energy, $V$ is activation volume, $P$ is pressure, $R$ is the gas exponent and $T$ is temperature. This form of the viscosity equation is commonly used in geodynamic simulations.  See, for example, Billen and Hirth (2007), G3, 8, Q08012.
+ The viscosity for dislocation or diffusion creep is defined as \[v = \frac 12 A^{-\frac{1}{n}} d^{\frac{m}{n}} \dot{\varepsilon}_{ii}^{\frac{1-n}{n}} \exp\left(\frac{E + PV}{nRT}\right)\] where $A$ is the prefactor, $n$ is the stress exponent, $\dot{\varepsilon}_{ii}$ is the square root of the deviatoric strain rate tensor second invariant, $d$ is grain size, $m$ is the grain size exponent, $E$ is activation energy, $V$ is activation volume, $P$ is pressure, $R$ is the gas exponent and $T$ is temperature. This form of the viscosity equation is commonly used in geodynamic simulations. See, for example, Billen and Hirth (2007), G3, 8, Q08012. Significantly, other studies may use slightly different forms of the viscosity equation leading to variations in how specific terms are defined or combined. For example, the grain size exponent should always be positive in the diffusion viscosity equation used here, while other studies place the grain size term in the denominator and invert the sign of the grain size exponent. When examining previous work, one should carefully check how the viscous prefactor and grain size terms are defined. 
 
  One may select to use the diffusion ($v_\text{diff}$; $n=1$, $m!=0$), dislocation ($v_\text{disl}$, $n>1$, $m=0$) or composite $\frac{v_\text{diff}*v_\text{disl}}{v_\text{diff}+v_\text{disl}}$ equation form. 
 
@@ -7938,7 +7807,7 @@ A typical example would be to set this runtime parameter to `pi=3.1415926536' an
 {\it Default:} 1.5e-15
 
 
-{\it Description:} List of viscosity prefactors, $A$, for background mantle and compositional fields, for a total of N+1 values, where N is the number of compositional fields. If only one value is given, then all use the same value. Units: $Pa^{-n_\text{diffusion}} m^{n_\text{diffusion}/m_\text{diffusion}} s^{-1}$
+{\it Description:} List of viscosity prefactors, $A$, for background mantle and compositional fields, for a total of N+1 values, where N is the number of compositional fields. If only one value is given, then all use the same value. Units: $Pa^{-1} m^{m_\text{diffusion}} s^{-1}$
 
 
 {\it Possible values:} A list of 0 to 4294967295 elements where each element is [A floating point number $v$ such that $0 \leq v \leq \text{MAX\_DOUBLE}$]
@@ -7954,7 +7823,7 @@ A typical example would be to set this runtime parameter to `pi=3.1415926536' an
 {\it Default:} 1.1e-16
 
 
-{\it Description:} List of viscosity prefactors, $A$, for background mantle and compositional fields, for a total of N+1 values, where N is the number of compositional fields. If only one value is given, then all use the same value. Units: $Pa^{-n_\text{dislocation}} m^{n_\text{dislocation}/m_\text{dislocation}} s^{-1}$
+{\it Description:} List of viscosity prefactors, $A$, for background mantle and compositional fields, for a total of N+1 values, where N is the number of compositional fields. If only one value is given, then all use the same value. Units: $Pa^{-n_\text{dislocation}} s^{-1}$
 
 
 {\it Possible values:} A list of 0 to 4294967295 elements where each element is [A floating point number $v$ such that $0 \leq v \leq \text{MAX\_DOUBLE}$]
@@ -10766,7 +10635,7 @@ Also note that the melting time scale has to be larger than or equal to the reac
 {\it Default:} 0.0
 
 
-{\it Description:} Freezing rate of melt when in subsolidus regions.Units: $1/yr$.
+{\it Description:} Freezing rate of melt when in subsolidus regions. If this parameter is set to a number larger than 0.0, it specifies the fraction of melt that will freeze per year (or per second, depending on the ``Use years in output instead of seconds'' parameter), as soon as the porosity exceeds the equilibrium melt fraction, and the equilibrium melt fraction falls below the depletion. In this case, melt will freeze according to the given rate until one of those conditions is not fulfilled anymore. The reasoning behind this is that there should not be more melt present than the equilibrium melt fraction, as melt production decreases with increasing depletion, but the freezing process of melt also reduces the depletion by the same amount, and as soon as the depletion falls below the equilibrium melt fraction, we expect that material should melt again (no matter how much melt is present). This is quite a simplification and not a realistic freezing parameterization, but without tracking the melt composition, there is no way to compute freezing rates accurately. If this parameter is set to zero, no freezing will occur. Note that freezing can never be faster than determined by the ``Melting time scale for operator splitting''. The product of the ``Freezing rate'' and the ``Melting time scale for operator splitting'' defines how fast freezing occurs with respect to melting (if the product is 0.5, melting will occur twice as fast as freezing). Units: 1/yr or 1/s, depending on the ``Use years in output instead of seconds'' parameter.
 
 
 {\it Possible values:} A floating point number $v$ such that $0 \leq v \leq \text{MAX\_DOUBLE}$
@@ -10846,9 +10715,9 @@ Also note that the melting time scale has to be larger than or equal to the reac
 {\it Default:} 1e3
 
 
-{\it Description:} In case the operator splitting scheme is used, the porosity field can not be set to a new equilibrium melt fraction instantly, but the model has to provide a melting time scale instead. This time scale defines how fast melting happens, or more specifically, the parameter defines the time after which the deviation of the porosity from the equilibrium melt fraction will be reduced to a fraction of $1/e$. So if the melting time scale is small compared to the time step size, the reaction will be so fast that the porosity is very close to the equilibrium melt fraction after reactions are computed. Conversely, if the melting time scale is large compared to the time step size, almost no melting and freezing will occur.
+{\it Description:} Because the operator splitting scheme is used, the porosity field can not be set to a new equilibrium melt fraction instantly, but the model has to provide a melting time scale instead. This time scale defines how fast melting happens, or more specifically, the parameter defines the time after which the deviation of the porosity from the equilibrium melt fraction will be reduced to a fraction of $1/e$. So if the melting time scale is small compared to the time step size, the reaction will be so fast that the porosity is very close to the equilibrium melt fraction after reactions are computed. Conversely, if the melting time scale is large compared to the time step size, almost no melting and freezing will occur.
 
-Also note that the melting time scale has to be larger than or equal to the reaction time step used in the operator splitting scheme, otherwise reactions can not be computed. If the model does not use operator splitting, this parameter is not used. Units: yr or s, depending on the ``Use years in output instead of seconds'' parameter.
+Also note that the melting time scale has to be larger than or equal to the reaction time step used in the operator splitting scheme, otherwise reactions can not be computed. Units: yr or s, depending on the ``Use years in output instead of seconds'' parameter.
 
 
 {\it Possible values:} A floating point number $v$ such that $0 \leq v \leq \text{MAX\_DOUBLE}$
@@ -11089,6 +10958,8 @@ Also note that the melting time scale has to be larger than or equal to the reac
 
 
 {\it Description:} If fractional melting should be used (if true), including a solidus change based on depletion (in this case, the amount of melt that has migrated away from its origin), and freezing of melt when it has moved to a region with temperatures lower than the solidus; or if batch melting should be used (if false), assuming that the melt fraction only depends on temperature and pressure, and how much melt has already been generated at a given point, but not considering movement of melt in the melting parameterization.
+
+Note that melt does not freeze unless the 'Freezing rate' parameter is set to a value larger than 0.
 
 
 {\it Possible values:} A boolean value (true or false)
@@ -12202,7 +12073,7 @@ Also note that the melting time scale has to be larger than or equal to the reac
 {\it Default:} 3
 
 
-{\it Description:} List of grain size exponents, $m_\text{diffusion}$, for background material and compositional fields, for a total of N+1 values, where N is the number of compositional fields. If only one value is given, then all use the same value.  Units: None
+{\it Description:} List of grain size exponents, $m_\text{diffusion}$, for background material and compositional fields, for a total of N+1 values, where N is the number of compositional fields. If only one value is given, then all use the same value. Units: None
 
 
 {\it Possible values:} A list of 0 to 4294967295 elements where each element is [A floating point number $v$ such that $0 \leq v \leq \text{MAX\_DOUBLE}$]
@@ -12282,7 +12153,7 @@ Also note that the melting time scale has to be larger than or equal to the reac
 {\it Default:} 1.5e-15
 
 
-{\it Description:} List of viscosity prefactors, $A$, for background material and compositional fields, for a total of N+1 values, where N is the number of compositional fields. If only one value is given, then all use the same value. Units: $Pa^{-1} m^{1/m_{diffusion}} s^{-1}$
+{\it Description:} List of viscosity prefactors, $A$, for background material and compositional fields, for a total of N+1 values, where N is the number of compositional fields. If only one value is given, then all use the same value. Units: $Pa^{-1} m^{m_\text{diffusion}} s^{-1}$
 
 
 {\it Possible values:} A list of 0 to 4294967295 elements where each element is [A floating point number $v$ such that $0 \leq v \leq \text{MAX\_DOUBLE}$]
@@ -12298,7 +12169,7 @@ Also note that the melting time scale has to be larger than or equal to the reac
 {\it Default:} 1.1e-16
 
 
-{\it Description:} List of viscosity prefactors, $A$, for background material and compositional fields, for a total of N+1 values, where N is the number of compositional fields. If only one value is given, then all use the same value. Units: $Pa^{-n_\text{dislocation}} m^{n_\text{dislocation}/m_\text{dislocation}} s^{-1}$
+{\it Description:} List of viscosity prefactors, $A$, for background material and compositional fields, for a total of N+1 values, where N is the number of compositional fields. If only one value is given, then all use the same value. Units: $Pa^{-n_\text{dislocation}} s^{-1}$
 
 
 {\it Possible values:} A list of 0 to 4294967295 elements where each element is [A floating point number $v$ such that $0 \leq v \leq \text{MAX\_DOUBLE}$]
@@ -12548,6 +12419,22 @@ Also note that the melting time scale has to be larger than or equal to the reac
 \label{parameters:Melt_20settings}
 
 \begin{itemize}
+\item {\it Parameter name:} {\tt Average melt velocity}
+\phantomsection\label{parameters:Melt settings/Average melt velocity}
+
+
+\index[prmindex]{Average melt velocity}
+\index[prmindexfull]{Melt settings!Average melt velocity}
+{\it Value:} true
+
+
+{\it Default:} true
+
+
+{\it Description:} Whether to cell-wise average the material properties that are used to compute the melt velocity or not. The melt velocity is computed as the sum of the solid velocity and the phase separation flux $ - K_D / \phi (\nabla p_f - \rho_f \mathbf g)$. If this parameter is set to true, $K_D$ and $\phi$ will be averaged cell-wise in the computation of the phase separation flux. This is useful because in some models the melt velocity can have spikes close to the interface between regions of melt and no melt, as both $K_D$ and $\phi$ go to zero for vanishing melt fraction. As the melt velocity is used for computing the time step size, and in models that use heat transport by melt or shear heating of melt, setting this parameter to true can speed up the model and make it mode stable. In computations where accuracy and convergence behavior of the melt velocity is important (like in benchmark cases with an analytical solution), this parameter should probably be set to 'false'.
+
+
+{\it Possible values:} A boolean value (true or false)
 \item {\it Parameter name:} {\tt Heat advection by melt}
 \phantomsection\label{parameters:Melt settings/Heat advection by melt}
 
@@ -12564,22 +12451,54 @@ Also note that the melting time scale has to be larger than or equal to the reac
 
 
 {\it Possible values:} A boolean value (true or false)
-\item {\it Parameter name:} {\tt Melt transport threshold}
-\phantomsection\label{parameters:Melt settings/Melt transport threshold}
+\item {\it Parameter name:} {\tt Include melt transport}
+\phantomsection\label{parameters:Melt settings/Include melt transport}
 
 
-\index[prmindex]{Melt transport threshold}
-\index[prmindexfull]{Melt settings!Melt transport threshold}
+\index[prmindex]{Include melt transport}
+\index[prmindexfull]{Melt settings!Include melt transport}
+{\it Value:} false
+
+
+{\it Default:} false
+
+
+{\it Description:} Whether to include the transport of melt into the model or not. If this is set to true, two additional pressures (the fluid pressure and the compaction pressure) will be added to the finite element. Including melt transport in the simulation also requires that there is one compositional field that has the name `porosity'. This field will be used for computing the additional pressures and the melt velocity, and has a different advection equation than other compositional fields, as it is effectively advected with the melt velocity.
+
+
+{\it Possible values:} A boolean value (true or false)
+\item {\it Parameter name:} {\tt Melt scaling factor threshold}
+\phantomsection\label{parameters:Melt settings/Melt scaling factor threshold}
+
+
+\index[prmindex]{Melt scaling factor threshold}
+\index[prmindexfull]{Melt settings!Melt scaling factor threshold}
 {\it Value:} 1e-3
 
 
 {\it Default:} 1e-3
 
 
-{\it Description:} The porosity limit for melt migration. For smaller porosities, the equations reduce to the Stokes equations and do neglect melt transport. Only used if Include melt transport is true. 
+{\it Description:} The factor by how much the Darcy coefficient K\_D in a cell can be smaller than the reference Darcy coefficient for this cell still to be considered a melt cell (for which the melt transport equations are solved). For smaller Darcy coefficients, the Stokes equations (without melt) are solved instead. Only used if ``Include melt transport'' is true. 
 
 
 {\it Possible values:} A floating point number $v$ such that $-\text{MAX\_DOUBLE} \leq v \leq \text{MAX\_DOUBLE}$
+\item {\it Parameter name:} {\tt Use discontinuous compaction pressure}
+\phantomsection\label{parameters:Melt settings/Use discontinuous compaction pressure}
+
+
+\index[prmindex]{Use discontinuous compaction pressure}
+\index[prmindexfull]{Melt settings!Use discontinuous compaction pressure}
+{\it Value:} true
+
+
+{\it Default:} true
+
+
+{\it Description:} Whether to use a discontinuous element for the compaction pressure or not. From our preliminary tests, continuous elements seem to work better in models where the porosity is > 0 everywhere in the domain, and discontinuous elements work better in models where in parts of the domain the porosity = 0.
+
+
+{\it Possible values:} A boolean value (true or false)
 \end{itemize}
 
 \subsection{Parameters in section \tt Mesh refinement}
@@ -12799,6 +12718,10 @@ To use this refinement criterion, you may want to combine it with other refineme
 
 `composition': A mesh refinement criterion that computes refinement indicators from the compositional fields. If there is more than one compositional field, then it simply takes the sum of the indicators computed from each of the compositional field.
 
+The way these indicators are computed is by evaluating the `Kelly error indicator' on each compositional field. This error indicator takes the finite element approximation of the compositional field and uses it to compute an approximation of the second derivatives of the composition for each cell. This approximation is then multiplied by an appropriate power of the cell's diameter to yield an indicator for how large the error is likely going to be on this cell. This construction rests on the observation that for many partial differential equations, the error on each cell is proportional to some power of the cell's diameter times the second derivatives of the solution on that cell.
+
+For complex equations such as those we solve here, this observation may not be strictly true in the mathematical sense, but it often yields meshes that are surprisingly good.
+
 `composition approximate gradient': A mesh refinement criterion that computes refinement indicators from the gradients of compositional fields. If there is more than one compositional field, then it simply takes the sum of the indicators times a user-specified weight for each field.
 
 In contrast to the `composition gradient' refinement criterion, the current criterion does not compute the gradient at quadrature points on each cell, but by a finite difference approximation between the centers of cells. Consequently, it also works if the compositional fields are computed using discontinuous finite elements.
@@ -12833,6 +12756,10 @@ To use this refinement criterion, you may want to combine it with other refineme
 
 `temperature': A mesh refinement criterion that computes refinement indicators from the temperature field.
 
+The way these indicators are computed is by evaluating the `Kelly error indicator' on the temperature field. This error indicator takes the finite element approximation of the temperature field and uses it to compute an approximation of the second derivatives of the temperature for each cell. This approximation is then multiplied by an appropriate power of the cell's diameter to yield an indicator for how large the error is likely going to be on this cell. This construction rests on the observation that for many partial differential equations, the error on each cell is proportional to some power of the cell's diameter times the second derivatives of the solution on that cell.
+
+For complex equations such as those we solve here, this observation may not be strictly true in the mathematical sense, but it often yields meshes that are surprisingly good.
+
 `thermal energy density': A mesh refinement criterion that computes refinement indicators from a field that describes the spatial variability of the thermal energy density, $\rho C_p T$. Because this quantity may not be a continuous function ($\rho$ and $C_p$ may be discontinuous functions along discontinuities in the medium, for example due to phase changes), we approximate the gradient of this quantity to refine the mesh. The error indicator defined here takes the magnitude of the approximate gradient and scales it by $h_K^{1.5}$ where $h_K$ is the diameter of each cell. This scaling ensures that the error indicators converge to zero as $h_K\rightarrow 0$ even if the energy density is discontinuous, since the gradient of a discontinuous function grows like $1/h_K$.
 
 `topography': A class that implements a mesh refinement criterion, which always flags all cells in the uppermost layer for refinement. This is useful to provide high accuracy for processes at or close to the surface.
@@ -12840,6 +12767,10 @@ To use this refinement criterion, you may want to combine it with other refineme
 To use this refinement criterion, you may want to combine it with other refinement criteria, setting the 'Normalize individual refinement criteria' flag and using the `max' setting for 'Refinement criteria merge operation'.
 
 `velocity': A mesh refinement criterion that computes refinement indicators from the velocity field.
+
+The way these indicators are computed is by evaluating the `Kelly error indicator' on the velocity field. This error indicator takes the finite element approximation of the velocity field and uses it to compute an approximation of the second derivatives of the velocity for each cell. This approximation is then multiplied by an appropriate power of the cell's diameter to yield an indicator for how large the error is likely going to be on this cell. This construction rests on the observation that for many partial differential equations, the error on each cell is proportional to some power of the cell's diameter times the second derivatives of the solution on that cell.
+
+For complex equations such as those we solve here, this observation may not be strictly true in the mathematical sense, but it often yields meshes that are surprisingly good.
 
 `viscosity': A mesh refinement criterion that computes refinement indicators from a field that describes the spatial variability of the logarithm of the viscosity, $\log\eta$. (We choose the logarithm of the viscosity because it can vary by orders of magnitude.)Because this quantity may not be a continuous function ($\eta$ may be a discontinuous function along discontinuities in the medium, for example due to phase changes), we approximate the gradient of this quantity to refine the mesh. The error indicator defined here takes the magnitude of the approximate gradient and scales it by $h_K^{1+d/2}$ where $h_K$ is the diameter of each cell and $d$ is the dimension. This scaling ensures that the error indicators converge to zero as $h_K\rightarrow 0$ even if the energy density is discontinuous, since the gradient of a discontinuous function grows like $1/h_K$.
 
@@ -13193,212 +13124,16 @@ If the function you are describing represents a vector-valued function with mult
 {\it Possible values:} Any string
 \end{itemize}
 
-\subsection{Parameters in section \tt Model settings}
-\label{parameters:Model_20settings}
+\subsection{Parameters in section \tt Nullspace removal}
+\label{parameters:Nullspace_20removal}
 
 \begin{itemize}
-\item {\it Parameter name:} {\tt Enable additional Stokes RHS}
-\phantomsection\label{parameters:Model settings/Enable additional Stokes RHS}
-
-
-\index[prmindex]{Enable additional Stokes RHS}
-\index[prmindexfull]{Model settings!Enable additional Stokes RHS}
-{\it Value:} false
-
-
-{\it Default:} false
-
-
-{\it Description:} Whether to ask the material model for additional terms for the right-hand side of the Stokes equation. This feature is likely only used when implementing force vectors for manufactured solution problems and requires filling additional outputs of type AdditionalMaterialOutputsStokesRHS.
-
-
-{\it Possible values:} A boolean value (true or false)
-\item {\it Parameter name:} {\tt Fixed composition boundary indicators}
-\phantomsection\label{parameters:Model settings/Fixed composition boundary indicators}
-
-
-\index[prmindex]{Fixed composition boundary indicators}
-\index[prmindexfull]{Model settings!Fixed composition boundary indicators}
-{\it Value:} 
-
-
-{\it Default:} 
-
-
-{\it Description:} A comma separated list of names denoting those boundaries on which the composition is fixed and described by the boundary composition object selected in its own section of this input file. All boundary indicators used by the geometry but not explicitly listed here will end up with no-flux (insulating) boundary conditions.
-
-The names of the boundaries listed here can either by numbers (in which case they correspond to the numerical boundary indicators assigned by the geometry object), or they can correspond to any of the symbolic names the geometry object may have provided for each part of the boundary. You may want to compare this with the documentation of the geometry model you use in your model.
-
-This parameter only describes which boundaries have a fixed composition, but not what composition should hold on these boundaries. The latter piece of information needs to be implemented in a plugin in the BoundaryComposition group, unless an existing implementation in this group already provides what you want.
-
-
-{\it Possible values:} A list of 0 to 4294967295 elements where each element is [Any string]
-\item {\it Parameter name:} {\tt Fixed temperature boundary indicators}
-\phantomsection\label{parameters:Model settings/Fixed temperature boundary indicators}
-
-
-\index[prmindex]{Fixed temperature boundary indicators}
-\index[prmindexfull]{Model settings!Fixed temperature boundary indicators}
-{\it Value:} 
-
-
-{\it Default:} 
-
-
-{\it Description:} A comma separated list of names denoting those boundaries on which the temperature is fixed and described by the boundary temperature object selected in its own section of this input file. All boundary indicators used by the geometry but not explicitly listed here will end up with no-flux (insulating) boundary conditions.
-
-The names of the boundaries listed here can either by numbers (in which case they correspond to the numerical boundary indicators assigned by the geometry object), or they can correspond to any of the symbolic names the geometry object may have provided for each part of the boundary. You may want to compare this with the documentation of the geometry model you use in your model.
-
-This parameter only describes which boundaries have a fixed temperature, but not what temperature should hold on these boundaries. The latter piece of information needs to be implemented in a plugin in the BoundaryTemperature group, unless an existing implementation in this group already provides what you want.
-
-
-{\it Possible values:} A list of 0 to 4294967295 elements where each element is [Any string]
-\item {\it Parameter name:} {\tt Free surface boundary indicators}
-\phantomsection\label{parameters:Model settings/Free surface boundary indicators}
-
-
-\index[prmindex]{Free surface boundary indicators}
-\index[prmindexfull]{Model settings!Free surface boundary indicators}
-{\it Value:} 
-
-
-{\it Default:} 
-
-
-{\it Description:} A comma separated list of names denoting those boundaries where there is a free surface. Set to nothing to disable all free surface computations.
-
-The names of the boundaries listed here can either by numbers (in which case they correspond to the numerical boundary indicators assigned by the geometry object), or they can correspond to any of the symbolic names the geometry object may have provided for each part of the boundary. You may want to compare this with the documentation of the geometry model you use in your model.
-
-
-{\it Possible values:} A list of 0 to 4294967295 elements where each element is [Any string]
-\item {\it Parameter name:} {\tt Include adiabatic heating}
-\phantomsection\label{parameters:Model settings/Include adiabatic heating}
-
-
-\index[prmindex]{Include adiabatic heating}
-\index[prmindexfull]{Model settings!Include adiabatic heating}
-{\it Value:} false
-
-
-{\it Default:} false
-
-
-{\it Description:} Whether to include adiabatic heating into the model or not. From a physical viewpoint, adiabatic heating should always be used but may be undesirable when comparing results with known benchmarks that do not include this term in the temperature equation.
-
-Warning: deprecated! Add `adiabatic heating' to the 'List of model names' instead.
-
-
-{\it Possible values:} A boolean value (true or false)
-\item {\it Parameter name:} {\tt Include latent heat}
-\phantomsection\label{parameters:Model settings/Include latent heat}
-
-
-\index[prmindex]{Include latent heat}
-\index[prmindexfull]{Model settings!Include latent heat}
-{\it Value:} false
-
-
-{\it Default:} false
-
-
-{\it Description:} Whether to include the generation of latent heat at phase transitions into the model or not. From a physical viewpoint, latent heat should always be used but may be undesirable when comparing results with known benchmarks that do not include this term in the temperature equation or when dealing with a model without phase transitions.
-
-Warning: deprecated! Add `latent heat' to the 'List of model names' instead.
-
-
-{\it Possible values:} A boolean value (true or false)
-\item {\it Parameter name:} {\tt Include melt transport}
-\phantomsection\label{parameters:Model settings/Include melt transport}
-
-
-\index[prmindex]{Include melt transport}
-\index[prmindexfull]{Model settings!Include melt transport}
-{\it Value:} false
-
-
-{\it Default:} false
-
-
-{\it Description:} Whether to include the transport of melt into the model or not. If this is set to true, two additional pressures (the fluid pressure and the compaction pressure) will be added to the finite element. Including melt transport in the simulation also requires that there is one compositional field that has the name `porosity'. This field will be used for computing the additional pressures and the melt velocity, and has a different advection equation than other compositional fields, as it is effectively advected with the melt velocity.
-
-
-{\it Possible values:} A boolean value (true or false)
-\item {\it Parameter name:} {\tt Include shear heating}
-\phantomsection\label{parameters:Model settings/Include shear heating}
-
-
-\index[prmindex]{Include shear heating}
-\index[prmindexfull]{Model settings!Include shear heating}
-{\it Value:} false
-
-
-{\it Default:} false
-
-
-{\it Description:} Whether to include shear heating into the model or not. From a physical viewpoint, shear heating should always be used but may be undesirable when comparing results with known benchmarks that do not include this term in the temperature equation.
-
-Warning: deprecated! Add `shear heating' to the 'List of model names' instead.
-
-
-{\it Possible values:} A boolean value (true or false)
-\item {\it Parameter name:} {\tt Prescribed traction boundary indicators}
-\phantomsection\label{parameters:Model settings/Prescribed traction boundary indicators}
-
-
-\index[prmindex]{Prescribed traction boundary indicators}
-\index[prmindexfull]{Model settings!Prescribed traction boundary indicators}
-{\it Value:} 
-
-
-{\it Default:} 
-
-
-{\it Description:} A comma separated list denoting those boundaries on which a traction force is prescribed, i.e., where known external forces act, resulting in an unknown velocity. This is often used to model ``open'' boundaries where we only know the pressure. This pressure then produces a force that is normal to the boundary and proportional to the pressure.
-
-The format of valid entries for this parameter is that of a map given as ``key1 [selector]: value1, key2 [selector]: value2, key3: value3, ...'' where each key must be a valid boundary indicator (which is either an integer or the symbolic name the geometry model in use may have provided for this part of the boundary) and each value must be one of the currently implemented boundary traction models. ``selector'' is an optional string given as a subset of the letters `xyz' that allows you to apply the boundary conditions only to the components listed. As an example, '1 y: function' applies the type `function' to the y component on boundary 1. Without a selector it will affect all components of the traction.
-
-
-{\it Possible values:} A key-value map of 0 to 4294967295 elements  where each key is [Any string] and each value is [Any one of ascii data, function, initial lithostatic pressure, zero traction]
-\item {\it Parameter name:} {\tt Prescribed velocity boundary indicators}
-\phantomsection\label{parameters:Model settings/Prescribed velocity boundary indicators}
-
-
-\index[prmindex]{Prescribed velocity boundary indicators}
-\index[prmindexfull]{Model settings!Prescribed velocity boundary indicators}
-{\it Value:} 
-
-
-{\it Default:} 
-
-
-{\it Description:} A comma separated list denoting those boundaries on which the velocity is prescribed, i.e., where unknown external forces act to prescribe a particular velocity. This is often used to prescribe a velocity that equals that of overlying plates.
-
-The format of valid entries for this parameter is that of a map given as ``key1 [selector]: value1, key2 [selector]: value2, key3: value3, ...'' where each key must be a valid boundary indicator (which is either an integer or the symbolic name the geometry model in use may have provided for this part of the boundary) and each value must be one of the currently implemented boundary velocity models. ``selector'' is an optional string given as a subset of the letters `xyz' that allows you to apply the boundary conditions only to the components listed. As an example, '1 y: function' applies the type `function' to the y component on boundary 1. Without a selector it will affect all components of the velocity.
-
-Note that the no-slip boundary condition is a special case of the current one where the prescribed velocity happens to be zero. It can thus be implemented by indicating that a particular boundary is part of the ones selected using the current parameter and using ``zero velocity'' as the boundary values. Alternatively, you can simply list the part of the boundary on which the velocity is to be zero with the parameter ``Zero velocity boundary indicator'' in the current parameter section.
-
-Note that when ``Use years in output instead of seconds'' is set to true, velocity should be given in m/yr. The following boundary velocity models are available:
-
-`ascii data': Implementation of a model in which the boundary velocity is derived from files containing data in ascii format. Note the required format of the input data: The first lines may contain any number of comments if they begin with '\#', but one of these lines needs to contain the number of grid points in each dimension as for example '\# POINTS: 3 3'. The order of the data columns has to be `x', `velocity${}_x$', `velocity${}_y$' in a 2d model or `x', `y', `velocity${}_x$', `velocity${}_y$', `velocity${}_z$' in a 3d model. Note that the data in the input files need to be sorted in a specific order: the first coordinate needs to ascend first, followed by the second in order to assign the correct data to the prescribed coordinates.If you use a spherical model, then the velocities will still be handled as Cartesian, however the assumed grid changes. `x' will be replaced by the radial distance of the point to the bottom of the model, `y' by the azimuth angle and `z' by the polar angle measured positive from the north pole. The grid will be assumed to be a latitude-longitude grid. Note that the order of spherical coordinates is `r', `phi', `theta' and not `r', `theta', `phi', since this allows for dimension independent expressions. No matter which geometry model is chosen, the unit of the velocities is assumed to be m/s or m/yr depending on the 'Use years in output instead of seconds' flag.
-
-`function': Implementation of a model in which the boundary velocity is given in terms of an explicit formula that is elaborated in the parameters in section ``Boundary velocity model|Function''. The format of these functions follows the syntax understood by the muparser library, see Section~\ref{sec:muparser-format}.
-
-The formula you describe in the mentioned section is a semicolon separated list of velocities for each of the $d$ components of the velocity vector. These $d$ formulas are interpreted as having units m/s, unless the global input parameter ``Use years in output instead of seconds'' is set, in which case we interpret the formula expressions as having units m/year.
-
-Likewise, since the symbol $t$ indicating time may appear in the formulas for the prescribed velocities, it is interpreted as having units seconds unless the global parameter above has been set.
-
-`gplates': Implementation of a model in which the boundary velocity is derived from files that are generated by the GPlates program.
-
-`zero velocity': Implementation of a model in which the boundary velocity is zero. This is commonly referred to as a ``stick boundary condition'', indicating that the material ``sticks'' to the material on the other side of the boundary.
-
-
-{\it Possible values:} A key-value map of 0 to 4294967295 elements  where each key is [Any string] and each value is [Any one of ascii data, function, gplates, zero velocity]
 \item {\it Parameter name:} {\tt Remove nullspace}
-\phantomsection\label{parameters:Model settings/Remove nullspace}
+\phantomsection\label{parameters:Nullspace removal/Remove nullspace}
 
 
 \index[prmindex]{Remove nullspace}
-\index[prmindexfull]{Model settings!Remove nullspace}
+\index[prmindexfull]{Nullspace removal!Remove nullspace}
 {\it Value:} 
 
 
@@ -13418,42 +13153,6 @@ Note that while more than one operation can be selected it only makes sense to p
 
 
 {\it Possible values:} A comma-separated list of any of net rotation, angular momentum, net translation, linear momentum, net x translation, net y translation, net z translation, linear x momentum, linear y momentum, linear z momentum
-\item {\it Parameter name:} {\tt Tangential velocity boundary indicators}
-\phantomsection\label{parameters:Model settings/Tangential velocity boundary indicators}
-
-
-\index[prmindex]{Tangential velocity boundary indicators}
-\index[prmindexfull]{Model settings!Tangential velocity boundary indicators}
-{\it Value:} 
-
-
-{\it Default:} 
-
-
-{\it Description:} A comma separated list of names denoting those boundaries on which the velocity is tangential and unrestrained, i.e., free-slip where no external forces act to prescribe a particular tangential velocity (although there is a force that requires the flow to be tangential).
-
-The names of the boundaries listed here can either by numbers (in which case they correspond to the numerical boundary indicators assigned by the geometry object), or they can correspond to any of the symbolic names the geometry object may have provided for each part of the boundary. You may want to compare this with the documentation of the geometry model you use in your model.
-
-
-{\it Possible values:} A list of 0 to 4294967295 elements where each element is [Any string]
-\item {\it Parameter name:} {\tt Zero velocity boundary indicators}
-\phantomsection\label{parameters:Model settings/Zero velocity boundary indicators}
-
-
-\index[prmindex]{Zero velocity boundary indicators}
-\index[prmindexfull]{Model settings!Zero velocity boundary indicators}
-{\it Value:} 
-
-
-{\it Default:} 
-
-
-{\it Description:} A comma separated list of names denoting those boundaries on which the velocity is zero.
-
-The names of the boundaries listed here can either by numbers (in which case they correspond to the numerical boundary indicators assigned by the geometry object), or they can correspond to any of the symbolic names the geometry object may have provided for each part of the boundary. You may want to compare this with the documentation of the geometry model you use in your model.
-
-
-{\it Possible values:} A list of 0 to 4294967295 elements where each element is [Any string]
 \end{itemize}
 
 \subsection{Parameters in section \tt Postprocess}
@@ -14077,7 +13776,7 @@ The following properties are available:
 
 `integrated strain invariant': A plugin in which the particle property is defined as the finite strain invariant ($\varepsilon_{ii}$). This property is calculated with the timestep ($dt$) and the second invariant of the deviatoric strain rate tensor ($\dot{\varepsilon}_{ii}$), where the value at time step $n$ is $\varepsilon_{ii}^{n} = \varepsilon_{ii}^{n-1} + dt\dot{\varepsilon}_{ii}$.
 
-`melt particle': Implementation of a plugin in which the particle property is defined as presence of melt above the melt transport theshold. This property is set to 0 if melt is not present and set to 1 if melt  is present.
+`melt particle': Implementation of a plugin in which the particle property is defined as presence of melt above a threshold, which can be set as an input parameter. This property is set to 0 if melt is not present and set to 1 if melt is present.
 
 `pT path': Implementation of a plugin in which the particle property is defined as the current pressure and temperature at this position. This can be used to generate pressure-temperature paths of material points over time.
 
@@ -14165,7 +13864,7 @@ The following properties are available:
 
 {\it Description:} Select one of the following models:
 
-`ascii file': Generates a distribution of particles from coordinates specified in an Ascii data file. The file format is a simple text file, with as many columns as spatial dimensions and as many lines as particles to be generated. Initial comment lines starting with `\#' will be discarded.All of the values that define this generator are read from a section ``Particle generator/Ascii file'' in the input file, see Section~\ref{parameters:Particle_20generator/Ascii_20file}.
+`ascii file': Generates a distribution of particles from coordinates specified in an Ascii data file. The file format is a simple text file, with as many columns as spatial dimensions and as many lines as particles to be generated. Initial comment lines starting with `\#' will be discarded.All of the values that define this generator are read from a section ``Postprocess/Particles/Generator/Ascii file'' in the input file, see Section~\ref{parameters:Postprocess/Particles/Generator/Ascii_20file}.
 
 `probability density function': Generate a random distribution of particles over the entire simulation domain. The probability density is prescribed in the form of a user-prescribed function. The format of this function follows the syntax understood by the muparser library, see Section~\ref{sec:muparser-format}. The return value of the function is always checked to be a non-negative probability density but it can be zero in parts of the domain.
 
@@ -14789,6 +14488,28 @@ If the function you are describing represents a vector-valued function with mult
 {\it Possible values:} A boolean value (true or false)
 \end{itemize}
 
+\subsection{Parameters in section \tt Postprocess/Particles/Melt particle}
+\label{parameters:Postprocess/Particles/Melt_20particle}
+
+\begin{itemize}
+\item {\it Parameter name:} {\tt Threshold for melt presence}
+\phantomsection\label{parameters:Postprocess/Particles/Melt particle/Threshold for melt presence}
+
+
+\index[prmindex]{Threshold for melt presence}
+\index[prmindexfull]{Postprocess!Particles!Melt particle/Threshold for melt presence}
+{\it Value:} 1e-3
+
+
+{\it Default:} 1e-3
+
+
+{\it Description:} The minimum porosity that has to be present at the position of a particle for it to be considered a melt particle (in the sense that the melt presence property is set to 1).
+
+
+{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
+\end{itemize}
+
 \subsection{Parameters in section \tt Postprocess/Point values}
 \label{parameters:Postprocess/Point_20values}
 
@@ -14907,9 +14628,9 @@ Of course, activating this option also greatly increases the amount of data \asp
 
 The following postprocessors are available:
 
-`Vp anomaly': A visualization output object that generates output showing the percentage anomaly in the seismic compressional wave speed $V_p$ as a spatially variable function with one value per cell. This anomaly is either shown as a percentage anomaly relative to the reference profile given by adiabatic conditions (with the compositions given by the current composition, such that the reference could potentially change through time), or as a percentage change relative to the laterally averaged velocity at the depth of the cell. This velocity is calculated by linear interpolation between average values calculated within equally thick depth slices. The number of depth slices in the domain is user-defined. Typically, the best results will be obtained if the number of depth slices is balanced between being large enough to capture step changes in velocities, but small enough to maintain a reasonable number of evaluation points per slice. Bear in mind that lateral averaging subsamples the finite element mesh.
+`Vp anomaly': A visualization output object that generates output showing the percentage anomaly in the seismic compressional wave speed $V_p$ as a spatially variable function with one value per cell. This anomaly is either shown as a percentage anomaly relative to the reference profile given by adiabatic conditions (with the compositions given by the current composition, such that the reference could potentially change through time), or as a percentage change relative to the laterally averaged velocity at the depth of the cell. This velocity is calculated by linear interpolation between average values calculated within equally thick depth slices. The number of depth slices in the domain is user-defined. Typically, the best results will be obtained if the number of depth slices is balanced between being large enough to capture step changes in velocities, but small enough to maintain a reasonable number of evaluation points per slice. Bear in mind that lateral averaging subsamples the finite element mesh. Note that this plugin requires a material model that provides seismic velocities.
 
-`Vs anomaly': A visualization output object that generates output showing the percentage anomaly in the seismic shear wave speed $V_s$ as a spatially variable function with one value per cell. This anomaly is either shown as a percentage anomaly relative to the reference profile given by adiabatic conditions (with the compositions given by the current composition, such that the reference could potentially change through time), or as a percentage change relative to the laterally averaged velocity at the depth of the cell. This velocity is calculated by linear interpolation between average values calculated within equally thick depth slices. The number of depth slices in the domain is user-defined. Typically, the best results will be obtained if the number of depth slices is balanced between being large enough to capture step changes in velocities, but small enough to maintain a reasonable number of evaluation points per slice. Bear in mind that lateral averaging subsamples the finite element mesh.
+`Vs anomaly': A visualization output object that generates output showing the percentage anomaly in the seismic shear wave speed $V_s$ as a spatially variable function with one value per cell. This anomaly is either shown as a percentage anomaly relative to the reference profile given by adiabatic conditions (with the compositions given by the current composition, such that the reference could potentially change through time), or as a percentage change relative to the laterally averaged velocity at the depth of the cell. This velocity is calculated by linear interpolation between average values calculated within equally thick depth slices. The number of depth slices in the domain is user-defined. Typically, the best results will be obtained if the number of depth slices is balanced between being large enough to capture step changes in velocities, but small enough to maintain a reasonable number of evaluation points per slice. Bear in mind that lateral averaging subsamples the finite element mesh. Note that this plugin requires a material model that provides seismic velocities.
 
 `adiabat': A visualization output object that generates adiabatic temperature, pressure, density, and density derivative as produced by AdiabaticConditions.
 
@@ -14961,7 +14682,7 @@ Fig.~\ref{fig:max-horizontal-compressive-stress} shows a simple example for this
 
 `melt fraction': A visualization output object that generates output for the melt fraction at the temperature and pressure of the current point. If the material model computes a melt fraction, this is the quantity that will be visualized. Otherwise, a specific parametrization for batch melting (as described in the following) will be used. It does not take into account latent heat. If there are no compositional fields, this postprocessor will visualize the melt fraction of peridotite (calculated using the anhydrous model of Katz, 2003). If there is at least one compositional field, the postprocessor assumes that the  first compositional field is the content of pyroxenite, and will visualize the melt fraction for a mixture of peridotite and pyroxenite (using the melting model of Sobolev, 2011 for pyroxenite). All the parameters that were used in these calculations can be changed in the input file, the most relevant maybe being the mass fraction of Cpx in peridotite in the Katz melting model (Mass fraction cpx), which right now has a default of 15\%. The corresponding p-T-diagrams can be generated by running the tests melt\_postprocessor\_peridotite and melt\_postprocessor\_pyroxenite.
 
-`melt material properties': A visualization output object that generates output for melt related properties of the material model.
+`melt material properties': A visualization output object that generates output for melt related properties of the material model. Note that this postprocessor always outputs the compaction pressure, but can output a large range of additional properties, as selected in the ``List of properties'' parameter.
 
 `named additional outputs': Some material models can compute quantities other than those that typically appear in the equations that \aspect{} solves (such as the viscosity, density, etc). Examples of quantities material models may be able to compute are seismic velocities, or other quantities that can be derived from the state variables and the material coefficients such as the stress or stress anisotropies. These quantities are generically referred to as `named outputs' because they are given an explicit name different from the usual outputs of material models.
 
@@ -15511,10 +15232,10 @@ viscosity|density|thermal expansivity|specific heat|thermal conductivity|thermal
 
 {\it Description:} A comma separated list of melt properties that should be written whenever writing graphical output. The following material properties are available:
 
-compaction viscosity|fluid viscosity|permeability|fluid density|fluid density gradient
+compaction viscosity|fluid viscosity|permeability|fluid density|fluid density gradient|is melt cell|darcy coefficient|darcy coefficient no cutoff
 
 
-{\it Possible values:} A comma-separated list of any of compaction viscosity, fluid viscosity, permeability, fluid density, fluid density gradient
+{\it Possible values:} A comma-separated list of any of compaction viscosity, fluid viscosity, permeability, fluid density, fluid density gradient, is melt cell, darcy coefficient, darcy coefficient no cutoff
 \end{itemize}
 
 \subsection{Parameters in section \tt Postprocess/Visualization/Vp anomaly}
@@ -15970,6 +15691,42 @@ If the function you are describing represents a vector-valued function with mult
 \subsection{Parameters in section \tt Solver parameters}
 \label{parameters:Solver_20parameters}
 
+\begin{itemize}
+\item {\it Parameter name:} {\tt Composition solver tolerance}
+\phantomsection\label{parameters:Solver parameters/Composition solver tolerance}
+
+
+\index[prmindex]{Composition solver tolerance}
+\index[prmindexfull]{Solver parameters!Composition solver tolerance}
+{\it Value:} 1e-12
+
+
+{\it Default:} 1e-12
+
+
+{\it Description:} The relative tolerance up to which the linear system for the composition system gets solved. See `Stokes solver parameters/Linear solver tolerance' for more details.
+
+
+{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
+\item {\it Parameter name:} {\tt Temperature solver tolerance}
+\phantomsection\label{parameters:Solver parameters/Temperature solver tolerance}
+
+
+\index[prmindex]{Temperature solver tolerance}
+\index[prmindexfull]{Solver parameters!Temperature solver tolerance}
+{\it Value:} 1e-12
+
+
+{\it Default:} 1e-12
+
+
+{\it Description:} The relative tolerance up to which the linear system for the temperature system gets solved. See `Stokes solver parameters/Linear solver tolerance' for more details.
+
+
+{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
+\end{itemize}
+
+
 
 \subsection{Parameters in section \tt Solver parameters/AMG parameters}
 \label{parameters:Solver_20parameters/AMG_20parameters}
@@ -15987,7 +15744,7 @@ If the function you are describing represents a vector-valued function with mult
 {\it Default:} 0.001
 
 
-{\it Description:} This threshold tells the AMG setup how the coarsening should be performed. In the AMG used by ML, all points that strongly couple with the tentative coarse-level point form one aggregate. The term strong coupling is controlled by the variable aggregation\_threshold, meaning that all elements that are not smaller than aggregation\_threshold times the diagonal element do couple strongly. The default is strongly recommended. There are indications that for the Newton solver a different value might be better. For extensive benchmarking of various settings of the AMG parameters in this secton for the Stokes problem and others, see https://github.com/geodynamics/aspect/pull/234.
+{\it Description:} This threshold tells the AMG setup how the coarsening should be performed. In the AMG used by ML, all points that strongly couple with the tentative coarse-level point form one aggregate. The term strong coupling is controlled by the variable aggregation\_threshold, meaning that all elements that are not smaller than aggregation\_threshold times the diagonal element do couple strongly. The default is strongly recommended. There are indications that for the Newton solver a different value might be better. For extensive benchmarking of various settings of the AMG parameters in this section for the Stokes problem and others, see https://github.com/geodynamics/aspect/pull/234.
 
 
 {\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
@@ -16019,7 +15776,7 @@ If the function you are describing represents a vector-valued function with mult
 {\it Default:} 2
 
 
-{\it Description:} Determines how many sweeps of the smoother should be performed. When the flag elliptic is set to true, (which is true for ASPECT), the polynomial degree of the Chebyshev smoother is set to this value. The term sweeps refers to the number of matrix-vector products performed in the Chebyshev case. In the non-elliptic case, this parameter sets the number of SSOR relaxation sweeps for post-smoothing to be performed. The default is strongly recommended. There are indications that for the Newton solver a different value might be better. For extensive benchmarking of various settings of the AMG parameters in this secton for the Stokes problem and others, see https://github.com/geodynamics/aspect/pull/234.
+{\it Description:} Determines how many sweeps of the smoother should be performed. When the flag elliptic is set to true, (which is true for ASPECT), the polynomial degree of the Chebyshev smoother is set to this value. The term sweeps refers to the number of matrix-vector products performed in the Chebyshev case. In the non-elliptic case, this parameter sets the number of SSOR relaxation sweeps for post-smoothing to be performed. The default is strongly recommended. There are indications that for the Newton solver a different value might be better. For extensive benchmarking of various settings of the AMG parameters in this section for the Stokes problem and others, see https://github.com/geodynamics/aspect/pull/234.
 
 
 {\it Possible values:} An integer $n$ such that $0\leq n \leq 2147483647$
@@ -16035,7 +15792,7 @@ If the function you are describing represents a vector-valued function with mult
 {\it Default:} Chebyshev
 
 
-{\it Description:} This parameter sets the type of smoother for the AMG. The default is strongly recommended for any normal runs with ASPECT. There are some indications that the symmetric Gaus-Seidel might be better and more stable for the Newton solver. For extensive benchmarking of various settings of the AMG parameters in this secton for the Stokes problem and others, see https://github.com/geodynamics/aspect/pull/234.
+{\it Description:} This parameter sets the type of smoother for the AMG. The default is strongly recommended for any normal runs with ASPECT. There are some indications that the symmetric Gauss-Seidel might be better and more stable for the Newton solver. For extensive benchmarking of various settings of the AMG parameters in this section for the Stokes problem and others, see https://github.com/geodynamics/aspect/pull/234.
 
 
 {\it Possible values:} Any one of Chebyshev, symmetric Gauss-Seidel
@@ -16245,6 +16002,110 @@ Once derivatives are used in a Newton method, \aspect{} always uses the Eisensta
 
 
 {\it Possible values:} An integer $n$ such that $0\leq n \leq 2147483647$
+\end{itemize}
+
+\subsection{Parameters in section \tt Solver parameters/Stokes solver parameters}
+\label{parameters:Solver_20parameters/Stokes_20solver_20parameters}
+
+\begin{itemize}
+\item {\it Parameter name:} {\tt Linear solver A block tolerance}
+\phantomsection\label{parameters:Solver parameters/Stokes solver parameters/Linear solver A block tolerance}
+
+
+\index[prmindex]{Linear solver A block tolerance}
+\index[prmindexfull]{Solver parameters!Stokes solver parameters!Linear solver A block tolerance}
+{\it Value:} 1e-2
+
+
+{\it Default:} 1e-2
+
+
+{\it Description:} A relative tolerance up to which the approximate inverse of the $A$ block of the Stokes system is computed. This approximate $A$ is used in the preconditioning used in the GMRES solver. The exact definition of this block preconditioner for the Stokes equation can be found in \cite{KHB12}.
+
+
+{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
+\item {\it Parameter name:} {\tt Linear solver S block tolerance}
+\phantomsection\label{parameters:Solver parameters/Stokes solver parameters/Linear solver S block tolerance}
+
+
+\index[prmindex]{Linear solver S block tolerance}
+\index[prmindexfull]{Solver parameters!Stokes solver parameters!Linear solver S block tolerance}
+{\it Value:} 1e-6
+
+
+{\it Default:} 1e-6
+
+
+{\it Description:} A relative tolerance up to which the approximate inverse of the $S$ block (i.e., the Schur complement matrix $S = BA^{-1}B^{T}$) of the Stokes system is computed. This approximate inverse of the $S$ block is used in the preconditioning used in the GMRES solver. The exact definition of this block preconditioner for the Stokes equation can be found in \cite{KHB12}.
+
+
+{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
+\item {\it Parameter name:} {\tt Linear solver tolerance}
+\phantomsection\label{parameters:Solver parameters/Stokes solver parameters/Linear solver tolerance}
+
+
+\index[prmindex]{Linear solver tolerance}
+\index[prmindexfull]{Solver parameters!Stokes solver parameters!Linear solver tolerance}
+{\it Value:} 1e-7
+
+
+{\it Default:} 1e-7
+
+
+{\it Description:} A relative tolerance up to which the linear Stokes systems in each time or nonlinear step should be solved. The absolute tolerance will then be $\| M x_0 - F \| \cdot \text{tol}$, where $x_0 = (0,p_0)$ is the initial guess of the pressure, $M$ is the system matrix, F is the right-hand side, and tol is the parameter specified here. We include the initial guess of the pressure to remove the dependency of the tolerance on the static pressure. A given tolerance value of 1 would mean that a zero solution vector is an acceptable solution since in that case the norm of the residual of the linear system equals the norm of the right hand side. A given tolerance of 0 would mean that the linear system has to be solved exactly, since this is the only way to obtain a zero residual.
+
+In practice, you should choose the value of this parameter to be so that if you make it smaller the results of your simulation do not change any more (qualitatively) whereas if you make it larger, they do. For most cases, the default value should be sufficient. In fact, a tolerance of 1e-4 might be accurate enough.
+
+
+{\it Possible values:} A floating point number $v$ such that $0 \leq v \leq 1$
+\item {\it Parameter name:} {\tt Maximum number of expensive Stokes solver steps}
+\phantomsection\label{parameters:Solver parameters/Stokes solver parameters/Maximum number of expensive Stokes solver steps}
+
+
+\index[prmindex]{Maximum number of expensive Stokes solver steps}
+\index[prmindexfull]{Solver parameters!Stokes solver parameters!Maximum number of expensive Stokes solver steps}
+{\it Value:} 1000
+
+
+{\it Default:} 1000
+
+
+{\it Description:} This sets the maximum number of iterations used in the expensive Stokes solver. If this value is set too low for the size of the problem, the Stokes solver will not converge and return an error message pointing out that the user didn't allow a sufficiently large number of iterations for the iterative solver to converge.
+
+
+{\it Possible values:} An integer $n$ such that $0\leq n \leq 2147483647$
+\item {\it Parameter name:} {\tt Number of cheap Stokes solver steps}
+\phantomsection\label{parameters:Solver parameters/Stokes solver parameters/Number of cheap Stokes solver steps}
+
+
+\index[prmindex]{Number of cheap Stokes solver steps}
+\index[prmindexfull]{Solver parameters!Stokes solver parameters!Number of cheap Stokes solver steps}
+{\it Value:} 200
+
+
+{\it Default:} 200
+
+
+{\it Description:} As explained in the paper that describes ASPECT (Kronbichler, Heister, and Bangerth, 2012, see \cite{KHB12}) we first try to solve the Stokes system in every time step using a GMRES iteration with a poor but cheap preconditioner. By default, we try whether we can converge the GMRES solver in 200 such iterations before deciding that we need a better preconditioner. This is sufficient for simple problems with variable viscosity and we never need the second phase with the more expensive preconditioner. On the other hand, for more complex problems, and in particular for problems with strongly nonlinear viscosity, the 200 cheap iterations don't actually do very much good and one might skip this part right away. In that case, this parameter can be set to zero, i.e., we immediately start with the better but more expensive preconditioner.
+
+
+{\it Possible values:} An integer $n$ such that $0\leq n \leq 2147483647$
+\item {\it Parameter name:} {\tt Use direct solver for Stokes system}
+\phantomsection\label{parameters:Solver parameters/Stokes solver parameters/Use direct solver for Stokes system}
+
+
+\index[prmindex]{Use direct solver for Stokes system}
+\index[prmindexfull]{Solver parameters!Stokes solver parameters!Use direct solver for Stokes system}
+{\it Value:} true
+
+
+{\it Default:} false
+
+
+{\it Description:} If set to true the linear system for the Stokes equation will be solved using Trilinos klu, otherwise an iterative Schur complement solver is used. The direct solver is only efficient for small problems.
+
+
+{\it Possible values:} A boolean value (true or false)
 \end{itemize}
 
 \subsection{Parameters in section \tt Termination criteria}

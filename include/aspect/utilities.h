@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2014 - 2017 by the authors of the ASPECT code.
+  Copyright (C) 2014 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -33,12 +33,18 @@
 #include <deal.II/fe/component_mask.h>
 
 #include <aspect/geometry_model/interface.h>
+#include <aspect/coordinate_systems.h>
 
 
 
 namespace aspect
 {
   template <int dim> class SimulatorAccess;
+
+  namespace GeometryModel
+  {
+    template <int dim> class Interface;
+  }
 
   /**
    * A namespace for utility functions that might be used in many different
@@ -160,24 +166,6 @@ namespace aspect
       ellipsoidal_to_cartesian_coordinates(const std_cxx11::array<double,3> &phi_theta_d,
                                            const double semi_major_axis_a,
                                            const double eccentricity);
-
-      /**
-       * This enum lists available coordinate systems that can be used for
-       * the function variables. Allowed values are 'cartesian',
-       * 'spherical', and 'depth'. 'spherical' coordinates follow: r, phi
-       * (2D) or r, phi, theta (3D); where r is radius, phi is longitude,
-       * and theta is the polar angle (colatitude). The 'depth' is a
-       * one-dimensional coordinate system in which only the distance
-       * below the 'top' surface (depth) as defined by each geometry model,
-       * is used.
-       */
-      enum CoordinateSystem
-      {
-        depth,
-        cartesian,
-        spherical,
-        invalid
-      };
 
 
       /**
@@ -518,6 +506,14 @@ namespace aspect
         get_column_names() const;
 
         /**
+         * Returns whether the stored coordinates are equidistant. If
+         * coordinates are equidistant the lookup is more efficient. Returns
+         * false if no coordinates are loaded at the moment.
+         */
+        bool
+        has_equidistant_coordinates() const;
+
+        /**
          * Returns the column index of a column with the given name
          * @p column_name. Throws an exception if no such
          * column exists or no names were provided in the file.
@@ -583,6 +579,12 @@ namespace aspect
          * to transform the unit of the data.
          */
         const double scale_factor;
+
+        /**
+         * Stores whether the coordinate values are equidistant or not,
+         * this determines the type of data function stored.
+         */
+        bool coordinate_values_are_equidistant;
 
         /**
          * Computes the table indices of each entry in the input data file.
@@ -656,9 +658,9 @@ namespace aspect
         AsciiDataBoundary();
 
         /**
-          * Initialization function. This function is called once at the
-          * beginning of the program. Checks preconditions.
-          */
+         * Initialization function. This function is called once at the
+         * beginning of the program. Checks preconditions.
+         */
         virtual
         void
         initialize (const std::set<types::boundary_id> &boundary_ids,
@@ -1069,6 +1071,49 @@ namespace aspect
     template <int dim>
     SymmetricTensor<2,dim> nth_basis_for_symmetric_tensors (const unsigned int k);
 
+    /*
+    * A class that represents a point in a chosen coordinate system.
+    */
+    template <int dim>
+    class NaturalCoordinate
+    {
+      public:
+        /**
+         * Constructor based on providing the geometry model as a pointer
+         */
+        NaturalCoordinate(Point<dim> &position,
+                          const GeometryModel::Interface<dim> &geometry_model);
+
+        /**
+         * Returns the coordinates in the given coordinate system, which may
+         * not be Cartesian.
+         */
+        std_cxx11::array<double,dim> &get_coordinates();
+
+        /**
+         * The coordinate that represents the 'surface' directions in the
+         * chosen coordinate system.
+         */
+        std_cxx11::array<double,dim-1> get_surface_coordinates() const;
+
+        /**
+         * The coordinate that represents the 'depth' direction in the chosen
+         * coordinate system.
+         */
+        double get_depth_coordinate() const;
+
+      private:
+        /**
+         * An enum which stores the the coordinate system of this natural
+         * point
+         */
+        Utilities::Coordinates::CoordinateSystem coordinate_system;
+
+        /**
+         * An array which stores the coordinates in the coordinates system
+         */
+        std::array<double,dim> coordinates;
+    };
   }
 }
 

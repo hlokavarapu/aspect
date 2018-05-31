@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -163,12 +163,13 @@ namespace aspect
         /**
          * Return the specific heating rate as a function of position.
          */
+        DEAL_II_DEPRECATED
         virtual
         double
         specific_heating_rate (const double temperature,
                                const double pressure,
                                const std::vector<double> &compositional_fields,
-                               const Point<dim> &position) const DEAL_II_DEPRECATED;
+                               const Point<dim> &position) const;
 
         /**
          * Declare the parameters this class takes through input files. The

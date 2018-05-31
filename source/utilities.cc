@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2017 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -698,7 +698,8 @@ namespace aspect
 
       if ((Utilities::MPI::this_mpi_process(comm) == 0))
         {
-          if (opendir(pathname.c_str()) == NULL)
+          DIR *output_directory = opendir(pathname.c_str());
+          if (output_directory == NULL)
             {
               if (!silent)
                 std::cout << "\n"
@@ -714,7 +715,7 @@ namespace aspect
             }
           else
             {
-              error = 0;
+              error = closedir(output_directory);
             }
           // Broadcast error code
           MPI_Bcast (&error, 1, MPI_INT, 0, comm);
@@ -1176,8 +1177,11 @@ namespace aspect
       components(components),
       data(components),
       maximum_component_value(components),
-      scale_factor(scale_factor)
+      scale_factor(scale_factor),
+      coordinate_values_are_equidistant(false)
     {}
+
+
 
     template <int dim>
     AsciiDataLookup<dim>::AsciiDataLookup(const double scale_factor)
@@ -1185,8 +1189,11 @@ namespace aspect
       components(numbers::invalid_unsigned_int),
       data(),
       maximum_component_value(),
-      scale_factor(scale_factor)
+      scale_factor(scale_factor),
+      coordinate_values_are_equidistant(false)
     {}
+
+
 
     template <int dim>
     std::vector<std::string>
@@ -1194,6 +1201,17 @@ namespace aspect
     {
       return data_component_names;
     }
+
+
+
+    template <int dim>
+    bool
+    AsciiDataLookup<dim>::has_equidistant_coordinates() const
+    {
+      return coordinate_values_are_equidistant;
+    }
+
+
 
     template <int dim>
     unsigned int
@@ -1378,7 +1396,7 @@ namespace aspect
       std_cxx11::array<unsigned int,dim> table_intervals;
 
       // Whether or not the grid is equidistant
-      bool equidistant_grid = true;
+      coordinate_values_are_equidistant = true;
 
       for (unsigned int i = 0; i < dim; i++)
         {
@@ -1416,7 +1434,7 @@ namespace aspect
                   // Compare current grid spacing with first grid spacing,
                   // taking into account roundoff of the read-in coordinates
                   if (std::abs(current_grid_spacing - grid_spacing) > 0.005*(current_grid_spacing+grid_spacing))
-                    equidistant_grid = false;
+                    coordinate_values_are_equidistant = false;
                 }
 
               // Set the coordinate value
@@ -1436,14 +1454,12 @@ namespace aspect
           if (data[i])
             delete data[i];
 
-          if (equidistant_grid)
+          if (coordinate_values_are_equidistant)
             data[i] = new Functions::InterpolatedUniformGridData<dim> (grid_extent,
                                                                        table_intervals,
                                                                        data_tables[dim+i]);
           else
             {
-              if (Utilities::MPI::this_mpi_process(comm) == 0)
-                std::cout << "   Ascii data file coordinates are not equidistant. " << std::endl << std::endl;
               data[i] = new Functions::InterpolatedTensorProductGridData<dim> (coordinate_values,
                                                                                data_tables[dim+i]);
             }
@@ -2415,9 +2431,9 @@ namespace aspect
       if ((strain_rate.norm() == 0) || (dviscosities_dstrain_rate.norm() == 0))
         return 1;
 
-      const double norm_a_b = std::sqrt((strain_rate*strain_rate)*(dviscosities_dstrain_rate*dviscosities_dstrain_rate));
-      const double contract_a_b = (strain_rate*dviscosities_dstrain_rate);
-      const double one_minus_part = 1 - (contract_a_b / norm_a_b);
+      const double norm_a_b = std::sqrt((strain_rate*strain_rate)*(dviscosities_dstrain_rate*dviscosities_dstrain_rate));;//std::sqrt((deviator(strain_rate)*deviator(strain_rate))*(dviscosities_dstrain_rate*dviscosities_dstrain_rate));
+      const double contract_b_a = (dviscosities_dstrain_rate*strain_rate);
+      const double one_minus_part = 1 - (contract_b_a / norm_a_b);
       const double denom = one_minus_part * one_minus_part * norm_a_b;
 
       // the case denom == 0 (smallest eigenvalue is zero), should return one,
@@ -2532,6 +2548,7 @@ namespace aspect
     }
 
 
+
     template <int dim>
     SymmetricTensor<2,dim>
     nth_basis_for_symmetric_tensors (const unsigned int k)
@@ -2545,6 +2562,98 @@ namespace aspect
       result[indices_ij] = 1;
 
       return symmetrize(result);
+    }
+
+    template <int dim>
+    NaturalCoordinate<dim>::NaturalCoordinate(Point<dim> &position,
+                                              const GeometryModel::Interface<dim> &geometry_model)
+    {
+      coordinate_system = geometry_model.natural_coordinate_system();
+      coordinates = geometry_model.cartesian_to_natural_coordinates(position);
+    }
+
+    template <int dim>
+    std_cxx11::array<double,dim> &NaturalCoordinate<dim>::get_coordinates()
+    {
+      return coordinates;
+    }
+
+    template <>
+    std_cxx11::array<double,1> NaturalCoordinate<2>::get_surface_coordinates() const
+    {
+      std_cxx11::array<double,1> coordinate;
+
+      switch (coordinate_system)
+        {
+          case Coordinates::CoordinateSystem::cartesian:
+            coordinate[0] = coordinates[0];
+            break;
+
+          case Coordinates::CoordinateSystem::spherical:
+            coordinate[0] = coordinates[1];
+            break;
+
+          case Coordinates::CoordinateSystem::ellipsoidal:
+            coordinate[0] = coordinates[1];
+            break;
+
+          default:
+            coordinate[0] = 0;
+            Assert (false, ExcNotImplemented());
+            break;
+        }
+
+      return coordinate;
+    }
+
+    template <>
+    std_cxx11::array<double,2> NaturalCoordinate<3>::get_surface_coordinates() const
+    {
+      std_cxx11::array<double,2> coordinate;
+
+      switch (coordinate_system)
+        {
+          case Coordinates::CoordinateSystem::cartesian:
+            coordinate[0] = coordinates[0];
+            coordinate[1] = coordinates[1];
+            break;
+
+          case Coordinates::CoordinateSystem::spherical:
+            coordinate[0] = coordinates[1];
+            coordinate[1] = coordinates[2];
+            break;
+
+          case Coordinates::CoordinateSystem::ellipsoidal:
+            coordinate[0] = coordinates[1];
+            coordinate[1] = coordinates[2];
+            break;
+
+          default:
+            Assert (false, ExcNotImplemented());
+        }
+
+      return coordinate;
+    }
+
+    template <int dim>
+    double NaturalCoordinate<dim>::get_depth_coordinate() const
+    {
+      switch (coordinate_system)
+        {
+          case Coordinates::CoordinateSystem::cartesian:
+            return coordinates[dim-1];
+
+          case Coordinates::CoordinateSystem::spherical:
+            return coordinates[0];
+
+          case Coordinates::CoordinateSystem::ellipsoidal:
+            return coordinates[0];
+
+          default:
+            Assert (false, ExcNotImplemented());
+        }
+
+      return 0;
     }
 
 
@@ -2635,5 +2744,7 @@ namespace aspect
     template SymmetricTensor<2,2> nth_basis_for_symmetric_tensors (const unsigned int k);
     template SymmetricTensor<2,3> nth_basis_for_symmetric_tensors (const unsigned int k);
 
+    template class NaturalCoordinate<2>;
+    template class NaturalCoordinate<3>;
   }
 }

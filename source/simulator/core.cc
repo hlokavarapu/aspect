@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2017 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -70,22 +70,6 @@ namespace aspect
   namespace
   {
     /**
-     * Return whether t is an element of the given container object.
-     */
-    template <typename Container>
-    bool is_element (const typename Container::value_type &t,
-                     const Container                      &container)
-    {
-      for (typename Container::const_iterator p = container.begin();
-           p != container.end();
-           ++p)
-        if (*p == t)
-          return true;
-
-      return false;
-    }
-
-    /**
      * Helper function to construct the final std::vector of FEVariable before
      * it is used to construct the Introspection object. Create the default
      * setup based on parameters followed by a signal to allow modifications.
@@ -151,7 +135,7 @@ namespace aspect
     assemblers (new Assemblers::Manager<dim>()),
     parameters (prm, mpi_communicator_),
     melt_handler (parameters.include_melt_transport ? new MeltHandler<dim> (prm) : NULL),
-    newton_handler (parameters.nonlinear_solver == NonlinearSolver::Newton_Stokes ? new NewtonHandler<dim> () : NULL),
+    newton_handler (parameters.nonlinear_solver == NonlinearSolver::iterated_Advection_and_Newton_Stokes ? new NewtonHandler<dim> () : NULL),
     post_signal_creation(
       std_cxx11::bind (&internals::SimulatorSignals::call_connector_functions<dim>,
                        std_cxx11::ref(signals))),
@@ -205,7 +189,7 @@ namespace aspect
 
     rebuild_stokes_matrix (true),
     assemble_newton_stokes_matrix (true),
-    assemble_newton_stokes_system (parameters.nonlinear_solver == NonlinearSolver::Newton_Stokes ? true : false),
+    assemble_newton_stokes_system (parameters.nonlinear_solver == NonlinearSolver::iterated_Advection_and_Newton_Stokes ? true : false),
     rebuild_stokes_preconditioner (true)
   {
     if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
@@ -220,210 +204,9 @@ namespace aspect
         print_aspect_header(log_file_stream);
       }
 
-
     // now that we have output set up, we can start timer sections
     TimerOutput::Scope timer (computing_timer, "Initialization");
 
-    // first do some error checking for the parameters we got
-    {
-      // make sure velocity and traction boundary indicators don't appear in multiple lists
-      std::set<types::boundary_id> boundary_indicator_lists[6]
-        = { boundary_velocity_manager.get_zero_boundary_velocity_indicators(),
-            boundary_velocity_manager.get_tangential_boundary_velocity_indicators(),
-            parameters.free_surface_boundary_indicators,
-            std::set<types::boundary_id>()   // to be prescribed velocity and traction boundary indicators
-          };
-
-      // sets of the boundary indicators only (no selectors and values)
-      std::set<types::boundary_id> velocity_bi;
-      std::set<types::boundary_id> traction_bi;
-
-      for (std::map<types::boundary_id, std::pair<std::string,std::vector<std::string> > >::const_iterator
-           p = boundary_velocity_manager.get_active_boundary_velocity_names().begin();
-           p != boundary_velocity_manager.get_active_boundary_velocity_names().end();
-           ++p)
-        velocity_bi.insert(p->first);
-
-      for (std::map<types::boundary_id,std::pair<std::string, std::string> >::const_iterator
-           r = parameters.prescribed_traction_boundary_indicators.begin();
-           r != parameters.prescribed_traction_boundary_indicators.end();
-           ++r)
-        traction_bi.insert(r->first);
-
-      // are there any indicators that occur in both the prescribed velocity and traction list?
-      std::set<types::boundary_id> intersection;
-      std::set_intersection (velocity_bi.begin(),
-                             velocity_bi.end(),
-                             traction_bi.begin(),
-                             traction_bi.end(),
-                             std::inserter(intersection, intersection.end()));
-
-      // if so, do they have different selectors?
-      if (!intersection.empty())
-        {
-          for (std::set<types::boundary_id>::const_iterator
-               it = intersection.begin();
-               it != intersection.end();
-               ++it)
-            {
-              const std::map<types::boundary_id, std::pair<std::string,std::vector<std::string> > >::const_iterator
-              boundary_velocity_names = boundary_velocity_manager.get_active_boundary_velocity_names().find(*it);
-              Assert(boundary_velocity_names != boundary_velocity_manager.get_active_boundary_velocity_names().end(),
-                     ExcInternalError());
-
-              std::set<char> velocity_selector;
-              std::set<char> traction_selector;
-
-              for (std::string::const_iterator
-                   it_selector  = boundary_velocity_names->second.first.begin();
-                   it_selector != boundary_velocity_names->second.first.end();
-                   ++it_selector)
-                velocity_selector.insert(*it_selector);
-
-              for (std::string::const_iterator
-                   it_selector  = parameters.prescribed_traction_boundary_indicators[*it].first.begin();
-                   it_selector != parameters.prescribed_traction_boundary_indicators[*it].first.end();
-                   ++it_selector)
-                traction_selector.insert(*it_selector);
-
-              // if there are no selectors specified, throw exception
-              AssertThrow(!velocity_selector.empty() || !traction_selector.empty(),
-                          ExcMessage ("Boundary indicator <"
-                                      +
-                                      Utilities::int_to_string(*it)
-                                      +
-                                      "> with symbolic name <"
-                                      +
-                                      geometry_model->translate_id_to_symbol_name (*it)
-                                      +
-                                      "> is listed as having both "
-                                      "velocity and traction boundary conditions in the input file."));
-
-              std::set<char> intersection_selector;
-              std::set_intersection (velocity_selector.begin(),
-                                     velocity_selector.end(),
-                                     traction_selector.begin(),
-                                     traction_selector.end(),
-                                     std::inserter(intersection_selector, intersection_selector.end()));
-
-              // if the same selectors are specified, throw exception
-              AssertThrow(intersection_selector.empty(),
-                          ExcMessage ("Selectors of boundary indicator <"
-                                      +
-                                      Utilities::int_to_string(*it)
-                                      +
-                                      "> with symbolic name <"
-                                      +
-                                      geometry_model->translate_id_to_symbol_name (*it)
-                                      +
-                                      "> are listed as having both "
-                                      "velocity and traction boundary conditions in the input file."));
-            }
-        }
-
-
-      // remove correct boundary indicators that occur in both the velocity and the traction set
-      // but have different selectors
-      std::set<types::boundary_id> union_set;
-      std::set_union (velocity_bi.begin(),
-                      velocity_bi.end(),
-                      traction_bi.begin(),
-                      traction_bi.end(),
-                      std::inserter(union_set, union_set.end()));
-
-      // assign the prescribed boundary indicator list to the boundary_indicator_lists
-      boundary_indicator_lists[3] = union_set;
-
-      // for each combination of boundary indicator lists, make sure that the
-      // intersection is empty
-      for (unsigned int i=0; i<sizeof(boundary_indicator_lists)/sizeof(boundary_indicator_lists[0]); ++i)
-        for (unsigned int j=i+1; j<sizeof(boundary_indicator_lists)/sizeof(boundary_indicator_lists[0]); ++j)
-          {
-            std::set<types::boundary_id> intersection;
-            std::set_intersection (boundary_indicator_lists[i].begin(),
-                                   boundary_indicator_lists[i].end(),
-                                   boundary_indicator_lists[j].begin(),
-                                   boundary_indicator_lists[j].end(),
-                                   std::inserter(intersection, intersection.end()));
-
-            // if the same indicators are specified for different boundary conditions, throw exception
-            AssertThrow (intersection.empty(),
-                         ExcMessage ("Boundary indicator <"
-                                     +
-                                     Utilities::int_to_string(*intersection.begin())
-                                     +
-                                     "> with symbolic name <"
-                                     +
-                                     geometry_model->translate_id_to_symbol_name (*intersection.begin())
-                                     +
-                                     "> is listed as having more "
-                                     "than one type of velocity or traction boundary condition in the input file."));
-          }
-
-      // Check that the periodic boundaries do not have other boundary conditions set
-      typedef std::set< std::pair< std::pair< types::boundary_id, types::boundary_id>, unsigned int> >
-      periodic_boundary_set;
-      periodic_boundary_set pbs = geometry_model->get_periodic_boundary_pairs();
-
-      for (periodic_boundary_set::iterator p = pbs.begin(); p != pbs.end(); ++p)
-        {
-          // Throw error if we are trying to use the same boundary for more than one boundary condition
-          AssertThrow( is_element( (*p).first.first, parameters.fixed_temperature_boundary_indicators ) == false &&
-                       is_element( (*p).first.second, parameters.fixed_temperature_boundary_indicators ) == false &&
-                       is_element( (*p).first.first, parameters.fixed_composition_boundary_indicators ) == false &&
-                       is_element( (*p).first.second, parameters.fixed_composition_boundary_indicators ) == false &&
-                       is_element( (*p).first.first, boundary_indicator_lists[0] ) == false && // zero velocity
-                       is_element( (*p).first.second, boundary_indicator_lists[0] ) == false && // zero velocity
-                       is_element( (*p).first.first, boundary_indicator_lists[1] ) == false && // tangential velocity
-                       is_element( (*p).first.second, boundary_indicator_lists[1] ) == false && // tangential velocity
-                       is_element( (*p).first.first, boundary_indicator_lists[2] ) == false && // free surface
-                       is_element( (*p).first.second, boundary_indicator_lists[2] ) == false && // free surface
-                       is_element( (*p).first.first, boundary_indicator_lists[3] ) == false && // prescribed traction or velocity
-                       is_element( (*p).first.second, boundary_indicator_lists[3] ) == false,  // prescribed traction or velocity
-                       ExcMessage("Periodic boundaries must not have boundary conditions set."));
-        }
-
-      const std::set<types::boundary_id> all_boundary_indicators
-        = geometry_model->get_used_boundary_indicators();
-      if (parameters.nonlinear_solver!=NonlinearSolver::Advection_only)
-        {
-          // next make sure that all listed indicators are actually used by
-          // this geometry
-          for (unsigned int i=0; i<sizeof(boundary_indicator_lists)/sizeof(boundary_indicator_lists[0]); ++i)
-            for (typename std::set<types::boundary_id>::const_iterator
-                 p = boundary_indicator_lists[i].begin();
-                 p != boundary_indicator_lists[i].end(); ++p)
-              AssertThrow (all_boundary_indicators.find (*p)
-                           != all_boundary_indicators.end(),
-                           ExcMessage ("One of the boundary indicators listed in the input file "
-                                       "is not used by the geometry model."));
-        }
-      else
-        {
-          // next make sure that there are no listed indicators
-          for (unsigned  int i = 0; i<sizeof(boundary_indicator_lists)/sizeof(boundary_indicator_lists[0]); ++i)
-            AssertThrow (boundary_indicator_lists[i].empty(),
-                         ExcMessage ("With solver type Advection only, one cannot set boundary conditions for velocity."));
-        }
-
-
-      // now do the same for the fixed temperature indicators and the
-      // compositional indicators
-      for (typename std::set<types::boundary_id>::const_iterator
-           p = parameters.fixed_temperature_boundary_indicators.begin();
-           p != parameters.fixed_temperature_boundary_indicators.end(); ++p)
-        AssertThrow (all_boundary_indicators.find (*p)
-                     != all_boundary_indicators.end(),
-                     ExcMessage ("One of the fixed boundary temperature indicators listed in the input file "
-                                 "is not used by the geometry model."));
-      for (typename std::set<types::boundary_id>::const_iterator
-           p = parameters.fixed_composition_boundary_indicators.begin();
-           p != parameters.fixed_composition_boundary_indicators.end(); ++p)
-        AssertThrow (all_boundary_indicators.find (*p)
-                     != all_boundary_indicators.end(),
-                     ExcMessage ("One of the fixed boundary composition indicators listed in the input file "
-                                 "is not used by the geometry model."));
-    }
 
     // if any plugin wants access to the Simulator by deriving from SimulatorAccess, initialize it and
     // call the initialize() functions immediately after.
@@ -482,39 +265,31 @@ namespace aspect
     initial_composition_manager.initialize_simulator(*this);
     initial_composition_manager.parse_parameters (prm);
 
-    // create a boundary temperature manager, but only if we actually need
-    // it. otherwise, allow the user to simply specify nothing at all
-    if (!parameters.fixed_temperature_boundary_indicators.empty())
-      {
-        boundary_temperature_manager.initialize_simulator (*this);
-        boundary_temperature_manager.parse_parameters (prm);
-      }
+    // Create a boundary temperature manager
+    boundary_temperature_manager.initialize_simulator (*this);
+    boundary_temperature_manager.parse_parameters (prm);
 
-    if (!parameters.fixed_composition_boundary_indicators.empty())
-      {
-        boundary_composition_manager.initialize_simulator (*this);
-        boundary_composition_manager.parse_parameters (prm);
-      }
+    // Create a boundary composition manager
+    boundary_composition_manager.initialize_simulator (*this);
+    boundary_composition_manager.parse_parameters (prm);
 
     boundary_velocity_manager.initialize_simulator (*this);
     boundary_velocity_manager.parse_parameters (prm);
 
     // Make sure we only have a prescribed Stokes plugin if needed
-    if (parameters.nonlinear_solver==NonlinearSolver::Advection_only)
+    if (parameters.nonlinear_solver == NonlinearSolver::single_Advection_no_Stokes)
       {
         AssertThrow(prescribed_stokes_solution.get()!=NULL,
-                    ExcMessage("For 'Advection only' solver you need to provide a Stokes plugin")
+                    ExcMessage("For the 'single Advection, no Stokes' solver scheme you need to provide a Stokes plugin!")
                    );
       }
     else
       {
         AssertThrow(prescribed_stokes_solution.get()==NULL,
-                    ExcMessage("The prescribed stokes plugin you selected only works with solver type 'Advection only' ")
+                    ExcMessage("The prescribed stokes plugin you selected only works with the solver "
+                               "scheme 'single Advection, no Stokes'.")
                    );
       }
-
-
-
 
     if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(prescribed_stokes_solution.get()))
       sim->initialize_simulator (*this);
@@ -545,15 +320,13 @@ namespace aspect
     // Initialize the melt handler
     if (parameters.include_melt_transport)
       {
-        AssertThrow( !parameters.use_discontinuous_temperature_discretization &&
-                     !parameters.use_discontinuous_composition_discretization,
-                     ExcMessage("Melt transport can not be used with discontinuous elements.") );
         melt_handler->initialize_simulator (*this);
+        melt_handler->initialize();
       }
 
     // If the solver type is a Newton type of solver, we need to set make sure
     // assemble_newton_stokes_system set to true.
-    if (parameters.nonlinear_solver == NonlinearSolver::Newton_Stokes)
+    if (parameters.nonlinear_solver == NonlinearSolver::iterated_Advection_and_Newton_Stokes)
       {
         assemble_newton_stokes_system = true;
         newton_handler->initialize_simulator(*this);
@@ -636,15 +409,22 @@ namespace aspect
                      ExcMessage (std::string("Could not open file <") +
                                  parameters.output_directory + "parameters.prm>."));
         prm.print_parameters(prm_out, ParameterHandler::Text);
-      }
-    if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
-      {
-        std::ofstream prm_out ((parameters.output_directory + "parameters.tex").c_str());
-        AssertThrow (prm_out,
+
+        std::ofstream tex_out ((parameters.output_directory + "parameters.tex").c_str());
+        AssertThrow (tex_out,
                      ExcMessage (std::string("Could not open file <") +
                                  parameters.output_directory + "parameters.tex>."));
-        prm.print_parameters(prm_out, ParameterHandler::LaTeX);
+        prm.print_parameters(tex_out, ParameterHandler::LaTeX);
+
+        std::ofstream json_out ((parameters.output_directory + "parameters.json").c_str());
+        AssertThrow (json_out,
+                     ExcMessage (std::string("Could not open file <") +
+                                 parameters.output_directory + "parameters.json>."));
+        prm.print_parameters(json_out, ParameterHandler::JSON);
       }
+
+    // check that the boundary condition selection is consistent
+    check_consistency_of_boundary_conditions();
 
     // check that the setup of equations, material models, and heating terms is consistent
     check_consistency_of_formulation();
@@ -934,11 +714,9 @@ namespace aspect
         // temperature boundary conditions and interpolate the temperature
         // there
         for (std::set<types::boundary_id>::const_iterator
-             p = parameters.fixed_temperature_boundary_indicators.begin();
-             p != parameters.fixed_temperature_boundary_indicators.end(); ++p)
+             p = boundary_temperature_manager.get_fixed_temperature_boundary_indicators().begin();
+             p != boundary_temperature_manager.get_fixed_temperature_boundary_indicators().end(); ++p)
           {
-            Assert (is_element (*p, geometry_model->get_used_boundary_indicators()),
-                    ExcInternalError());
             VectorTools::interpolate_boundary_values (*mapping,
                                                       dof_handler,
                                                       *p,
@@ -965,11 +743,9 @@ namespace aspect
         // there
         for (unsigned int c=0; c<introspection.n_compositional_fields; ++c)
           for (std::set<types::boundary_id>::const_iterator
-               p = parameters.fixed_composition_boundary_indicators.begin();
-               p != parameters.fixed_composition_boundary_indicators.end(); ++p)
+               p = boundary_composition_manager.get_fixed_composition_boundary_indicators().begin();
+               p != boundary_composition_manager.get_fixed_composition_boundary_indicators().end(); ++p)
             {
-              Assert (is_element (*p, geometry_model->get_used_boundary_indicators()),
-                      ExcInternalError());
               VectorTools::interpolate_boundary_values (*mapping,
                                                         dof_handler,
                                                         *p,
@@ -985,12 +761,18 @@ namespace aspect
             }
       }
 
-
     // let plugins add more constraints if they so choose, then close the
     // constraints object
     signals.post_constraints_creation(*this, current_constraints);
 
     current_constraints.close();
+
+    // let the melt handler add its constraints once before we solve the porosity system for the first time
+    if (parameters.include_melt_transport)
+      melt_handler->save_constraints (current_constraints);
+
+    if (time_step == 0 && parameters.include_melt_transport)
+      melt_handler->add_current_constraints (current_constraints);
   }
 
 
@@ -1022,13 +804,10 @@ namespace aspect
     // - all velocities couple with all velocities
     // - pressure couples with all velocities and the other way
     //   around
-    // - temperature only couples with itself when using the IMPES
-    //   scheme
+    // - temperature only couples with itself
     // - compositional fields only couple with themselves
-    // this is also valid in the case of melt transport (for the
-    // fluid and the compaction pressure
-    // additionally, fluid pressure and compaction pressures couple
-    // with themselves
+    // - additionally, in models with melt transport fluid pressure
+    //   and compaction pressures couple with themselves
     {
       const typename Introspection<dim>::ComponentIndices &x
         = introspection.component_indices;
@@ -1181,6 +960,10 @@ namespace aspect
         coupling[introspection.variable("fluid pressure").first_component_index]
         [introspection.variable("fluid pressure").first_component_index] = DoFTools::always;
         coupling[introspection.variable("compaction pressure").first_component_index]
+        [introspection.variable("compaction pressure").first_component_index] = DoFTools::always;
+        coupling[introspection.variable("compaction pressure").first_component_index]
+        [introspection.variable("fluid pressure").first_component_index] = DoFTools::always;
+        coupling[introspection.variable("fluid pressure").first_component_index]
         [introspection.variable("compaction pressure").first_component_index] = DoFTools::always;
       }
     else
@@ -1383,6 +1166,9 @@ namespace aspect
     old_old_solution.reinit(introspection.index_sets.system_partitioning, introspection.index_sets.system_relevant_partitioning, mpi_communicator);
     current_linearization_point.reinit (introspection.index_sets.system_partitioning, introspection.index_sets.system_relevant_partitioning, mpi_communicator);
 
+    if (parameters.use_operator_splitting)
+      operator_split_reaction_vector.reinit (introspection.index_sets.system_partitioning, introspection.index_sets.system_relevant_partitioning, mpi_communicator);
+
     if (do_pressure_rhs_compatibility_modification)
       pressure_shape_function_integrals.reinit (introspection.index_sets.system_partitioning, mpi_communicator);
 
@@ -1416,7 +1202,6 @@ namespace aspect
 
       if (!parameters.include_melt_transport)
         {
-          // locally_owned_melt_pressure_dofs is only used if not using melt
           if (parameters.use_direct_stokes_solver)
             introspection.index_sets.locally_owned_pressure_dofs = system_index_set & Utilities::extract_locally_active_dofs_with_component(dof_handler, introspection.component_masks.pressure);
           else
@@ -1703,39 +1488,39 @@ namespace aspect
 
     switch (parameters.nonlinear_solver)
       {
-        case NonlinearSolver::IMPES:
+        case NonlinearSolver::single_Advection_single_Stokes:
         {
-          solve_IMPES();
+          solve_single_advection_single_stokes();
           break;
         }
 
-        case NonlinearSolver::Stokes_only:
+        case NonlinearSolver::no_Advection_iterated_Stokes:
         {
-          solve_stokes_only();
+          solve_no_advection_iterated_stokes();
           break;
         }
 
-        case NonlinearSolver::iterated_IMPES:
+        case NonlinearSolver::iterated_Advection_and_Stokes:
         {
-          solve_iterated_IMPES();
+          solve_iterated_advection_and_stokes();
           break;
         }
 
-        case NonlinearSolver::iterated_Stokes:
+        case NonlinearSolver::single_Advection_iterated_Stokes:
         {
-          solve_iterated_stokes();
+          solve_single_advection_iterated_stokes();
           break;
         }
 
-        case NonlinearSolver::Newton_Stokes:
+        case NonlinearSolver::iterated_Advection_and_Newton_Stokes:
         {
-          solve_newton_stokes();
+          solve_iterated_advection_and_newton_stokes();
           break;
         }
 
-        case NonlinearSolver::Advection_only:
+        case NonlinearSolver::single_Advection_no_Stokes:
         {
-          solve_advection_only();
+          solve_single_advection_no_stokes();
           break;
         }
 

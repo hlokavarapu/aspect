@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -298,6 +298,12 @@ namespace aspect
     return simulator->old_old_solution;
   }
 
+  template <int dim>
+  const LinearAlgebra::BlockVector &
+  SimulatorAccess<dim>::get_reaction_vector () const
+  {
+    return simulator->operator_split_reaction_vector;
+  }
 
   template <int dim>
   const LinearAlgebra::BlockVector &
@@ -384,7 +390,7 @@ namespace aspect
   bool
   SimulatorAccess<dim>::has_boundary_temperature () const
   {
-    return (get_boundary_temperature_manager().get_active_boundary_temperature_conditions().size() > 0);
+    return (get_boundary_temperature_manager().get_fixed_temperature_boundary_indicators().size() > 0);
   }
 
 
@@ -413,7 +419,7 @@ namespace aspect
   bool
   SimulatorAccess<dim>::has_boundary_composition () const
   {
-    return (get_boundary_composition_manager().get_active_boundary_composition_conditions().size() > 0);
+    return (get_boundary_composition_manager().get_fixed_composition_boundary_indicators().size() > 0);
   }
 
 
@@ -442,7 +448,7 @@ namespace aspect
   const std::set<types::boundary_id> &
   SimulatorAccess<dim>::get_fixed_temperature_boundary_indicators () const
   {
-    return simulator->parameters.fixed_temperature_boundary_indicators;
+    return get_boundary_temperature_manager().get_fixed_temperature_boundary_indicators();
   }
 
 
@@ -450,7 +456,7 @@ namespace aspect
   const std::set<types::boundary_id> &
   SimulatorAccess<dim>::get_fixed_composition_boundary_indicators () const
   {
-    return simulator->parameters.fixed_composition_boundary_indicators;
+    return get_boundary_composition_manager().get_fixed_composition_boundary_indicators();
   }
 
 
@@ -653,6 +659,20 @@ namespace aspect
   SimulatorAccess<dim>::pressure_rhs_needs_compatibility_modification () const
   {
     return simulator->do_pressure_rhs_compatibility_modification;
+  }
+
+  template <int dim>
+  bool
+  SimulatorAccess<dim>::model_has_prescribed_stokes_solution () const
+  {
+    return (simulator->prescribed_stokes_solution.get() != 0);
+  }
+
+  template <int dim>
+  const Postprocess::Manager<dim> &
+  SimulatorAccess<dim>::get_postprocess_manager() const
+  {
+    return simulator->postprocess_manager;
   }
 }
 

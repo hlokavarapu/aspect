@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2017 by the authors of the ASPECT code.
+  Copyright (C) 2017 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -23,6 +23,7 @@
 #include <aspect/global.h>
 #include <aspect/free_surface.h>
 #include <aspect/newton.h>
+#include <aspect/melt.h>
 
 #include <deal.II/numerics/vector_tools.h>
 
@@ -242,6 +243,17 @@ namespace aspect
         (boundary_velocity_manager.get_active_boundary_velocity_conditions().size() > 0))
       rebuild_stokes_matrix = rebuild_stokes_preconditioner = true;
 
+    // set constraints for p_c if porosity is below a threshold
+    if (nonlinear_iteration == 0 && parameters.include_melt_transport)
+      {
+        melt_handler->add_current_constraints (current_constraints);
+
+        setup_system_matrix (introspection.index_sets.system_partitioning);
+        setup_system_preconditioner (introspection.index_sets.system_partitioning);
+
+        rebuild_stokes_matrix = rebuild_stokes_preconditioner = true;
+      }
+
     assemble_stokes_system ();
     build_stokes_preconditioner();
 
@@ -279,7 +291,7 @@ namespace aspect
 
 
   template <int dim>
-  void Simulator<dim>::solve_IMPES ()
+  void Simulator<dim>::solve_single_advection_single_stokes ()
   {
     assemble_and_solve_temperature();
     assemble_and_solve_composition();
@@ -294,7 +306,7 @@ namespace aspect
 
 
   template <int dim>
-  void Simulator<dim>::solve_stokes_only ()
+  void Simulator<dim>::solve_no_advection_iterated_stokes ()
   {
     double initial_stokes_residual = 0.0;
 
@@ -331,7 +343,7 @@ namespace aspect
 
 
   template <int dim>
-  void Simulator<dim>::solve_iterated_IMPES ()
+  void Simulator<dim>::solve_iterated_advection_and_stokes ()
   {
     double initial_temperature_residual = 0;
     double initial_stokes_residual      = 0;
@@ -402,7 +414,7 @@ namespace aspect
 
 
   template <int dim>
-  void Simulator<dim>::solve_iterated_stokes ()
+  void Simulator<dim>::solve_single_advection_iterated_stokes ()
   {
     // solve the temperature and composition systems once...
     assemble_and_solve_temperature();
@@ -447,7 +459,7 @@ namespace aspect
 
 
   template <int dim>
-  void Simulator<dim>::solve_newton_stokes ()
+  void Simulator<dim>::solve_iterated_advection_and_newton_stokes ()
   {
     // Now store the linear_tolerance we started out with, because we might change
     // it within this timestep.
@@ -466,6 +478,9 @@ namespace aspect
     double newton_residual_for_derivative_scaling_factor = 1;
 
     bool use_picard = true;
+
+    const Newton::Parameters::Stabilization starting_preconditioner_stabilization = newton_handler->parameters.preconditioner_stabilization;
+    const Newton::Parameters::Stabilization starting_velocity_block_stabilization = newton_handler->parameters.velocity_block_stabilization;
 
     const unsigned int max_nonlinear_iterations =
       (pre_refinement_step < parameters.initial_adaptive_refinement)
@@ -791,6 +806,10 @@ namespace aspect
           }
       }
 
+    // Reset the Newton stabilization at the end of the timestep.
+    newton_handler->parameters.preconditioner_stabilization = starting_preconditioner_stabilization;
+    newton_handler->parameters.velocity_block_stabilization = starting_velocity_block_stabilization;
+
     // Reset the linear tolerance to what it was at the beginning of the time step.
     parameters.linear_stokes_solver_tolerance = begin_linear_tolerance;
 
@@ -802,7 +821,7 @@ namespace aspect
 
 
   template <int dim>
-  void Simulator<dim>::solve_advection_only ()
+  void Simulator<dim>::solve_single_advection_no_stokes ()
   {
     assemble_and_solve_temperature();
     assemble_and_solve_composition();
@@ -850,12 +869,12 @@ namespace aspect
   template double Simulator<dim>::assemble_and_solve_temperature(const bool, double*); \
   template std::vector<double> Simulator<dim>::assemble_and_solve_composition(const bool, std::vector<double> *); \
   template double Simulator<dim>::assemble_and_solve_stokes(const bool, double*); \
-  template void Simulator<dim>::solve_IMPES(); \
-  template void Simulator<dim>::solve_stokes_only(); \
-  template void Simulator<dim>::solve_iterated_IMPES(); \
-  template void Simulator<dim>::solve_iterated_stokes(); \
-  template void Simulator<dim>::solve_newton_stokes(); \
-  template void Simulator<dim>::solve_advection_only();
+  template void Simulator<dim>::solve_single_advection_single_stokes(); \
+  template void Simulator<dim>::solve_no_advection_iterated_stokes(); \
+  template void Simulator<dim>::solve_iterated_advection_and_stokes(); \
+  template void Simulator<dim>::solve_single_advection_iterated_stokes(); \
+  template void Simulator<dim>::solve_iterated_advection_and_newton_stokes(); \
+  template void Simulator<dim>::solve_single_advection_no_stokes();
 
   ASPECT_INSTANTIATE(INSTANTIATE)
 }

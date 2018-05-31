@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -98,6 +98,11 @@ namespace aspect
   namespace AdiabaticConditions
   {
     template <int dim> class Interface;
+  }
+
+  namespace Postprocess
+  {
+    template <int dim> class Manager;
   }
 
   template <int dim> class MeltHandler;
@@ -420,6 +425,16 @@ namespace aspect
       get_old_old_solution () const;
 
       /**
+       * Return a reference to the vector that has the reactions computed by the
+       * operator splitting scheme in the current time step.
+       *
+       * @note In general the vector is a distributed vector; however, it
+       * contains ghost elements for all locally relevant degrees of freedom.
+       */
+      const LinearAlgebra::BlockVector &
+      get_reaction_vector () const;
+
+      /**
        * Return a reference to the vector that has the mesh velocity for
        * simulations with a free surface.
        *
@@ -525,8 +540,9 @@ namespace aspect
        *
        * @deprecated: Use get_boundary_temperature_manager() instead.
        */
+      DEAL_II_DEPRECATED
       const BoundaryTemperature::Interface<dim> &
-      get_boundary_temperature () const DEAL_II_DEPRECATED;
+      get_boundary_temperature () const;
 
       /**
        * Return an reference to the manager of the boundary temperature models.
@@ -552,8 +568,9 @@ namespace aspect
        *
        * @deprecated: Use get_boundary_composition_manager() instead.
        */
+      DEAL_II_DEPRECATED
       const BoundaryComposition::Interface<dim> &
-      get_boundary_composition () const DEAL_II_DEPRECATED;
+      get_boundary_composition () const;
 
       /**
        * Return an reference to the manager of the boundary composition models.
@@ -577,8 +594,9 @@ namespace aspect
        *
        * @deprecated Use <code> get_initial_temperature_manager </code> instead.
        */
+      DEAL_II_DEPRECATED
       const InitialTemperature::Interface<dim> &
-      get_initial_temperature () const DEAL_II_DEPRECATED;
+      get_initial_temperature () const;
 
       /**
        * Return a reference to the manager of the initial temperature models.
@@ -593,8 +611,9 @@ namespace aspect
        * Return a pointer to the object that describes the composition initial
        * values.
        */
+      DEAL_II_DEPRECATED
       const InitialComposition::Interface<dim> &
-      get_initial_composition () const DEAL_II_DEPRECATED;
+      get_initial_composition () const;
 
       /**
        * Return a pointer to the manager of the initial composition model.
@@ -630,8 +649,9 @@ namespace aspect
        *
        * @deprecated: Use get_boundary_velocity_manager() instead.
        */
+      DEAL_II_DEPRECATED
       const std::map<types::boundary_id,std_cxx11::shared_ptr<BoundaryVelocity::Interface<dim> > >
-      get_prescribed_boundary_velocity () const DEAL_II_DEPRECATED;
+      get_prescribed_boundary_velocity () const;
 
       /**
        * Return an reference to the manager of the boundary velocity models.
@@ -708,6 +728,12 @@ namespace aspect
       pressure_rhs_needs_compatibility_modification() const;
 
       /**
+       * Return whether the model uses a prescribed Stokes solution.
+       */
+      bool
+      model_has_prescribed_stokes_solution () const;
+
+      /**
        * A convenience function that copies the values of the compositional
        * fields at the quadrature point q given as input parameter to the
        * output vector composition_values_at_q_point.
@@ -741,10 +767,20 @@ namespace aspect
        * file (or, has been required by another postprocessor using the
        * Postprocess::Interface::required_other_postprocessors()
        * mechanism), then the function returns a NULL pointer.
+       *
+       * @deprecated Use get_postprocess_manager().has_matching_postprocessor()
+       * and get_postprocess_manager().get_matching_postprocessor() instead.
        */
       template <typename PostprocessorType>
+      DEAL_II_DEPRECATED
       PostprocessorType *
       find_postprocessor () const;
+
+      /**
+       * Return a reference to the melt handler.
+       */
+      const Postprocess::Manager<dim> &
+      get_postprocess_manager () const;
 
       /** @} */
 
@@ -761,7 +797,10 @@ namespace aspect
   PostprocessorType *
   SimulatorAccess<dim>::find_postprocessor () const
   {
-    return simulator->postprocess_manager.template find_postprocessor<PostprocessorType>();
+    if (get_postprocess_manager().template has_matching_postprocessor<PostprocessorType>())
+      return &get_postprocess_manager().template get_matching_postprocessor<PostprocessorType>();
+
+    return NULL;
   }
 }
 

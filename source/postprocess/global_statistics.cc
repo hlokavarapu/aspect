@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2017 by the authors of the ASPECT code.
+  Copyright (C) 2017 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -171,8 +171,8 @@ namespace aspect
 
           // only output the number of nonlinear iterations if we actually
           // use a nonlinear solver scheme
-          if (!(this->get_parameters().nonlinear_solver == Parameters<dim>::NonlinearSolver::IMPES
-                || this->get_parameters().nonlinear_solver == Parameters<dim>::NonlinearSolver::Advection_only))
+          if (!(this->get_parameters().nonlinear_solver == Parameters<dim>::NonlinearSolver::single_Advection_single_Stokes
+                || this->get_parameters().nonlinear_solver == Parameters<dim>::NonlinearSolver::single_Advection_no_Stokes))
             statistics.add_value("Number of nonlinear iterations",
                                  nonlinear_iterations);
 

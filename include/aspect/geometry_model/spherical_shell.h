@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -139,6 +139,13 @@ namespace aspect
         virtual
         bool
         point_is_in_domain(const Point<dim> &p) const;
+
+        /*
+         * Returns what the natural coordinate system for this geometry model is,
+         * which for a spherical shell is Spherical.
+         */
+        virtual
+        aspect::Utilities::Coordinates::CoordinateSystem natural_coordinate_system() const;
 
         /**
          * Declare the parameters this class takes through input files. The

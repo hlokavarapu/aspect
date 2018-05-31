@@ -134,7 +134,7 @@ COMPUTATIONAL INFRASTRUCTURE FOR GEODYNAMICS (CIG)
 \hfill{\Huge \fontfamily{\sfdefault}\selectfont User Manual \\
 \raggedleft \huge \fontfamily{\sfdefault}\selectfont Version
 % keep the following line as is so that we can replace this using a script:
-2.0.0-pre %VERSION-INFO%
+2.0.0 %VERSION-INFO%
 \\\large(generated \today)\\
 {\Large Wolfgang Bangerth\\Juliane Dannberg\\Rene Gassm{\"o}ller\\Timo Heister\\}
 }
@@ -299,39 +299,9 @@ relevance.
 In addition, many have contributed to the development of \aspect{} and deserve credit
 for their work.
 To this end, we ask that if you publish results that were obtained
-to some part using \aspect{}, cite the following, canonical reference \cite{heister_aspect_methods2} for
-this software:
-\begin{lstlisting}[frame=single,language=tex]
-@Article{heister_aspect_methods2,
-  Title                    = {High Accuracy Mantle Convection Simulation through Modern Numerical Methods. {II}: {R}ealistic Models and Problems},
-  Author                   = {Heister, Timo and Dannberg, Juliane and Gassm{\"o}ller, Rene and Bangerth, Wolfgang},
-  Journal                  = {Geophysical Journal International},
-  Year                     = {2017},
-  Number                   = {2},
-  Pages                    = {833-851},
-  Volume                   = {210},
-  Doi                      = {10.1093/gji/ggx195},
-  Url                      = {https://doi.org/10.1093/gji/ggx195}
-}
-\end{lstlisting}
-Please also cite the User's Manual:
-\begin{lstlisting}[frame=single,language=tex]
-@Article{aspectmanual,
-  Title         = {{\textsc{ASPECT}: Advanced Solver for Problems in Earth's ConvecTion, User Manual}},
-  Author        = {W. Bangerth and J. Dannberg and R. Gassm{\"o}ller and T. Heister and others},
-  Year          = {2017},
-  Month         = {4},
-  DOI           = {10.6084/m9.figshare.4865333},
-  Note          = {doi:10.6084/m9.figshare.4865333},
-  URL           = {https://doi.org/10.6084/m9.figshare.4865333}
-}
-\end{lstlisting}
-
-
-
-Updated citation information can also be found on the \aspect{}
-website at \url{https://aspect.geodynamics.org/publications.html}.
-
+to some part using \aspect{}, please see the information at
+{\bf \url{https://aspect.geodynamics.org/cite.html}}, which includes suggestions
+for acknowledgments and citations.
 
 
 \subsection{Acknowledgments}
@@ -1177,7 +1147,7 @@ Equations \eqref{eq:stokes-1}--\eqref{eq:temperature} require us to
 pose initial conditions for the temperature, and this is done by
 selecting one of the existing models for initial conditions in the
 input parameter file, see
-Section~\ref{parameters:Initial_20conditions}. The equations
+Section~\ref{parameters:Initial_20temperature_20model}. The equations
 themselves do not require that initial conditions are specified for
 the velocity and pressure variables (since there are no time
 derivatives on these variables in the model).
@@ -2313,7 +2283,7 @@ that there will be an appreciable difference between the two varieties,
 though removing linear/angular momentum is more physically motivated.
 
 The user can flag the nullspace for removal by setting the \texttt{Remove nullspace} option,
-as described in Section~\ref{parameters:Model_20settings}.
+as described in Section~\ref{parameters:Nullspace_20removal}.
 Figure~\ref{fig:rigid_rotation} shows the result of removing angular momentum from a convection 
 model in a 2D annulus with free-slip velocity boundary conditions. 
 
@@ -2450,6 +2420,7 @@ setup problems, and performance penalties.
 \end{enumerate}
 
 \subsection{Docker Container}
+\label{subsec:docker_container}
 
 \subsubsection{Installing Docker and downloading the \aspect{} image}
 
@@ -3873,6 +3844,30 @@ improvements in run-time.
 \index[prmindexfull]{Material model!Material averaging}
 
 
+\subsubsection{Using multithreading}
+In most cases using as many MPI processes as possible is the optimal
+parallelization strategy for \aspect{} models, but if you are limited by the
+amount of MPI communication it can be beneficial to use multiple threads per
+MPI process. While not utilized by our linear solvers, this parallelization can
+speed up the assembly of the system matrices, e.g. by around 10-15\% if you
+utilize unused logical cores, or nearly linearly if you use otherwise
+unused physical cores. This can also reduce the performance cost if you are
+memory limited and need to run your model on less than the available number of
+cores per node on a cluster to increase the available memory per core.  Running
+with for example two threads per process will offset some of the performance
+loss you will see in these situations.
+
+Multithreading is controlled by setting the command line parameter \texttt{-j}
+or \texttt{-{}-threads}. If the parameter is not set, \aspect{} will create
+exactly one thread per MPI process, i.e. multithreading is disabled.  Appending
+the parameter allows \aspect{} to spawn several threads per MPI process. Note
+that the internally used TBB library will determine the number of threads based
+on the number of available cores, i.e., if you start 2~MPI processes on a
+quadcore machine with hyperthreading (8 logical cores), \aspect{} will spawn 4
+threads on each MPI process. Also note that there is no guarantee that the
+final number of threads will exactly match the number of available logical
+cores if you start with a number of processes that is not a divisor of your
+logical cores (e.g. 3 MPI processes for 8 logical cores).
 
 \subsection{Input parameter files}
 \label{sec:parameters-overview}
@@ -3968,7 +3963,7 @@ categorized into the following groups:
 \item Parameters that describe certain global aspects of the equations to be
   solved: This includes, for example, a description if certain terms in the
   model should be omitted or not. See
-  Section~\ref{parameters:Model_20settings} for the list of parameters in this
+  Section~\ref{parameters:Formulation} for the list of parameters in this
   category.
 
 \item Parameters that characterize plugins: Certain behaviors of
@@ -3993,7 +3988,7 @@ categorized into the following groups:
   \item The gravity description:
     Sections~\ref{parameters:Gravity_20model} and following.
   \item Initial conditions for the temperature:
-    Sections~\ref{parameters:Initial_20conditions} and following.
+    Sections~\ref{parameters:Initial_20temperature_20model} and following.
   \item Temperature boundary conditions:
     Sections~\ref{parameters:Boundary_20temperature_20model} and following.
   \item Postprocessors:
@@ -4017,7 +4012,7 @@ prescribes a constant temperature, or a
 plugin that implements a particular formula for these initial conditions in
 C++ in the code of the plugin, or a
 plugin that allows you to describe this formula in a symbolic way in the input file
-(see Section~\ref{parameters:Initial_20conditions}). An example of this latter
+(see Section~\ref{parameters:Initial_20temperature_20model}). An example of this latter
 case is this snippet of code discussed in
 Section~\ref{sec:cookbooks-simple-box-3d}:
 %
@@ -4036,6 +4031,31 @@ an if-statement that has the general form
 the syntax understood, reference the documentation of the muparser library
 linked to above.
 
+\subsubsection{Compatibility of input files with newer \aspect{} versions}
+
+We strive to maintain compatibility for options in input files as long as
+possible. However, occasionally we have to reorder, rename, or remove options
+from parameter files to improve \aspect{} further. This is in particular true
+for new major versions. In order to allow running old parameter files with
+newer \aspect{} versions we provide scripts that can automatically update
+existing parameter files to the new syntax. Executing
+\texttt{doc/update\_prm\_files.sh} with one or more parameter files as
+arguments will create a backup of the old parameter file (named
+\texttt{old\_filename.bak}), and replace the existing file with a version that
+should work with the current \aspect{} version. Using this script would look
+like this:
+
+\begin{lstlisting}[frame=single,language=ksh,showstringspaces=false]
+bash doc/update_prm_files.sh cookbooks/convection_box.prm
+\end{lstlisting}
+
+\note{Not all text replacements are unique, and the structure of input files
+allows for constructions the script can not properly parse. Also we can not
+guarantee to preserve the structure and position of comments, as it is not
+always clear to which part of the input file they refer. Thus, it is important
+that you check your updated input file for errors. That being said, all input
+files in the main \aspect{} repository are updated successfully using this
+script.}
   
 \subsection{A graphical user interface for editing \aspect{} parameter files}
 Preparing a parameter file in a text editor can be a tedious task, not
@@ -4989,26 +5009,22 @@ for the components of the velocity.
 To illustrate this, let us consider the \url{cookbooks/platelike-boundary.prm}
 input file. It essentially extends the input file considered in the previous example.
 The part of this file that we are particularly interested in in the current
-context is the selection of the kind of boundary conditions on the four
+context is the selection of the kind of velocity boundary conditions on the four
 sides of the box geometry, which we do using a section like this:
-\lstinputlisting[language=prmfile]{cookbooks/platelike-boundary/modelsettings.part.prm.out}
+\lstinputlisting[language=prmfile]{cookbooks/platelike-boundary/boundary.part.prm.out}
 
-Following the convention for numbering boundaries described in the previous
-section, this means that we prescribe a fixed temperature at the bottom and top sides of the box (boundary
-numbers two and three). We use tangential flow at boundaries zero, one and two
-(left, right and bottom).
-Finally, the last entry above is a comma separated list (here with only a single element) of pairs consisting of the
-number of a boundary and the name of the prescribed velocity boundary model to
-be used on this boundary. Here, we use the \texttt{function} boundary model,
-which allows us to provide a function-like notation for the components of the
-velocity vector at the boundary.
+We use tangential flow at boundaries named left, right and bottom.
+Additionally, we specify a comma separated list (here with only a single
+element) of pairs consisting of the name of a boundary and the name of a
+prescribed velocity boundary model. Here, we use the \texttt{function} model on
+the \texttt{top} boundary, which allows us to provide a function-like notation
+for the components of the velocity vector at the boundary.
 
 The second part we need is that we actually describe the function that sets the
-velocity. We do this as follows:
-\lstinputlisting[language=prmfile]{cookbooks/platelike-boundary/boundary.part.prm.out}
-The first of these gives names to the components of the position vector (here,
-we are in 2d and we use $x$ and $z$ as spatial variable names) and the time.
-We could have left this entry at its default, \texttt{x,y,t}, but since we
+velocity. We do this in the subsection \texttt{Function}. The first of these
+parameters gives names to the components of the position vector (here, we are
+in 2d and we use $x$ and $z$ as spatial variable names) and the time. We could
+have left this entry at its default, \texttt{x,y,t}, but since we
 often think in terms of ``depth'' as the vertical direction, let us use
 \texttt{z} for the second coordinate.
 In the second parameter we define symbolic constants that can be used
@@ -5701,11 +5717,13 @@ topography on the free surface at every time step.
 
 The bulk of the parameter file for this cookbook is similar to previous ones in this manual.
 We use initial temperature conditions that set up a hot blob of rock in the center of the 
-domain. In the \texttt{Model settings} section you need to give \aspect{} a comma 
-separated list of the free surface boundary indicators.  In this case, we are 
-dealing with the top boundary of a box in 2D, corresponding to boundary indicator 3.  
+domain.
 
-The main addition is the \texttt{Free surface} subsection.  There is one main
+The main addition is the \texttt{Free surface} subsection.
+In this subsection you need to give \aspect{} a comma
+separated list of the free surface boundary indicators.  In this case, we are
+dealing with the `top' boundary of a box in 2D.
+There is another significant
 parameter that needs to be set here: the value for the stabilization parameter ``theta''.
 If this parameter is zero, then there is no stabilization, and you are likely to
 see instabilities develop in the free surface.  If this parameter is one then it
@@ -6578,7 +6596,7 @@ In the following, let us pick apart this input file:
   \item The description of what we want to model is complete by specifying
   that the initial temperature is a perturbation with hexagonal symmetry from a
   linear interpolation between inner and outer temperatures (see
-  Section~\ref{parameters:Initial_20conditions}), and what kind of gravity model
+  Section~\ref{parameters:Initial_20composition_20model}), and what kind of gravity model
   we want to choose (one reminiscent of the one inside the Earth mantle, see
   Section~\ref{parameters:Gravity_20model}).
 
@@ -6848,7 +6866,7 @@ The next section concerns the geometry. The geometry model remains unchanged at
 ``spherical shell'' but we omit the opening angle of 90 degrees as we would like
 to get a complete spherical shell. Such a shell of course also only has two
 boundaries (the inner one has indicator zero, the outer one indicator one) and
-consequently these are the only ones we need to list in the ``Model settings''
+consequently these are the only ones we need to list in the ``Boundary velocity model''
 section:
 
 \lstinputlisting[language=prmfile]{cookbooks/shell_simple_3d/part2.part.prm.out}
@@ -7327,7 +7345,7 @@ The relevant section of the input file is then as follows:
 
 \lstinputlisting[language=prmfile]{cookbooks/gplates/gplates.part.prm.out}
 
-In the model settings subsection the user prescribes the boundary that is supposed to 
+In the ``Boundary velocity model'' subsection the user prescribes the boundary that is supposed to
 use the GPlates plugin. Although currently nothing forbids the user to use GPlates plugin for other
 boundaries than the surface, its current usage and the provided sample data only make sense
 for the surface of a spherical shell (boundary number 1 in the above provided parameter file). 
@@ -7971,6 +7989,7 @@ Both trends are shown in Figure~\ref{fig:inner-core-trends} and can be compared 
 \end{figure}
 
 \subsubsection{Melt migration in a 2D mantle convection model}
+\label{sec:cookbooks-melt-global}
 
 \textit{This section was contributed by Juliane Dannberg and is based on a section in \cite{dannberg_melt} by Juliane Dannberg and Timo Heister.}
 
@@ -8012,6 +8031,160 @@ In the first few tens of millions of years, this models evolves similarly to the
 Figure~\ref{fig:global-melt} shows the time evolution of both models. 
 A more complete comparison of the two models can be found in Section~4.7 ``Influence of melt migration on a global-scale 
 convection model'' in \cite{dannberg_melt}.
+
+\subsubsection{Melt migration in a 2D mid-ocean ridge model}
+\label{sec:cookbooks-mid-ocean-ridge}
+
+\textit{This section was contributed by Juliane Dannberg.}
+
+The following cookbook will explain how to set up a model of a mid-ocean ridge that uses \aspect{}'s 
+implementation of coupled magma/mantle dynamics (see Section~\ref{sec:melt_transport}) and melting 
+and freezing of mantle rock. 
+In particular, it will outline 
+\begin{enumerate}
+  \item how to use operator splitting to accurately compute melting and freezing of melt, 
+  \item how to use traction boundary conditions to set up the flow field of a mid-ocean ridge, 
+  \item useful strategies for how to refine the mesh in models with melt migration.
+\end{enumerate}
+How to set up a model with melt migration in general is explained in the previous cookbook \ref{sec:cookbooks-melt-global}. 
+
+As the flow at mid-ocean ridges can be assumed to be roughly symmetric with respect to the ridge axis 
+in the center, we only model one half of the ridge in a 2d Cartesian box with dimensions of $105 \times 70$\,km. Solid material is flowing in from the bottom with a prescribed temperature and melting due to decompression as is rises. The model is cooled from the top so that melt freezes again as it approaches this boundary. In addition, a fixed plate velocity away from the ridge axis is prescribed at the top boundary, inducing corner flow. Material can flow out freely at the right model boundary. The model shows both how melt is focused towards the ridge axis, and how melting and freezing induces chemical heterogeneity in the mantle, generating the crust and lithosphere. 
+A movie of the full model evolution can be found \href{https://www.youtube.com/watch?v=f4Bc4lzdNP0}{online}. 
+
+\paragraph{The input file.}
+One important problem in models with melting and freezing (and other reactions) is that these reactions 
+can be much faster than the time step of the model. For mid-ocean ridges, melt is generally assumed to 
+be in equilibrium with the solid, which means that the reaction is basically instantaneous. 
+To model these type of processes, \aspect{} uses operator splitting (see also Section \ref{sec:benchmark-operator_splitting}): Reactions are solved on a different time scale than advection. 
+For this model, this means that at the beginning of each time step, all melting reactions, 
+including their latent heat effects, are solved using several shorter sub-time steps. In the input file, 
+we have to choose both the size of these sub-time steps and the rate (or characteristic time scale) of melting, 
+and they have to be consistent in the sense that the operator splitting time step can not be larger than 
+the reaction time scale. 
+The melting model we use here is the anhydrous mantle melting model of \cite{KSL2003} for a peridotitic 
+rock composition, as implemented in the ``melt simple'' material model. 
+
+\lstinputlisting[language=prmfile]{cookbooks/mid_ocean_ridge/melting_and_freezing.part.prm}
+
+To make sure we reproduce the characteristic triangular melting region of a mid-ocean ridge, we have to  
+set up the boundary conditions in a way so that they will lead to corner flow. At the top boundary, we can 
+simply prescribe the half-spreading rate, and at the left boundary we can use a free-slip boundary, as 
+material should not cross this centerline. However, we do not know the inflow and outflow velocities at 
+the bottom and right side of the model. Instead, what we can do here is prescribing the lithostatic 
+pressure as a boundary condition for the stress. We accomplish this by using the 
+``initial lithostatic pressure'' model. This plugin will automatically compute a 1d lithostatic pressure 
+profile at a given point at the time of the model start and apply it as a boundary traction.
+
+\lstinputlisting[language=prmfile]{cookbooks/mid_ocean_ridge/boundary_conditions.part.prm}
+
+Finally, we have to make sure that the resolution is high enough to model melt migration. 
+This is particularly important in regions where the porosity is low, but still high enough that 
+the two-phase flow equations are solved (instead of the Stokes system, which is solved if there is  
+no melt present in a cell). At the boundary between these regions, material properties like the 
+compaction viscosity may jump, and there may be strong gradients or jumps in some solution variables such 
+as the melt velocity and the compaction pressure. In addition, the characteristic length scale for melt transport, 
+the compaction length $\delta$, depends on the porosity:
+\begin{equation}
+\delta = \sqrt{\frac{(\xi+4\eta/3)k}{\eta_f}}.
+\end{equation}
+While the melt viscosity $\eta_f$ is usually assumed to be constant, and the shear and compaction 
+viscosities $\eta$ and  $\xi$ increase with decreasing porosity $\phi$, the permeability 
+$k \propto \phi^2$ or $k \propto \phi^3$ dominates this relation, so that the compaction length becomes 
+smaller for lower porosities. 
+As the length scale of melt migration is usually smaller than for mantle convection, we want to make 
+sure that regions where melt is present have a high resolution, and that this high resolution extends 
+to all cells where the two-phase flow equations are solved. 
+
+\lstinputlisting[language=prmfile]{cookbooks/mid_ocean_ridge/mesh_refinement.part.prm}
+
+\aspect{} also supports an alternative method to make sure that regions with melt are sufficiently 
+well resolved, relying directly on the compaction length, and we will discuss this method as a possible 
+modification to this cookbook at the end of this section. 
+
+The complete input file is located at \url{cookbooks/mid_ocean_ridge.prm}. 
+
+\paragraph{Model evolution.}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{cookbooks/mid_ocean_ridge/mid_ocean_ridge.pdf}
+    \caption{Mid-ocean ridge model after 8 million years. The top panel shows the depletion 
+             and porosity fields (with the characteristic triangular melting region), 
+             the bottom panel shows the temperature distribution and the melt velocity, indicated 
+             by the arrows.}
+    \label{fig:mid-ocean-ridge}
+\end{figure}
+
+When we look at the visualization output of this model (see also Figure~\ref{fig:mid-ocean-ridge}), 
+we can see how the hot material flowing in 
+from the bottom starts to melt as it reaches lower and lower pressures and crosses the solidus.  Simultaneously, melting makes the residual solid rock more depleted (as indicated by the positive 
+values of the compositional field called `peridotite'). Once material approaches the surface, 
+it is cooled from the cold boundary layer above, and melt starts to crystallize again, generating 
+`enriched' basaltic crust where is freezes (as indicated by the negative values of the compositional 
+field called `peridotite'). As the temperature gradients are much sharper close to the surface, this 
+transition from melt to solid rock is much sharper than in the melting region. Once material 
+crystallizes, it is transported away from the ridge axis due to the flow field induced by the prescribed 
+plate velocity at the top boundary. This way, over time, the classical triangular melting region develops 
+at the ridge axis, and the material transported away from the ridge shows two distinct layers:
+The top $\approx 7$ km are enriched material, and form the basaltic crust (negative peridotite field), 
+and the $\approx 50$ km below are depleted material, and form the lithosphere (positive peridotite field). 
+A vertical profile at a distance of 80 km from the ridge axis showing this composition can be found in Figure~\ref{fig:mid-ocean-ridge-profile}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.35\textwidth]{cookbooks/mid_ocean_ridge/depletion_profile.pdf}
+    \caption{Vertical profile through the model domain at a distance of 80 km from the ridge axis
+             at the end of the model run, showing the distribution of depletion and enrichment as
+             indicated by the peridotite field.}
+    \label{fig:mid-ocean-ridge-profile}
+\end{figure}
+
+\paragraph{Mesh refinement.}
+Another option for making sure that melt migration is resolved properly in the model is using a 
+refinement criterion that directly relates to the compaction length. This can be done in the mesh 
+refinement section of the input file:
+
+\lstinputlisting[language=prmfile]{cookbooks/mid_ocean_ridge/compaction_length.part.prm}
+
+This will lead to a higher resolution particularly in regions with low (but not zero) porosity, 
+and can be useful to resolve the strong gradients in the melt velocity and compaction pressure that 
+are to be expected in these places (see Figure~\ref{fig:mid-ocean-ridge-mesh}). 
+Of course it is also possible to combine both methods for refining the mesh. 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.6\textwidth]{cookbooks/mid_ocean_ridge/refinement.pdf}
+    \caption{Mesh after a time of 3.6 million years for a model using the composition threshold 
+             refinement strategy (left) and the compaction length refinement strategy (right)
+             Background colors indicate the melt velocity. Its sharp gradients at the interface 
+             between regions with and without melt can only be resolved using the compaction 
+             length refinement strategy.}
+    \label{fig:mid-ocean-ridge-mesh}
+\end{figure}
+
+\paragraph{Extending the model.}
+There are a number of parameters that influence the amount of melting, how fast the melt moves, and ultimately the distribution of crustal and lithospheric material. 
+Some ideas for adapting the model setup:
+\begin{itemize}
+  \item Changing the spreading rate: This can be done by choosing a different magnitude of the 
+        prescribed velocity at the top boundary, and influences the size and shape of the triangular
+        melting region. Faster spreading allows hot material to move further away from the ridge axis, 
+        and hence facilitates a melting region that extends further in horizontal direction. 
+  \item Changing the temperature profile: This can be done by choosing a different bottom boundary 
+        temperature and influences the amount of melting, and hence the thickness of the crust. 
+        Higher temperatures lead to more melt being generated. 
+  \item Changing the speed of melt migration: The velocity of the melt with respect to the solid velocity 
+        is determined by the permeability and the melt viscosity (and the pressure gradients in the melt). 
+        Increasing the permeability (by setting a different ``Reference permeability'' in the melt simple 
+        model) can lead to higher melt velocities, melt reaching the depth of freezing faster, and hence 
+        lower overall porosity values at steady state. 
+  \item Making the viscosity law more realistic: In this simple model, the viscosity only depends on the 
+        amount of melt that is present and is otherwise constant. This could be the reason why melt can 
+        not flow up all the way up at the ridge axis, but freezes before it reaches the surface. 
+        Introducing a temperature-dependent rheology could improve this behavior (and in reality, plastic
+        effects might also play a role).
+\end{itemize}
 
 \subsection{Benchmarks}
 \label{sec:cookbooks-benchmarks}
@@ -9270,11 +9443,11 @@ of the entire system satisfies the Stokes equations with their boundary
 conditions. In other words, the solution of the problem is not unique: given a
 solution, adding a solid body rotation yields another solution. We select
 arbitrarily the one that has no net rotation (see
-Section~\ref{parameters:Model_20settings}). The section in the input file 
+Section~\ref{parameters:Nullspace_20removal}). The section in the input file
 that is relevant is then as follows (the full input file resides at
 \url{benchmarks/davies_et_al/case-2.1.prm}):
 \index[prmindex]{Remove nullspace}
-\index[prmindexfull]{Model settings!Remove nullspace}
+\index[prmindexfull]{Nullspace removal!Remove nullspace}
 
 \lstinputlisting[language=prmfile]{cookbooks/benchmarks/davies_et_al/case-2.1.prm.out}
 
@@ -10829,7 +11002,7 @@ plugins above.
 \label{sec:prescribed-velocity-boundary-conditions}
 
 \index[prmindex]{Prescribed velocity boundary indicators}
-\index[prmindexfull]{Model settings!Prescribed velocity boundary indicators}
+\index[prmindexfull]{Boundary velocity model!Prescribed velocity boundary indicators}
 
 Most of the time, one chooses relatively simple boundary values for the
 velocity: either a zero boundary velocity, a tangential flow model in which
@@ -10901,7 +11074,7 @@ plugins above.
 \label{sec:temperature-boundary-conditions}
 
 \index[prmindex]{Fixed temperature boundary indicators}
-\index[prmindexfull]{Model settings!Fixed temperature boundary indicators}
+\index[prmindexfull]{Boundary temperature model!Fixed temperature boundary indicators}
 The boundary conditions are responsible for describing the temperature values
 at those parts of the boundary at which the temperature is fixed (see
 Section~\ref{sec:geometry-models} for how it is determined which parts of the
@@ -11462,6 +11635,30 @@ of the last two functions has been discussed in the general overview of
 plugins above.
 
 
+\subsection{Compatibility of plugins with newer \aspect{} versions}
+
+We strive to maintain compatibility for user written plugins with new versions
+of \aspect{} for as long as possible. However, occasionally we have to
+restructure interface classes to improve \aspect{} further. This is in
+particular true for new major versions. In order to allow running old plugins
+with newer \aspect{} versions we provide scripts that can automatically update
+existing plugins to the new syntax. Executing
+\texttt{doc/update\_source\_files.sh} with one or more plugin files as
+arguments will create a backup of the old file (named
+\texttt{old\_filename.bak}), and replace the existing file with a version that
+should work with the current \aspect{} version. Using this script would look
+like this:
+
+\begin{lstlisting}[frame=single,language=ksh,showstringspaces=false]
+bash doc/update_source_files.sh cookbooks/finite_strain/finite_strain.cc
+\end{lstlisting}
+
+\note{Not all text replacements are unique, and the structure of plugin files
+allows for constructs the script can not properly parse. Thus, it is important
+that you check your updated plugin file for errors. That being said, all plugin
+files in the main \aspect{} repository are updated successfully using this
+script.}
+
 
 \subsection{Extending \aspect{} through the signals mechanism}
 \label{sec:extending-signals}
@@ -11812,7 +12009,24 @@ requests by others, one of the trusted maintainers has to specifically request a
 test run, and this will usually happen
 as soon as the patch developer indicates the patch is ready for review.}
 Upon completion of the test suite, both the general summary (pass/fail) and a
-full verbose log will available from the GitHub page.
+full verbose log will available from the GitHub page. Because the official test
+setup is set up in a Docker container, it is simple to replicate the results on
+a local machine. To this end, follow the instructions in
+Section~\ref{subsec:docker_container} to set up Docker, and then run the
+following command in any terminal (replace \texttt{ASPECT\_SOURCE\_DIR} with
+the path to your \aspect{} directory):
+\begin{lstlisting}[frame=single,language=ksh] 
+    docker run -v ASPECT_SOURCE_DIR:/home/dealii/aspect \
+    --name=aspect-tester --rm -it \
+    dealii/dealii:v8.5.0-gcc-mpi-fulldepscandi-debugrelease \
+    bash /home/dealii/aspect/cmake/compile_and_update_tests.sh
+\end{lstlisting}
+
+This command executes the shell script 
+\texttt{cmake/compile\_and\_update\_tests.sh} \textit{inside} the docker
+container that contains the official \aspect{} test system. Note that by
+mounting your \aspect{} folder into the container you are actually updating the
+reference test results on the host system (i.e. your computer).
 
 
 \subsubsection{Writing tests}

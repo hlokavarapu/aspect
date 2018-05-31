@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -64,12 +64,12 @@ namespace aspect
     {
       enum Kind
       {
-        IMPES,
-        iterated_IMPES,
-        iterated_Stokes,
-        Stokes_only,
-        Newton_Stokes,
-        Advection_only
+        single_Advection_single_Stokes,
+        iterated_Advection_and_Stokes,
+        single_Advection_iterated_Stokes,
+        no_Advection_iterated_Stokes,
+        iterated_Advection_and_Newton_Stokes,
+        single_Advection_no_Stokes
       };
     };
 
@@ -382,9 +382,6 @@ namespace aspect
      */
     bool                           include_melt_transport;
     bool                           enable_additional_stokes_rhs;
-
-    std::set<types::boundary_id> fixed_temperature_boundary_indicators;
-    std::set<types::boundary_id> fixed_composition_boundary_indicators;
 
     /**
      * Map from boundary id to a pair "components", "traction boundary type",

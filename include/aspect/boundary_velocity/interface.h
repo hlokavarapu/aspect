@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2016 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2018 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -110,10 +110,10 @@ namespace aspect
     };
 
     /**
-      * A class that manages all boundary velocity objects.
-      *
-      * @ingroup BoundaryVelocities
-      */
+     * A class that manages all boundary velocity objects.
+     *
+     * @ingroup BoundaryVelocities
+     */
     template <int dim>
     class Manager : public ::aspect::SimulatorAccess<dim>
     {
